@@ -1,0 +1,36 @@
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+
+    volumes:
+      # Mount project root
+      - ..:/workspaces/myproject:cached
+
+      # === Claude Code Persistence ===
+      # Entire .claude directory: auth tokens, settings, plugins, history, onboarding
+      - ~/.claude:/home/lifted/.claude
+
+      # Shell persistence across rebuilds (optional but recommended)
+      - ~/.container-bashrc:/home/lifted/.bashrc
+      - ~/.bash_aliases:/home/lifted/.bash_aliases
+      - ~/.bash_history:/home/lifted/.bash_history
+
+      # Optional: cache for faster Rust builds (remove if not using Rust)
+      # - cargo-cache:/home/lifted/.cargo/registry
+
+    # Required for debugging
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+    # Claude Code OAuth callback forwarding
+    ports:
+      - "45297:45297"
+
+    # Keep container running
+    command: sleep infinity
+    stdin_open: true
+    tty: true
