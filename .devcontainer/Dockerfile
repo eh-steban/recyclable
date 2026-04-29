@@ -44,7 +44,7 @@ RUN useradd -m -u 1000 -s /bin/bash lifted \
 
 # Switch to user for remaining setup
 USER lifted
-WORKDIR /workspaces/myproject
+WORKDIR /workspaces/recyclable
 
 # === Language tool setup (as user) ===
 RUN python3 -m pip install --user --upgrade pip

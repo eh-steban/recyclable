@@ -1,0 +1,17 @@
+{
+  "name": "Recyclable Dev",
+  "dockerComposeFile": [
+    "../docker-compose.yaml",
+    "docker-compose.yml"
+  ],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/recyclable",
+  "remoteUser": "lifted",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [
+    3000,
+    8000,
+    5432,
+    45297
+  ]
+}

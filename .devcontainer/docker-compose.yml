@@ -6,7 +6,7 @@ services:
 
     volumes:
       # Mount project root
-      - ..:/workspaces/myproject:cached
+      - ..:/workspaces/recyclable:cached
 
       # === Claude Code Persistence ===
       # Entire .claude directory: auth tokens, settings, plugins, history, onboarding

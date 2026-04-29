@@ -18,10 +18,13 @@ if [ ! -f "$BASHRC_FILE" ]; then
 fi
 
 # === Install project-specific dependencies ===
-# Customize these for your project:
 
-# Example: Python dependencies
-cd /workspaces/myproject && pip3 install --user -r requirements.txt
+# Backend (Python worker)
+if [ -f /workspaces/recyclable/backend/requirements.txt ]; then
+  cd /workspaces/recyclable/backend && pip3 install --user -r requirements.txt
+fi
 
-# Example: Node dependencies
-# cd /workspaces/myproject && npm install
+# Frontend (Next.js)
+if [ -f /workspaces/recyclable/frontend/package.json ]; then
+  cd /workspaces/recyclable/frontend && npm install
+fi

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Idempotent dev-container entry point.
+#
+#   ./bin/dev              -> interactive bash inside the dev container
+#   ./bin/dev pytest -q    -> run a one-shot command, then exit
+#   ./bin/dev --rebuild    -> rebuild the image first, then enter
+#
+# Starts the `devcontainer` service if it is not already running, then execs
+# into it. Loads both compose files so the dev container can reach `app-db`
+# on the same network. Run `docker compose up app-db` separately if you want
+# the database service running too.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+COMPOSE=(docker compose -f docker-compose.yaml -f .devcontainer/docker-compose.yml)
+SERVICE=devcontainer
+
+if [ "${1:-}" = "--rebuild" ]; then
+  shift
+  "${COMPOSE[@]}" up -d --build "$SERVICE"
+elif [ -z "$("${COMPOSE[@]}" ps -q --status running "$SERVICE" 2>/dev/null)" ]; then
+  "${COMPOSE[@]}" up -d "$SERVICE"
+fi
+
+if [ $# -eq 0 ]; then
+  exec "${COMPOSE[@]}" exec "$SERVICE" bash
+else
+  exec "${COMPOSE[@]}" exec "$SERVICE" "$@"
+fi
