@@ -1,47 +1,74 @@
-# [Project Name]
+# Recyclable
 
-[Brief description of your project]
+Recycling Law Assistant -- a grounded, source-cited recycling Q&A product. Two cooperating systems share one Postgres knowledge base:
+
+- **`frontend/`** -- Next.js App Router app. SEO-crawlable jurisdiction/material pages and an interactive assistant. Calls Claude **Sonnet** synchronously for retrieval-backed user responses.
+- **`backend/`** -- Python research worker. Asynchronous source ingestion, extraction, conflict detection, and eval runs. Calls Claude **Opus** for the agentic research loop. Not on the user request path.
 
 ## Writing Style
 
 - Use `--` (double-hyphen) instead of em-dashes (`—`) in all prose, docs, and commit messages. Em-dashes render as `<E2><80><94>` in git diffs and some terminals.
-- Never hard-wrap prose lines in markdown files. Do not insert manual line breaks mid-sentence. Let lines be as long as needed -- editors and renderers handle wrapping. Hard-wrapped lines with continuation indents double-wrap in terminals and look broken.
+- Never hard-wrap prose lines in markdown files. Do not insert manual line breaks mid-sentence. Let lines be as long as needed -- editors and renderers handle wrapping.
 
 ## Quick Reference
 
 ```bash
-# Full stack (all services + database)
-docker-compose up
+# Full local stack (web + worker + Postgres)
+docker compose up
+
+# Frontend only (dev mode, local Node)
+cd frontend && npm run dev
+
+# Worker only (one-off ingestion job)
+cd backend && python -m app.cli ingest --source <url>
+
+# Eval suite
+cd backend && pytest tests/evals
 ```
 
 ## Project Structure
 
 ```
-project-root/
-├── backend/          # Python/FastAPI - API, business logic, storage
-├── frontend/         # React/TypeScript - Web app
-├── docker-compose.yaml
+recyclable/
+├── frontend/              # Next.js App Router -- SEO pages, /ask, /api/ask
+├── backend/               # Python research worker -- ingestion, extraction, evals
+├── docker-compose.yaml    # Local prod-shape: web + worker + Postgres
+├── .devcontainer/         # Devcontainer spec (editor-agnostic; enter via ./bin/dev)
+└── private/               # Strategy, experiments, specs (gitignored to its own repo)
 ```
+
+## Hosting Target
+
+- **Frontend:** Vercel (Next.js native; SSG + edge caching, event-driven revalidation on ingestion-apply).
+- **Worker:** Railway (Python, Dockerfile build).
+- **Database:** Neon Postgres (serverless, branching for evals).
+
+Local Docker Compose is a dev-parity shape, not the deployment topology. The `frontend/Dockerfile` exists for parity testing; Vercel builds Next.js itself.
 
 ## Key Principles
 
-- **DDD Architecture:** Domain layer is pure business logic, no framework dependencies
-- **API Advisement:** Avoid translation layers between internal/external schemas where possible
-- **Fail Fast:** Detect errors early, handle them gracefully
-- **SOLID Principles:** Apply across all services -- each service CLAUDE.md has service-specific thresholds and DIP guidance
+- **Grounded answers only:** every definitive claim cites a source. The assistant says "I cannot verify this" rather than guess.
+- **Postgres is the product asset:** structured rules drive both SEO pages and assistant answers. No separate hand-written content layer.
+- **Sonnet on the user path, Opus on the research path:** keep the user-facing loop low-latency and deterministic; reserve agentic reasoning for offline ingestion where mistakes can be reviewed.
+- **DDD inside the worker:** domain layer is pure business logic, no framework dependencies.
+- **Fail fast:** detect errors at boundaries, refuse to answer on missing evidence.
 
 ## Service Details
 
 See `.claude/rules/` for detailed standards:
-- `backend/CLAUDE.md` -- Structure, commands, DDD layers
-- `frontend/CLAUDE.md` -- Structure, commands, components
+- `frontend/CLAUDE.md` -- Next.js App Router, route shape, SSG + revalidation, components
+- `backend/CLAUDE.md` -- Python DDD layers, ingestion worker structure
+- `llm/CLAUDE.md` -- Claude SDK usage: model selection, prompt caching, tool design, evals
+- `data-model.md` -- Recycling knowledge base schema (jurisdictions, materials, rules, sources, facilities, traces)
 
 ## Coding Standards
 
 See `.claude/rules/` for detailed standards:
 - `backend/` -- Python, DDD architecture, testing
-- `frontend/` -- React, TypeScript, testing
+- `frontend/` -- Next.js, TypeScript, testing
+- `llm/` -- Claude API conventions, prompt versioning, tool schemas, eval harness
 - `contracts.md` -- Interservice contract ownership and contract-first rule
+- `doc-ownership.md` -- Which agent owns which docs/dirs (canonical)
 
 Git standards live in `.claude/docs/infra/git.md`.
 
@@ -54,32 +81,36 @@ See `.claude/rules/infra/` for infrastructure and deployment:
 
 ## Error Handling & Observability
 
-See `.claude/rules/` for error handling and observability standards:
-- `error-handling.md` -- Cross-service error philosophy, categories, sensitive data rules
+- `error-handling.md` -- Cross-service error philosophy, sensitive data rules
 - `observability.md` -- Logging standards, log levels
-- `backend/error-handling.md` -- Python exception hierarchy, HTTP status mapping
-- `backend/observability.md` -- Python logging setup, required log points
-- `frontend/error-handling.md` -- Error types, Error Boundaries, graceful degradation
+- `backend/error-handling.md` -- Python exception hierarchy
+- `backend/observability.md` -- Python logging setup
+- `frontend/error-handling.md` -- Error types, Error Boundaries
+- `llm/CLAUDE.md` -- LLM call failures, retry policy, trace logging
 
 ## Agents
 
 Specialized subagents for autonomous work:
-- `backend-python` -- Python/FastAPI: endpoints, use cases, domain services, backend tests
-- `frontend-react` -- React/TypeScript: components, hooks, state, frontend tests
+- `backend-python` -- Python worker: ingestion, extraction, domain services, eval harness, tests
+- `frontend-react` -- Next.js App Router: pages, server components, route handlers, client components, tests
 - `spec-writer` -- Specs, experiment katas, strategy docs, learnings consolidation
 - `code-reviewer` -- Security, convention, logic, and test coverage review (read-only)
 - `test-auditor` -- Periodic test suite audit across all services (read-only)
-- `e2e-playwright` -- Cross-service end-to-end tests spanning full user flows
+- `e2e-playwright` -- End-to-end tests spanning Next.js UI + worker + DB
 
 ## Workflow
 
-This project uses a Product Kata-driven development workflow.
+Product Kata-driven development.
 
 ### Key Locations
 - Product strategy: `private/product/strategy/`
 - Active experiments: `private/product/experiments/` (find `Status: active-experiment`)
 - Feature specs: `private/specs/`
 - Machine-switch state: `private/CONTEXT.md` (read at session start only)
+
+### Active Experiments
+- `01-grounded-retrieval` -- Sonnet user path with cited answers (Denver MVP)
+- `02-agentic-ingestion` -- Opus research workflow for autonomous source extraction
 
 ### Knowledge Management
 - Before starting work, check `private/learnings-index.md` for relevant cross-project learnings
@@ -89,32 +120,23 @@ This project uses a Product Kata-driven development workflow.
 - Run `/consolidate-learnings` weekly to promote drafts (spec-writer agent)
 
 ### Shared File Ownership
-- Strategy files (`vision.md`, `current-options.md`): spec-writer agent only
-- `private/learnings-index.md`: spec-writer only (updated during `/consolidate-learnings`)
-- `private/learnings.md` (promoted entries): spec-writer only
-- `private/learnings.md` ## Drafts: any service agent may append
+See `.claude/rules/doc-ownership.md` for the canonical table of which agent owns which docs/dirs. Do not duplicate ownership rules here -- point at that file.
 
-### Definition of Done (applies to ALL work)
-Every completed unit of work must meet these standards:
+### Definition of Done
 - Tests written and passing for new/changed code
 - Observability: logging instrumented per service conventions
 - Security: no sensitive data exposed, inputs validated at system boundaries
 - Conventions: follows relevant `.claude/rules/[service]/CLAUDE.md` patterns
+- Grounding (LLM-touching code only): every assistant answer in tests carries a citation; refusal path tested
 
-**Review gates (run automatically after each logical unit of work):**
+**Review gates:**
+1. Run `test-auditor` agent against changed services
+2. Run `code-reviewer` agent against the unstaged diff
+3. Fix issues before marking work complete
 
-After completing an implementation phase, feature shard, or significant refactor:
-1. Run `test-auditor` agent against changed services -- catch coverage gaps, missing error path tests, stale tests
-2. Run `code-reviewer` agent against the unstaged diff -- catch convention violations, security issues, logic bugs
-3. Fix any issues from steps 1-2 before marking work complete
+For quick-fixes (typos, config changes, one-line edits): self-review is sufficient.
 
-For quick-fixes (typos, config changes, one-line edits): self-review is sufficient, skip auditor/reviewer.
-
-**Plan review gate (run after writing or substantially revising a plan):**
-
-After writing a spec, experiment kata, or implementation plan:
-1. Run `spec-writer` agent to review the plan for template alignment, completeness, measurable acceptance criteria, learnings citations, and contract field coverage
-2. Fix any structural issues before proceeding to implementation
+**Plan review gate:** after writing/revising a spec or kata, run `spec-writer` agent to review.
 
 ### Development Principles
 - NEVER build without a linked experiment defining the outcome we're targeting

@@ -6,22 +6,27 @@ paths:
 ---
 # Backend Service
 
-Python/FastAPI service implementing domain-driven design.
+Python research worker. Asynchronous source ingestion, extraction, conflict detection, regression-suite runs, and operator CLI/admin endpoints. **Not** on the user request path -- the user-facing `/api/ask` lives in the Next.js frontend. This service uses Claude **Opus** for the agentic research loop.
+
+Implements domain-driven design.
 
 ## Structure
 
 ```
 backend/
 ├── app/
-│   ├── api/                          # HTTP Layer (thin routes)
+│   ├── api/                          # Operator/admin HTTP routes (thin)
 │   │   └── [resource].py
+│   │
+│   ├── cli/                          # CLI entry points (operator workflows)
+│   │   └── ingest.py                 # `python -m app.cli ingest --source <url>`
 │   │
 │   ├── application/                  # Use Cases / Orchestration
 │   │   ├── mappers/                  # ORM → Domain model mapping
-│   │   └── use_cases/
+│   │   └── use_cases/                # IngestSource, ExtractRules, RunRegressionSuite, ApplyIngestionReport
 │   │
 │   ├── domain/                       # Business Logic (pure, no framework deps)
-│   │   ├── models/                   # Entities & Value Objects
+│   │   ├── models/                   # Entities & Value Objects (mirrors data-model.md)
 │   │   ├── services/                 # Domain Services (pure, no I/O)
 │   │   └── exceptions.py
 │   │
@@ -29,17 +34,28 @@ backend/
 │   │   ├── db/
 │   │   │   ├── models/               # ORM table definitions
 │   │   │   └── repositories/         # Data access layer
-│   │   └── external/                 # External API clients
+│   │   └── external/
+│   │       ├── source_fetcher.py     # HTTP/HTML fetch + caching
+│   │       └── anthropic_client.py   # Claude SDK wrapper
+│   │
+│   ├── llm/                          # Prompt templates, validators, tool defs
+│   │   ├── prompts/
+│   │   ├── tools/
+│   │   └── validators/
 │   │
 │   ├── utils/                        # Cross-cutting utilities
 │   ├── config.py
-│   └── main.py
+│   └── main.py                       # FastAPI app for admin endpoints (optional)
 │
-├── tests/                            # Mirrors app/ structure
+├── migrations/                       # Alembic
+│
+├── tests/
 │   ├── api/
 │   ├── application/
 │   ├── domain/
 │   ├── infra/
+│   ├── regression/                   # See .claude/rules/llm/regression-suite.md
+│   │   └── cases/
 │   └── conftest.py
 │
 ├── Dockerfile
@@ -50,14 +66,23 @@ backend/
 ## Commands
 
 ```bash
-# Run locally (from repo root)
-docker-compose up backend
+# Run worker locally (from repo root)
+docker compose up backend
+
+# One-off ingestion (CLI)
+cd backend && python -m app.cli ingest --source https://example-city.gov/recycling
+
+# Apply an approved ingestion report
+cd backend && python -m app.cli apply-report --id <uuid>
 
 # Run tests
 cd backend && pytest
 
 # Run with coverage
 pytest --cov=app --cov-report=term-missing
+
+# Run regression suite
+pytest tests/regression -v
 
 # Linting + formatting
 ruff check app/

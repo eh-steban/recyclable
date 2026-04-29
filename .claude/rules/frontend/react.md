@@ -1,51 +1,70 @@
 ---
 paths:
-  - "frontend/src/**/*.ts"
-  - "frontend/src/**/*.tsx"
-  - "frontend/src/**/**/*.ts"
-  - "frontend/src/**/**/*.tsx"
+  - "frontend/app/**/*.tsx"
+  - "frontend/components/**/*.tsx"
+  - "frontend/components/**/*.ts"
 ---
-# React Patterns
+# React Patterns (Next.js App Router)
+
+Default to **server components**. Reach for client components only for browser APIs, event handlers, or stateful hooks. See `frontend/CLAUDE.md` § Server vs Client Components.
 
 ## Component Organization
 
-Feature-based organization, not by file type. Colocate related components, hooks, and types.
+Feature-based organization, colocate related components, hooks, and types.
 
 ```
-src/components/
-├── userProfile/
+components/
+├── answer-card/
 │   ├── index.ts                  # Public exports
-│   ├── UserProfile.tsx
-│   ├── UserAvatar.tsx
-│   ├── hooks/
-│   │   └── useUserProfile.ts
+│   ├── answer-card.tsx           # Server component (renders structure)
+│   ├── feedback-buttons.tsx      # 'use client' (interactive)
 │   └── types.ts
-├── orderHistory/
-│   ├── OrderList.tsx
-│   └── ...
+├── ask-box/
+│   ├── ask-box.tsx               # 'use client' (form state, fetch)
+│   └── types.ts
 ```
 
 ## Component Structure
 
 ```tsx
-// userProfile/index.ts
-export { UserProfile } from './UserProfile';
+// components/answer-card/index.ts
+export { AnswerCard } from './answer-card';
 
-// userProfile/UserProfile.tsx
-import { useUserProfile } from './hooks/useUserProfile';
+// components/answer-card/answer-card.tsx (server component)
+import { FeedbackButtons } from './feedback-buttons';
+import type { Answer } from '@/lib/domain/answer';
 
-export const UserProfile: React.FC<Props> = ({ userId }) => {
-  // Logic here
-};
+export function AnswerCard({ answer }: { answer: Answer }) {
+  return (
+    <article>
+      {/* server-rendered structure */}
+      <FeedbackButtons traceId={answer.traceId} />
+    </article>
+  );
+}
+
+// components/answer-card/feedback-buttons.tsx
+'use client';
+export function FeedbackButtons({ traceId }: { traceId: string }) {
+  // event handlers, state
+}
 ```
 
 ## State Management
 
 | State Type | Approach |
 |------------|----------|
-| UI-only state | `useState` |
-| Shared feature state | React Context |
-| Server state | Fetch in hooks, cache as needed |
+| Server-fetched data | Fetch in server components; pass as props |
+| URL state (filters, page) | `searchParams` in server components |
+| UI-only client state | `useState` in a client component |
+| Shared client state | React Context (sparingly) -- prefer URL state or server-rendered props |
+| Mutations | Server Actions or POST to a route handler in `app/api/` |
+
+## Data Fetching
+
+- Server components: call `lib/db` / `lib/retrieval` directly. Cache with `unstable_cache` or rely on the route's render mode.
+- Client components: fetch via `/api/...` route handlers. Never import server-only modules.
+- Tag all DB-touching modules with `import 'server-only'` at the top.
 
 ## Props
 

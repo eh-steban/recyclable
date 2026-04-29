@@ -3,65 +3,61 @@ paths:
   - ".devcontainer/*"
   - "**/Dockerfile"
   - "docker-compose.yaml"
-  - ".github/workflows/*"
+  - "docker-compose.yml"
 ---
 # Container Architecture
 
-Detailed documentation of container structure, optimization, and best practices.
+Container structure, optimization, and best practices for both local Compose parity and the prod targets (Vercel, Railway, Neon).
 
-## Container Design Philosophy
+## Design Philosophy
 
-1. **Minimal production images** -- Only include runtime dependencies
-2. **Security first** -- Non-root users, minimal attack surface
-3. **Layer caching** -- Optimize build times with proper layer ordering
-4. **Reproducibility** -- Pin versions, use lock files
+1. **Minimal production images** -- only runtime dependencies in `runner` stages.
+2. **Security first** -- non-root users, no secrets baked in.
+3. **Layer caching** -- dependencies copied before source.
+4. **Reproducibility** -- pin versions, use lock files (`package-lock.json`, `requirements.txt`).
+5. **Multi-stage** -- shared `builder` for compile, separate `dev` (hot reload) and `runner` (prod).
 
 ## Production Containers
 
-### Backend (Python)
-
-**File:** `backend/Dockerfile`
-
-**Key Features:**
-- Non-root user (`lifted` UID 1000)
-- Dependencies installed before code copy (better caching)
-- Uvicorn ASGI server for FastAPI
-
-**Optimization Opportunities:**
-- Multi-stage build to reduce final image size
-- Use `python:3.x-slim` base image
-- Copy only necessary files (use `.dockerignore`)
-
-### Frontend (Node)
+### Frontend (Next.js)
 
 **File:** `frontend/Dockerfile`
+**Stages:** `deps` → `dev` | `builder` → `runner`
+**Production deploy:** Vercel (Vercel ignores this Dockerfile and builds Next.js itself).
 
-**Key Features:**
-- Alpine Linux base (minimal size)
-- Multi-stage build ready (named stage)
-- `npm ci` for reproducible installs
-- Vite dev/preview server
+The `runner` stage exists for prod-parity testing and any future self-host. It expects `next.config.ts` to set `output: 'standalone'` so only the standalone bundle ships.
+
+### Backend (Python worker)
+
+**File:** `backend/Dockerfile`
+**Stages:** `builder` → `dev` | `runner`
+**Production deploy:** Railway (uses `runner` stage, respects `$PORT`).
+
+Key features:
+- Venv copied across stages -- runner has no compilers.
+- Non-root `appuser` (UID 1000).
+- `HEALTHCHECK` against `/health`.
+- Single uvicorn process; one-off CLI invoked via `docker compose run` or Railway's "run command" override.
 
 ## Development Container
 
 **File:** `.devcontainer/Dockerfile`
+Unified Node + Python image, entered via `./bin/dev` (or any tool that speaks the open Devcontainer spec).
 
-Unified container with Node.js + Python for development.
+Features:
+- UID 1000 matches typical host user (volume permissions).
+- Both language stacks for cross-service editing.
+- Claude Code CLI baked in.
 
-**Key Features:**
-- UID 1000 matches typical host user (volume permissions)
-- Both language stacks in one image
-- Interactive bash shell for development
-
-## Container User Strategy
+## User Strategy
 
 | Container | User | UID | Rationale |
 |-----------|------|-----|-----------|
 | Devcontainer | `lifted` | 1000 | Matches host user for volume permissions |
-| Backend | `lifted` | 1000 | Non-root |
-| Frontend | `node` | 1000 | Built-in Node image user |
+| Backend runner | `appuser` | 1000 | Non-root |
+| Frontend runner | `node` | 1000 | Built-in Node image user |
 
-**Security Note:** Never run production containers as root.
+Never run production containers as root.
 
 ## Best Practices
 
@@ -82,62 +78,56 @@ RUN npm ci
 
 ```dockerfile
 # ✅ Good - single RUN layer, cleanup
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# ❌ Bad - multiple layers, no cleanup
-RUN apt-get update
-RUN apt-get install -y build-essential
 ```
+
+### Use BuildKit Cache Mounts
+
+```dockerfile
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+```
+Speeds up rebuilds without inflating final image size.
 
 ### Use .dockerignore
 
-```
-# backend/.dockerignore
-__pycache__/
-*.pyc
-.pytest_cache/
-.venv/
-*.egg-info/
-
-# frontend/.dockerignore
-node_modules/
-dist/
-.cache/
-coverage/
-```
+`frontend/.dockerignore` and `backend/.dockerignore` exist -- update them when adding new caches or build artifacts.
 
 ## Volume Strategy
 
-### Development Volumes
+### Development
 
 ```yaml
-# Code volumes (hot reload)
-- ./backend:/backend
-- ./frontend:/app
-
-# Dependency caches
-- /app/node_modules   # Prevents host/container conflict
+- ./frontend:/app           # source (hot reload)
+- /app/node_modules         # anonymous, container-only
+- /app/.next                # anonymous, container-only
+- ./backend:/app            # source (hot reload)
 ```
 
-### Production Volumes
+### Production
 
-```yaml
-# Data persistence only
-- postgres-data:/var/lib/postgresql/data
+- No source bind mounts -- code is baked into images.
+- Postgres persistence is managed by Neon, not local volumes.
+- Vercel handles its own caching.
 
-# No code volumes - baked into image
-```
+## Healthchecks
 
-## Health Checks (Future)
+Both production stages include a `HEALTHCHECK`. Keep them simple (single curl/wget) -- complex healthchecks become their own debug surface.
 
 ```dockerfile
-# Backend
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8000/health || exit 1
-
-# Frontend
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:3000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+  CMD curl --fail http://localhost:${PORT}/health || exit 1
 ```
+
+The Next.js app should expose a trivial `/api/health` route handler that does not touch the DB. The worker should expose a `/health` route that does -- if the DB is unreachable, Railway should restart the worker.
+
+## Build-Time Secrets
+
+Never `COPY .env` into an image. Use:
+- Vercel project env settings.
+- Railway service env variables.
+- BuildKit `--secret` for build-time-only values, never runtime.
+
+If you find yourself wanting to bake an API key into a layer, stop -- you are about to leak it to anyone with `docker history`.

@@ -3,187 +3,142 @@ paths:
   - ".devcontainer/*"
   - "**/Dockerfile"
   - "docker-compose.yaml"
-  - ".github/workflows/*"
+  - "docker-compose.yml"
 ---
 # Development Container (Devcontainer)
 
-Unified development environment with Node.js and Python.
+Unified development environment with Node.js (24) and Python (3.13). One container, full monorepo. Follows the open [Devcontainer spec](https://containers.dev/) -- editor-agnostic. The user enters the container via `./bin/dev` from a tmux/nvim setup; other editors that speak the spec (JetBrains Gateway, GitHub Codespaces, etc.) can also consume `.devcontainer/devcontainer.json` directly.
 
-## Overview
+## Entry Point
 
-The devcontainer provides a **consistent development environment** for all team members, eliminating "works on my machine" issues.
+The canonical way to enter the container is `./bin/dev` from the repo root. The script is idempotent: if the container is already running it just `exec`s into it; if not, it brings it up first.
 
-**Key Features:**
-- Node.js + Python in one container
-- VSCode extensions pre-installed
-- Database access via shared Docker network
-- Consistent formatting and linting
+```bash
+./bin/dev              # interactive bash shell
+./bin/dev pytest -q    # one-shot command
+./bin/dev --rebuild    # rebuild image, then enter
+```
+
+Editor-aware tools (the open-source `devcontainer` CLI, GitHub Codespaces, JetBrains Gateway, etc.) can also consume `.devcontainer/devcontainer.json` directly. Both paths land in the same container.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `.devcontainer/Dockerfile` | Devcontainer image |
+| `.devcontainer/docker-compose.yml` | Devcontainer service definition |
+| `.devcontainer/devcontainer.json` | Devcontainer spec manifest (editor-agnostic; consumed by the open-source `devcontainer` CLI, JetBrains, GitHub Codespaces, etc.) |
+| `.devcontainer/setup.sh` | postCreateCommand hook |
 
 ## Architecture
 
-### Stack
-
 ```
 ubuntu:22.04
-├── Node.js         # Frontend development
-├── Python          # Backend development
-├── PostgreSQL client  # Database operations
-└── Build tools     # gcc, make, curl, git
+├── Node.js 24       # Frontend (Next.js)
+├── Python 3.13      # Worker
+├── PostgreSQL client
+├── Claude Code CLI  # Persistent auth + history
+└── Build tools
 ```
 
-### Why Unified?
+### Why Unified
 
-**Pros:**
-- Single container for entire monorepo
-- No context switching between services
-- Shared tools (git, formatters, linters)
-- Faster iteration
+Single container for the whole monorepo, no context switching, shared git/lint/format tools, faster iteration. Production images stay slim (separate `frontend/` and `backend/` Dockerfiles).
 
-**Cons:**
-- Larger image size
-- Longer initial build time
+## Compose File Layering
 
-**Trade-off:** Development experience wins. Production containers remain optimized.
+`devcontainer.json` references `.devcontainer/docker-compose.yml` for the devcontainer service. The root `docker-compose.yaml` is a separate concern -- run it manually for the prod-shape stack.
 
-## Configuration
-
-### devcontainer.json Key Settings
-
-- **dockerComposeFile:** Merges production services with devcontainer overlay
-- **workspaceFolder:** VSCode opens at repo root (monorepo pattern)
-- **remoteUser:** Non-root user for safety
-- **postCreateCommand:** Automatic dependency installation
+To get the devcontainer talking to the local Postgres, either:
+- Run `docker compose up app-db` from the host before entering the devcontainer, **or**
+- Add the root compose file to `dockerComposeFile` in `devcontainer.json` and depend on `app-db`.
 
 ## User and Permissions
 
-### UID Strategy
-
 ```dockerfile
-# Use UID 1000 to match typical host user
+# UID 1000 to match typical host user
 RUN useradd -m -u 1000 -s /bin/bash lifted
 ```
 
-**Why UID 1000?**
-- Most Linux users have UID 1000
-- Files created in container match host permissions
-- No ownership conflicts on mounted volumes
-
-**Check Your UID:**
+If your host UID is not 1000:
 ```bash
-id -u  # Should output 1000
+id -u
+# If different, modify .devcontainer/Dockerfile
 ```
 
-If different, modify `.devcontainer/Dockerfile`:
-```dockerfile
-RUN useradd -m -u YOUR_UID -s /bin/bash lifted
-```
+## Volumes
 
-## Volumes and Persistence
+| Mount | Purpose |
+|---|---|
+| `..:/workspaces/myproject:cached` | Project root (`:cached` optimizes I/O on macOS/Windows) |
+| `~/.claude:/home/lifted/.claude` | Claude Code auth + history persistence |
+| `~/.container-bashrc:/home/lifted/.bashrc` | Shell history |
 
-### Source Code Volume
+`node_modules` is **not** mounted -- runs `npm install` in container after creation to avoid platform-specific binary conflicts.
 
-```yaml
-volumes:
-  - ../project:/workspaces/project:cached
-```
-
-**`:cached` flag:** Optimizes I/O on macOS/Windows.
-
-### Node Modules
-
-**Not mounted** -- `npm install` runs in container after creation.
-
-**Why not mount?**
-- Native modules may differ between host and container
-- Avoids platform-specific binary conflicts
-
-## Development Workflows
+## Workflows
 
 ### Starting Services
 
-#### Option 1: Manual (Recommended for Development)
+After entering the container via `./bin/dev` (in two separate tmux panes / terminal windows):
+
+#### Manual (recommended for development)
 
 ```bash
-# Terminal 1: Backend
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Pane 1: Frontend
+cd frontend && npm run dev
 
-# Terminal 2: Frontend
-cd frontend
-npm run dev -- --host 0.0.0.0
+# Pane 2: Worker
+cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Pros:** Full control, separate logs, easy to restart individual services.
+Full control, separate logs, easy to restart individual services.
 
-#### Option 2: Production Containers
+#### Compose (prod parity)
 
 ```bash
-docker-compose up backend frontend
+docker compose up
 ```
 
-**Pros:** Production-like environment.
-**Cons:** Harder to debug, logs mixed together.
-
-### Database Operations
+### Database
 
 ```bash
-# Connect to database
-psql postgresql://appuser:apppassword@app-db:5432/app_db
-
-# Run migrations
+psql postgresql://recyclable:recyclable_dev@app-db:5432/recyclable
 cd backend && alembic upgrade head
-
-# Create migration
-alembic revision --autogenerate -m "description"
+cd backend && alembic revision --autogenerate -m "description"
 ```
 
-### Testing
+### Tests
 
 ```bash
-# Backend
 cd backend && pytest
-
-# Frontend
-cd frontend && npm run test
+cd frontend && npm test
 ```
 
-## Rebuilding the Devcontainer
-
-### When to Rebuild
+## Rebuilding
 
 Rebuild when you change:
 - `.devcontainer/Dockerfile`
 - `.devcontainer/devcontainer.json`
 - System dependencies (apt packages)
 
-**Don't rebuild for:**
-- Application code changes (hot reload handles this)
-- Python/npm dependency changes (reinstall inside container)
+Don't rebuild for:
+- App code (hot reload).
+- Python/npm dep changes (reinstall in container).
 
-### How to Rebuild
-
-```
-VSCode Command Palette → "Dev Containers: Rebuild Container"
+```bash
+./bin/dev --rebuild
+# or directly:
+docker compose -f docker-compose.yaml -f .devcontainer/docker-compose.yml up -d --build devcontainer
 ```
 
 ## Customization
 
-### Adding System Dependencies
-
 ```dockerfile
 # .devcontainer/Dockerfile
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     your-package-here \
     && rm -rf /var/lib/apt/lists/*
-```
-
-### Adding VSCode Extensions
-
-```json
-// .devcontainer/devcontainer.json
-"extensions": [
-  "your-extension-id"
-]
 ```
 
 ## Troubleshooting
@@ -192,8 +147,8 @@ RUN apt-get update && apt-get install -y \
 
 ```bash
 docker ps
-docker-compose ps
-docker-compose logs devcontainer
+docker compose ps
+docker compose logs devcontainer
 ```
 
 ### Dependencies Not Installing
@@ -206,7 +161,7 @@ cd frontend && npm install
 ### Database Connection Refused
 
 ```bash
-docker-compose up app-db
+docker compose up app-db
 docker network ls
 ```
 
@@ -214,10 +169,9 @@ docker network ls
 
 ```bash
 id -u  # Check your UID -- should be 1000
-# If not, modify .devcontainer/Dockerfile with your UID
 ```
 
-## Security Considerations
+## Security
 
 ### Non-Root User
 
@@ -231,7 +185,4 @@ Always develop as `lifted` user (UID 1000), never root.
 
 ### Secrets
 
-**Never commit:**
-- `.env` files
-- Database passwords (use environment variables)
-- API keys
+Never commit `.env` files, database passwords, or API keys. `.env` is gitignored; template lives in `.env.example`.

@@ -67,13 +67,7 @@ Don't load all learnings at once. Instead, check the index BEFORE:
 **Maintenance:** Update when new pattern identified (check quarterly for stale entries)
 **Discovery mechanism:** Use `private/learnings-index.md` to find relevant learnings
 
-**Ownership and write protocol:**
-- **Promoted learnings (above ## Drafts):** `spec-writer` agent only
-- **## Drafts section:** Any service agent may append raw findings
-- **private/learnings-index.md:** `spec-writer` agent only, updated during /consolidate-learnings
-- Service agents discovering a pattern append to ## Drafts with format:
-  `### [Draft] [Topic] -- [agent: agent-name, date: YYYY-MM-DD]`
-- `spec-writer` reviews, promotes valid drafts, discards duplicates/incorrect findings
+**Ownership and write protocol:** See `.claude/rules/doc-ownership.md` for the canonical table. The relevant rule for this file: service agents append to `## Drafts` using `### [Draft] [Topic] -- [agent: agent-name, date: YYYY-MM-DD]`; `spec-writer` reviews during `/consolidate-learnings` and promotes or discards.
 
 **When to add:**
 - "We keep forgetting this" (pattern appears 2nd time)
@@ -201,12 +195,14 @@ Don't load all learnings at once. Instead, check the index BEFORE:
 
 ## Maintenance Schedule
 
-| Tier | When to Update | Owner | Action |
-|---|---|---|---|
-| `private/learnings.md` ## Drafts | When pattern discovered | Any service agent | Append draft finding |
-| `private/learnings.md` (promoted) | Weekly via /consolidate-learnings | spec-writer only | Promote, deduplicate, prune |
-| `private/learnings-index.md` | During /consolidate-learnings | spec-writer only | Add/update index entries |
-| `.claude/rules/**/*.md` | When learnings graduate | spec-writer only | Capture permanent patterns |
-| Service mental models | After debugging reveals pattern | Claude + code review | Create or enhance |
-| Spec assumptions | When creating spec | spec-writer | Document dependencies |
-| Code comments | Every PR touching that code | Code reviewer | Keep current |
+| Tier | When to Update | Action |
+|---|---|---|
+| `private/learnings.md` ## Drafts | When pattern discovered | Append draft finding |
+| `private/learnings.md` (promoted) | Weekly via /consolidate-learnings | Promote, deduplicate, prune |
+| `private/learnings-index.md` | During /consolidate-learnings | Add/update index entries |
+| `.claude/rules/**/*.md` | When learnings graduate | Capture permanent patterns |
+| Service mental models | After debugging reveals pattern | Create or enhance |
+| Spec assumptions | When creating spec | Document dependencies |
+| Code comments | Every PR touching that code | Keep current |
+
+For ownership of each tier, see `.claude/rules/doc-ownership.md`.

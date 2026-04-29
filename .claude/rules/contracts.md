@@ -1,8 +1,8 @@
 ---
 paths:
-  - "parser/src/domain/**"
   - "backend/app/domain/**"
-  - "frontend/src/domain/**"
+  - "frontend/lib/domain/**"
+  - "private/specs/contracts/**"
 ---
 # Interservice Contract Standards
 
@@ -18,11 +18,13 @@ Contracts live as spec files in `private/specs/contracts/`. These files are the 
 
 Each contract has exactly one owner agent (the service that produces the shape) and one or more consumer agents (services that read the shape). The owner updates the spec; consumers read it.
 
-| Contract | Boundary | Example owner | Example consumer |
-|----------|----------|---------------|------------------|
-| `backend-api.md` | backend -> frontend | `backend-python` | `frontend-react` |
+| Contract | Boundary | Owner | Consumer |
+|----------|----------|-------|----------|
+| `answer.md` | Postgres / DB layer -> Next.js `/api/ask` -> client | `frontend-react` (the route handler that produces the shape) | client `<AnswerCard />`; regression suite (`backend-python`) |
+| `ingestion-report.md` | `backend-python` worker -> admin UI / DB | `backend-python` | admin UI in `frontend-react` |
+| `db-schema.md` | Postgres tables -> both services | `backend-python` (owns Alembic migrations) | `frontend-react` (`lib/domain/` types must match) |
 
-Duplicate this table and the spec file per contract boundary your project has.
+The `db-schema.md` contract is special: it is the only "shape" that both services consume directly (Next.js reads tables for the user path, the worker reads + writes for ingestion). `.claude/rules/data-model.md` is the human-readable form; `db-schema.md` is the per-PR contract diff.
 
 ## Contract-First Rule
 
