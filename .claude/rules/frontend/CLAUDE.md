@@ -69,7 +69,7 @@ Mark client components at the top of the file with `'use client'` and keep them 
 
 ## Route Handlers (`app/api/.../route.ts`)
 
-- Validate inputs at system boundaries with `zod`. Specifically: (a) `/api/ask` request bodies, and (b) parsed output from Sonnet (LLM structured responses). Do NOT use zod to validate DB query results (SQLModel guarantees row shape on write) or internal function boundaries (TS types are sufficient).
+- Validate inputs at system boundaries with `zod`. Specifically: (a) `/api/ask` request bodies, and (b) parsed output from Sonnet (LLM structured responses). Do NOT use zod to validate DB query results (the backend's SQLAlchemy models and Alembic-managed schema guarantee row shape on write) or internal function boundaries (TS types are sufficient).
 - Return typed JSON matching the contract spec in `private/specs/contracts/`.
 - Wrap every Anthropic SDK call per `.claude/rules/llm/CLAUDE.md` (timeout, retry, prompt-version log, trace persistence).
 - Set `runtime = 'nodejs'` (default) -- the edge runtime cannot use the `pg` driver.
@@ -142,7 +142,7 @@ npm run test:e2e
 - TypeScript (strict mode)
 - Tailwind CSS
 - Anthropic SDK (`@anthropic-ai/sdk`) -- see `.claude/rules/llm/CLAUDE.md`
-- `pg` (node-postgres) for DB access, server-only, with hand-written SQL. Do not introduce a parallel TS ORM (Drizzle, Prisma, Kysely, etc.) -- SQLModel in the backend is the schema source of truth, and a second ORM in TS would create a duplicate schema that drifts.
+- `pg` (node-postgres) for DB access, server-only, with hand-written SQL. Do not introduce a parallel TS ORM (Drizzle, Prisma, Kysely, etc.) -- the backend's SQLAlchemy schema (managed via Alembic) is the source of truth, and a second ORM in TS would create a duplicate schema that drifts.
 - Vitest + React Testing Library
 - Playwright for E2E
 - `zod` for the two specific boundaries above (user input on `/api/ask`, parsed Sonnet output). Not for DB rows.
