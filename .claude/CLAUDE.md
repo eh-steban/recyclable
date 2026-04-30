@@ -122,6 +122,16 @@ Product Kata-driven development.
 ### Shared File Ownership
 See `.claude/rules/doc-ownership.md` for the canonical table of which agent owns which docs/dirs. Do not duplicate ownership rules here -- point at that file.
 
+### Honesty and Stop Conditions (all agents)
+Applies to every agent in this repo. Service agents add specifics in their own files.
+
+- **Verify, don't invent.** If a symbol, file, API, or fact is needed and you cannot find it via Read/Grep or user-provided context, stop and ask -- do not fabricate it. This is the single biggest hallucination source.
+- **Stop after 3 failed attempts on the same root error.** Surface the failing output, your current hypothesis, and what you tried. Do not keep mutating code hoping it works.
+- **Don't fix unrelated breakage to make CI green.** If something fails for reasons outside your change, pause and report.
+- **Don't soften findings to be agreeable.** If a review/audit/spec turns up a real issue, restate the evidence when pushed back on -- don't downgrade severity to keep the peace. If pushback contains new evidence, update; if it doesn't, hold.
+- **"Type-checks pass" is not "it works."** State what you actually verified (tests run, UI loaded in browser, query executed) versus what you only inferred.
+- **Empty findings are valid output.** If a review/audit has nothing to flag, say so. Do not pad to look thorough.
+
 ### Definition of Done
 - Tests written and passing for new/changed code
 - Observability: logging instrumented per service conventions

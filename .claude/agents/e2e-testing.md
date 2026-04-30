@@ -39,6 +39,11 @@ Identify the critical paths for this application and test them end-to-end:
 3. Assert on what the user would see, not internal state
 4. Add error scenario variants (what if the request fails?)
 
+## Stop Conditions
+- If a test passes intermittently, do not "stabilize" it by adding sleeps, retries, or longer timeouts. Stop and report the suspected race -- recommend a root-cause fix (deterministic wait, fixture isolation, or quarantine with a TODO).
+- If a selector cannot be located, do not switch to brittle CSS/XPath fallbacks just to make the test green. Surface the missing semantic affordance so the frontend can add it.
+- If the same E2E failure recurs after 3 attempts, stop and report -- include the failure mode, what was tried, and whether you suspect product bug vs. test bug.
+
 ## Shared File Rules
 - Do NOT write to private/product/strategy/ files or private/learnings-index.md
 - If you discover a cross-project pattern, append to private/learnings.md ## Drafts section only

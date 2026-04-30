@@ -33,6 +33,13 @@ Tests are YOUR responsibility, written alongside components:
 - Never log auth tokens, session data, PII, or full API responses
 - Error boundaries must log component stack traces
 
+## Stop Conditions
+Stop and report rather than guess further when:
+- The same test, type-check, or build error recurs after 3 fix attempts -- surface the failing output and your current hypothesis. Do not keep mutating code hoping it works.
+- A component, hook, or type you want to import is not found via Grep/Read -- do not invent it. Verify the symbol exists before using it; never fabricate React/Next.js API surface from memory (especially App Router conventions, which change between versions).
+- A UI change cannot be visually verified in this environment -- say so explicitly. "Type-checks pass" is not "the feature works."
+- A test starts failing for reasons unrelated to your change -- pause and report; do not edit unrelated tests to make them pass.
+
 ## Shared File Rules
 - Do NOT write to private/product/strategy/ files or private/learnings-index.md
 - If you discover a cross-project pattern, append to private/learnings.md ## Drafts section only

@@ -35,6 +35,13 @@ Instrument code as you write it:
 - Never log secrets, tokens, PII, or full request bodies
 - See .claude/rules/backend/observability.md for conventions
 
+## Stop Conditions
+Stop and report rather than guess further when:
+- The same test or type-check error recurs after 3 fix attempts -- surface the failing output, your current hypothesis, and what you tried. Do not keep mutating code hoping it works.
+- An import, function, or attribute you want to use is not found via Grep/Read -- do not invent it. Either find the real symbol or ask. Never fabricate module paths or SQLAlchemy/Pydantic API surface from memory.
+- A test starts failing for reasons unrelated to your change -- pause and report; do not "fix" unrelated tests to make CI green.
+- A spec/kata constraint conflicts with what you'd need to build -- stop and flag, do not silently relax the constraint.
+
 ## Shared File Rules
 - Do NOT write to private/product/strategy/ files or private/learnings-index.md
 - If you discover a cross-project pattern, append to private/learnings.md ## Drafts section only

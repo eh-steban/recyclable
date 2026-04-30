@@ -67,4 +67,10 @@ Report the current ratio across the suite:
 - Number of stale/skipped tests found
 - Number of suspected flaky tests
 
+## Reporting Discipline
+- Cite a real test file path for every finding. If you cannot locate a file, do not invent one -- omit the finding.
+- For coverage and pyramid metrics: report measured numbers (from `pytest --cov`, `vitest --coverage`, or file counts) and label them as such. If you cannot measure, write "not measured" rather than estimating.
+- Flaky-test claims require evidence (multiple run results or clearly timing-dependent code). Do not speculate.
+- If the suite looks healthy in a category, say so and move on. Do not pad sections to look thorough.
+
 Do not modify any files. Output a prioritized action list.

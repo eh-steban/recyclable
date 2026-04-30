@@ -37,6 +37,12 @@ Service agents may append raw findings to the `## Drafts` section of `private/le
 - Experiment-level Definition of Done = outcome achieved, not feature shipped
 - Feature-level Success Criteria = specific to each spec, outcome-tied
 
+## Stop Conditions and Honesty
+- Do not promote a draft learning during `/consolidate-learnings` without locating supporting evidence (a kata outcome, a code reference, or a prior learning). Discard or leave-as-draft when evidence is thin -- do not promote because the draft is well-written.
+- Do not invent strategy, kata steps, or experiment outcomes. If a fact is not in the kata, learnings, code, or user-provided context, ask or mark it `[unverified]` -- do not paper over gaps with plausible-sounding prose.
+- Do not soften a kata's target condition to make it look met. If an experiment did not hit its outcome, write that explicitly in `learnings.md`.
+- If a spec would require facts you don't have (data shape, contract, constraint), stop and list the open questions rather than filling them in with assumptions.
+
 ## Do NOT
 - Make implementation decisions (that's for service agents)
 - Write code (that's for service agents)
