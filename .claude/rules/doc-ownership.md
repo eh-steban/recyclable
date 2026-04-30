@@ -2,7 +2,7 @@
 
 Single source of truth for **who can write to which markdown / config files** in this repo. This is about *documentation* ownership, not code ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-04-29
+**Last reconciled:** 2026-04-30
 
 > Why this doc exists: ownership rules used to be scattered across `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a buried `skills/context-audit/references/ownership-map.md`. They drifted from each other. This file is now the single source -- everything else points here.
 
@@ -29,6 +29,7 @@ If a file is not listed, treat it as **shared** -- any agent may edit, with norm
 |---|---|
 | `private/product/strategy/vision.md` | Strategic direction |
 | `private/product/strategy/current-options.md` | Active bets and outcomes |
+| `private/product/strategy/parking-lot.md` | Spec-writer governs promotion / removal. Service agents may **append** new entries (see Append-only table below). |
 | `private/product/experiments/*/kata.md` | Product Kata experiment files |
 | `private/product/experiments/*/learnings.md` | Experiment outcome writeups |
 | `private/specs/*.md` | Feature specs and task shards |
@@ -43,8 +44,9 @@ If a file is not listed, treat it as **shared** -- any agent may edit, with norm
 | File | Section | Format |
 |---|---|---|
 | `private/learnings.md` | `## Drafts` only | `### [Draft] [Topic] -- [agent: name, date: YYYY-MM-DD]` |
+| `private/product/strategy/parking-lot.md` | Any of the categorized sections (Jurisdictions, Materials, Source documents, Other) | `- [Label] -- one-line description. Source: [pointer]. Found: YYYY-MM-DD.` |
 
-Service agents may NOT touch any other section of `learnings.md`, the index, the rules tree, or strategy files. `spec-writer` reviews drafts during `/consolidate-learnings` and either promotes or discards.
+Service agents may NOT touch any other section of `learnings.md`, the index, the rules tree, or strategy files (other than appending to `parking-lot.md` as above). `spec-writer` reviews drafts during `/consolidate-learnings` and either promotes or discards. `spec-writer` is the only agent that removes or promotes parking-lot entries.
 
 ## Service agent owned
 
