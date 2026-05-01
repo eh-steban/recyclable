@@ -282,6 +282,50 @@ def test_rule_orm_to_domain_roundtrip():
     assert domain.accepted_status == AcceptedStatus.ACCEPTED
 
 
+def test_source_document_orm_to_domain_roundtrip():
+    orm = SourceDocumentORM(
+        id=SOURCE_DOC_ID,
+        jurisdiction_id=JURISDICTION_ID,
+        url="https://denvergov.org/recycling",
+        title="Denver Recycling",
+        authority_level=1,
+        fetched_at=NOW,
+        effective_date=None,
+        source_text="Aluminum cans are accepted for curbside recycling.",
+        source_text_hash="abc123",
+        last_reviewed_at=None,
+    )
+    domain = SourceDocument(
+        id=orm.id,
+        jurisdiction_id=orm.jurisdiction_id,
+        url=orm.url,
+        title=orm.title,
+        authority_level=orm.authority_level,
+        fetched_at=orm.fetched_at,
+        effective_date=orm.effective_date,
+        source_text=orm.source_text,
+        source_text_hash=orm.source_text_hash,
+        last_reviewed_at=orm.last_reviewed_at,
+    )
+    assert domain.url == "https://denvergov.org/recycling"
+    assert domain.authority_level == 1
+
+
+def test_material_alias_orm_to_domain_roundtrip():
+    orm = MaterialAliasORM(
+        material_id=MATERIAL_ID,
+        alias="soda can",
+        weight=2,
+    )
+    domain = MaterialAlias(
+        material_id=orm.material_id,
+        alias=orm.alias,
+        weight=orm.weight,
+    )
+    assert domain.alias == "soda can"
+    assert domain.weight == 2
+
+
 def test_regression_case_orm_to_domain_roundtrip():
     orm = RegressionCaseORM(
         id=REGRESSION_CASE_ID,
