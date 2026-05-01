@@ -44,7 +44,7 @@ with normal review gates.
 | `private/learnings.md` (above `## Drafts`) | Promoted, vetted learnings only |
 | `private/learnings-index.md` | Updated only during `/consolidate-learnings` |
 | `private/CONTEXT.md` | Written by `/switch-machine`, read by owner at session start |
-| `.claude/rules/**/*.md` | Service rules, mental models, this file |
+| `.claude/rules/**/*.md` | Service rules, mental models, this file. Each rule declares its scope via a `paths:` glob list in frontmatter; service agents use this to decide which rules to read for a given task (see `.claude/agents/<agent>.md` "Loading rules on demand"). When adding or moving a rule, keep `paths:` accurate -- stale globs cause agents to load the wrong rules or miss relevant ones. |
 | `.claude/knowledge-management.md` | Knowledge system process doc |
 
 ## Append-only by service agents

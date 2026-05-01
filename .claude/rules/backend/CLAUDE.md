@@ -1,8 +1,6 @@
 ---
 paths:
   - "backend/**/*.py"
-  - "backend/**/**/*.py"
-  - "backend/**/**/**/*.py"
 ---
 
 # Backend Service

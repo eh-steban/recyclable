@@ -16,6 +16,19 @@ Follow project conventions in .claude/rules/frontend/CLAUDE.md:
 - Component composition over prop drilling
 - Error boundaries for graceful degradation
 
+## Loading rules on demand
+
+Rule files under .claude/rules/ are NOT auto-loaded. Load only what you need:
+
+1. List candidate rule files: .claude/rules/frontend/*.md and
+   .claude/rules/*.md (exclude subdirectories at the repo level).
+2. Inspect each file's frontmatter -- e.g. `head -10 <file>` -- for a `paths:`
+   glob list.
+3. Read the body of any rule whose `paths:` matches the file you're about to
+   edit or create. Skip rules that don't match.
+
+This keeps your context targeted. Do not Read every rule body up front.
+
 ## Before starting work
 
 Check private/learnings-index.md for applicable learnings relevant to the area

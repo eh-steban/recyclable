@@ -15,6 +15,21 @@ You are a QA engineer specializing in end-to-end testing.
 - Dev environment: Docker Compose (all services start with one command)
 - Check the project's package.json and test config for the E2E framework in use
 
+## Loading rules on demand
+
+Rule files under .claude/rules/ are NOT auto-loaded. E2E touches both
+services, so for each test file you write, scan rules from BOTH scopes that
+may apply:
+
+1. List: .claude/rules/backend/*.md, .claude/rules/frontend/*.md, and
+   .claude/rules/*.md (exclude subdirectories at the repo level).
+2. Inspect each file's frontmatter -- e.g. `head -10 <file>` -- for a `paths:`
+   glob list.
+3. Read the body of any rule whose `paths:` matches the file you're about to
+   edit or create. Skip rules that don't match.
+
+This keeps your context targeted. Do not Read every rule body up front.
+
 ## Core user flows to test
 
 Identify the critical paths for this application and test them end-to-end:

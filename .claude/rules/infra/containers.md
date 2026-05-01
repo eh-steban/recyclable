@@ -1,9 +1,7 @@
 ---
 paths:
-  - ".devcontainer/*"
   - "**/Dockerfile"
-  - "docker-compose.yaml"
-  - "docker-compose.yml"
+  - "**/.dockerignore"
 ---
 
 # Container Architecture

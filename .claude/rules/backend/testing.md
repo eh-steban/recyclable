@@ -1,8 +1,7 @@
 ---
 paths:
-  - "backend/**/*.py"
-  - "backend/**/**/*.py"
-  - "backend/**/**/**/*.py"
+  - "backend/tests/**/*.py"
+  - "backend/conftest.py"
 ---
 # Backend Testing Standards
 

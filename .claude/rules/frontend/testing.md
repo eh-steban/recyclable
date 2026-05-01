@@ -1,9 +1,11 @@
 ---
 paths:
-  - "frontend/src/**/*.ts"
-  - "frontend/src/**/*.tsx"
-  - "frontend/src/**/**/*.ts"
-  - "frontend/src/**/**/*.tsx"
+  - "frontend/**/*.test.ts"
+  - "frontend/**/*.test.tsx"
+  - "frontend/**/*.spec.ts"
+  - "frontend/**/*.spec.tsx"
+  - "frontend/**/__tests__/**"
+  - "frontend/tests/**"
 ---
 # Frontend Testing Standards
 

@@ -1,9 +1,6 @@
 ---
 paths:
-  - ".devcontainer/*"
-  - "**/Dockerfile"
-  - "docker-compose.yaml"
-  - "docker-compose.yml"
+  - ".devcontainer/**"
 ---
 
 # Development Container (Devcontainer)
