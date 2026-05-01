@@ -107,7 +107,8 @@ vi.stubEnv('VITE_API_URL', 'http://localhost:8000');
 
 ## Error State Testing
 
-Every component with error state must test error display, retry functionality, and recovery.
+Every component with error state must test error display, retry
+functionality, and recovery.
 
 ```tsx
 describe('UserProfile error handling', () => {
@@ -153,6 +154,7 @@ Focus on critical user paths rather than arbitrary coverage numbers:
 - Accessibility
 
 ## Component Testing Hierarchy
+
 1. Critical User Paths → Always test these
 2. Error Handling      → Test failure scenarios
 3. Edge Cases          → Empty data, extreme values

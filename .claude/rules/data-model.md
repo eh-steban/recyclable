@@ -6,13 +6,19 @@ paths:
   - "frontend/lib/domain/**/*.ts"
   - "frontend/lib/db/**/*.ts"
 ---
+
 # Data Model -- Recycling Knowledge Base
 
-Postgres is the product asset. Both the SEO pages and the assistant read from these tables. The research worker writes to them through ingestion reports + human approval. Schema changes are coordinated -- bump migration, update both `frontend/lib/domain/` types and `backend/app/domain/models/`, run regression suite.
+Postgres is the product asset. Both the SEO pages and the assistant read
+from these tables. The research worker writes to them through ingestion
+reports + human approval. Schema changes are coordinated -- bump migration,
+update both `frontend/lib/domain/` types and
+`backend/app/domain/models/`, run regression suite.
 
 ## Entities
 
 ### `jurisdictions`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -24,6 +30,7 @@ Postgres is the product asset. Both the SEO pages and the assistant read from th
 | `created_at`, `updated_at` | timestamptz | |
 
 ### `materials`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -33,6 +40,7 @@ Postgres is the product asset. Both the SEO pages and the assistant read from th
 | `parent_id` | uuid null | For hierarchy ("plastic" → "PET bottle") |
 
 ### `material_aliases`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -41,6 +49,7 @@ Postgres is the product asset. Both the SEO pages and the assistant read from th
 | `weight` | int default 1 | Higher = stronger match |
 
 ### `source_documents`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -55,6 +64,7 @@ Postgres is the product asset. Both the SEO pages and the assistant read from th
 | `last_reviewed_at` | timestamptz | When a human last vetted this source |
 
 ### `rules`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -71,9 +81,11 @@ Postgres is the product asset. Both the SEO pages and the assistant read from th
 | `effective_from` | date null | |
 | `superseded_by` | uuid null FK | Soft history -- never delete a rule, point to its replacement |
 
-Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. Only one active rule per (jurisdiction, material).
+Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is
+unique. Only one active rule per (jurisdiction, material).
 
 ### `facilities`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -87,6 +99,7 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `source_document_id` | uuid FK | |
 
 ### `answer_traces`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -107,6 +120,7 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `created_at` | timestamptz | |
 
 ### `feedback`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -116,6 +130,7 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `created_at` | timestamptz | |
 
 ### `escalations`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -127,6 +142,7 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `created_at` | timestamptz | |
 
 ### `ingestion_reports`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -142,6 +158,7 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `created_at`, `decided_at` | timestamptz | |
 
 ### `regression_cases`
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
@@ -154,20 +171,31 @@ Constraint: `(jurisdiction_id, material_id, superseded_by IS NULL)` is unique. O
 | `refusal_required` | bool default false | |
 | `notes` | text null | |
 
-(Cases may live as JSON files under `backend/tests/regression/cases/` and be loaded into this table for runs against deployed instances. Either form is the source of truth -- pick one per project and stick to it.)
+Cases may live as JSON files under `backend/tests/regression/cases/` and
+be loaded into this table for runs against deployed instances. Either form
+is the source of truth -- pick one per project and stick to it.
 
-## Why Structured Rules + Source Chunks
+## Why structured rules + source chunks
 
-Vector chunks alone miss exact accepted/rejected distinctions. Structured rules alone struggle to explain nuanced source text. Storing both lets retrieval combine precision (filter to `(jurisdiction, material, accepted)`) with explanation (cite the source quote that supports it).
+Vector chunks alone miss exact accepted/rejected distinctions. Structured
+rules alone struggle to explain nuanced source text. Storing both lets
+retrieval combine precision (filter to `(jurisdiction, material, accepted)`)
+with explanation (cite the source quote that supports it).
 
 ## When pgvector
 
-Skip pgvector for 01. Add it only if 01 step 2 regression failures clearly trace to retrieval miss on materials whose aliases are absent from `material_aliases`. If added, embed `source_documents.source_text` chunks and use vector search as a fallback after structured rule lookup, never as the primary path.
+Skip pgvector for 01. Add it only if 01 step 2 regression failures clearly
+trace to retrieval miss on materials whose aliases are absent from
+`material_aliases`. If added, embed `source_documents.source_text` chunks
+and use vector search as a fallback after structured rule lookup, never as
+the primary path.
 
-## Migration Discipline
+## Migration discipline
 
-- Every schema change is an Alembic migration (backend) -- never edit existing migrations.
+- Every schema change is an Alembic migration (backend) -- never edit
+  existing migrations.
 - Every migration tested up AND down.
 - Frontend `lib/domain/` types updated in the same PR as the migration.
 - Regression suite re-run before merge.
-- For breaking changes, bump the contract version in `private/specs/contracts/`.
+- For breaking changes, bump the contract version in
+  `private/specs/contracts/`.

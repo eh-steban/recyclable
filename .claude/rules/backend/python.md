@@ -45,9 +45,11 @@ class OrderTotalCalculator:
 ```
 
 **Guidelines:**
+
 - Class name = noun (what data you're working with)
 - Method name = verb (what action you're performing)
-- Use plural form to distinguish services that work with multiple models (`UsersService` vs `UserService`)
+- Use plural form to distinguish services that work with multiple models
+  (`UsersService` vs `UserService`)
 - Suffix with `Service` to indicate it's a service class
 
 ## Domain Models

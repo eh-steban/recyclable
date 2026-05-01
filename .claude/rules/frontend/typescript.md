@@ -19,6 +19,7 @@ paths:
 **Prefer `interface` over `type`** unless using an interface is overkill.
 
 Reasons:
+
 - Better error messages
 - More flexible when extending
 - Declaration merging when needed

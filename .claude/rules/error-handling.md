@@ -17,12 +17,14 @@ Cross-service error handling philosophy and principles.
 
 ## Philosophy
 
-- **Fail fast, recover gracefully** -- Detect errors early, handle them appropriately
+- **Fail fast, recover gracefully** -- Detect errors early, handle them
+  appropriately
 - **Errors are information** -- Use them for debugging and improvement
-- **User-facing errors: helpful without leaking internals** -- Guide users, protect implementation details
+- **User-facing errors: helpful without leaking internals** -- Guide users,
+  protect implementation details
 - **Internal errors: detailed for debugging** -- Log full context for developers
 
-## Error Categories
+## Error categories
 
 | Category | Example | HTTP Status | Response Strategy |
 |----------|---------|-------------|-------------------|
@@ -31,47 +33,56 @@ Cross-service error handling philosophy and principles.
 | Upstream Failure | External API/service down | 502/503 | Retry hint, generic message |
 | Internal Error | Unexpected exception | 500 | Generic message, log full details |
 
-## Graceful Degradation Patterns
+## Graceful degradation patterns
 
 ### Stale-While-Error
+
 Return cached data when fresh data is unavailable:
+
 - Frontend implements this with `allowStaleOnError` option
 - Prefer stale data over complete failure for non-critical reads
 
-### Partial Data Return
+### Partial data return
+
 When possible, return available data even if some parts fail:
+
 - Missing optional data? Still show what's available
 - Timeline failed? Still show the main resource
 
 ### Circuit Breaker (Future)
+
 For external services with repeated failures:
+
 - Track failure rates
 - Open circuit to fail fast during outages
 - Gradually test recovery
 
-## Sensitive Data Rules
+## Sensitive data rules
 
-### NEVER Log
+### NEVER log
+
 - API keys, secrets, tokens
 - Session identifiers
 - User credentials (passwords, OAuth tokens)
 - Full request/response bodies in production
 
-### NEVER Expose in Error Responses
+### NEVER expose in error responses
+
 - Stack traces
 - Internal IPs or hostnames
 - Database queries or connection strings
 - File system paths
 - Third-party API details
 
-### ALWAYS Sanitize
+### ALWAYS sanitize
+
 - User input before including in error messages
 - URLs (remove query params with sensitive data)
 - Resource IDs are OK to include in internal logs
 
-## Error Message Guidelines
+## Error message guidelines
 
-### User-Facing Messages
+### User-facing messages
 
 | Scenario | Good | Bad |
 |----------|------|-----|
@@ -80,10 +91,11 @@ For external services with repeated failures:
 | Server error | "Something went wrong. Please try again." | "PostgreSQL connection refused at 10.0.0.5:5432" |
 | Timeout | "Request timed out. The server may be busy." | "httpx.TimeoutException after 300s" |
 
-### Internal Log Messages
+### Internal log messages
 
 Include actionable context:
-```
+
+```text
 # Good
 ERROR - User 42: Failed to process payment -- Stripe returned 402 (card declined)
 
@@ -91,8 +103,9 @@ ERROR - User 42: Failed to process payment -- Stripe returned 402 (card declined
 ERROR - Payment failed
 ```
 
-## Testing Requirements
+## Testing requirements
 
 Every error path should be tested. See service-specific testing rules:
+
 - `backend/testing.md` -- API error response tests
 - `frontend/testing.md` -- Error state and boundary tests

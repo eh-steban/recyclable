@@ -9,7 +9,7 @@ paths:
 
 React/TypeScript error handling patterns and standards.
 
-## Error Types
+## Error types
 
 Define typed errors for consistent handling:
 
@@ -23,7 +23,10 @@ interface AppError {
 }
 
 function toAppError(err: unknown): AppError {
-  if (err instanceof Response || (err && typeof err === 'object' && 'status' in err)) {
+  if (
+    err instanceof Response ||
+    (err && typeof err === 'object' && 'status' in err)
+  ) {
     const status = (err as Response).status;
     return {
       type: 'api',
@@ -39,19 +42,19 @@ function toAppError(err: unknown): AppError {
 }
 ```
 
-## Hook Error State
+## Hook error state
 
 Use typed error state instead of `unknown`:
 
 ```typescript
-// ✅ Good - typed error state
+// Good - typed error state
 const [error, setError] = useState<AppError | null>(null);
 
-// ❌ Bad - untyped error
+// Bad - untyped error
 const [error, setError] = useState<unknown>(null);
 ```
 
-## Error Boundaries
+## Error boundaries
 
 Implement React error boundaries for critical components:
 
@@ -89,10 +92,11 @@ class ErrorBoundary extends React.Component<Props, State> {
 ```
 
 Use error boundaries around:
+
 - Page-level components
 - Any component that processes external data
 
-## Graceful Degradation
+## Graceful degradation
 
 ### Stale-While-Error
 
@@ -100,7 +104,7 @@ Use error boundaries around:
 const data = await fetchResource(id, { allowStaleOnError: true });
 ```
 
-### Partial Data Display
+### Partial data display
 
 Show available data even when some parts fail:
 
@@ -113,7 +117,7 @@ Show available data even when some parts fail:
 )}
 ```
 
-### Silent Failures for Non-Critical Operations
+### Silent failures for non-critical operations
 
 ```typescript
 function saveToStorage(key: string, value: unknown): void {
@@ -125,7 +129,7 @@ function saveToStorage(key: string, value: unknown): void {
 }
 ```
 
-## User-Facing Error Messages
+## User-facing error messages
 
 | Error Type | User Message | Show Retry? |
 |------------|--------------|-------------|
@@ -134,7 +138,7 @@ function saveToStorage(key: string, value: unknown): void {
 | 500 | "Something went wrong. Please try again." | Yes |
 | Timeout | "Request timed out. The server may be busy." | Yes |
 
-## Error UI Components
+## Error UI components
 
 ```tsx
 // components/common/ErrorMessage.tsx
@@ -158,7 +162,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ error, onRetry }) => (
 );
 ```
 
-## API Error Handling
+## API error handling
 
 ```typescript
 async function fetchResource(id: number): Promise<Resource> {
@@ -173,11 +177,12 @@ async function fetchResource(id: number): Promise<Resource> {
 }
 ```
 
-## Best Practices
+## Best practices
 
 1. **Always handle errors** -- Every async operation needs error handling
 2. **Type your errors** -- Use `AppError` instead of `unknown`
 3. **Show user-friendly messages** -- Never display raw error text
-4. **Enable retry for transient failures** -- Network and 5xx errors are retryable
+4. **Enable retry for transient failures** -- Network and 5xx errors are
+   retryable
 5. **Log errors with context** -- Include relevant IDs for debugging
 6. **Use error boundaries** -- Prevent entire app crashes from component errors

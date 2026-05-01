@@ -5,27 +5,35 @@ paths:
   - "docker-compose.yaml"
   - "docker-compose.yml"
 ---
+
 # Container Architecture
 
-Container structure, optimization, and best practices for both local Compose parity and the prod targets (Vercel, Railway, Neon).
+Container structure, optimization, and best practices for both local
+Compose parity and the prod targets (Vercel, Railway, Neon).
 
-## Design Philosophy
+## Design philosophy
 
-1. **Minimal production images** -- only runtime dependencies in `runner` stages.
+1. **Minimal production images** -- only runtime dependencies in `runner`
+   stages.
 2. **Security first** -- non-root users, no secrets baked in.
 3. **Layer caching** -- dependencies copied before source.
-4. **Reproducibility** -- pin versions, use lock files (`package-lock.json`, `requirements.txt`).
-5. **Multi-stage** -- shared `builder` for compile, separate `dev` (hot reload) and `runner` (prod).
+4. **Reproducibility** -- pin versions, use lock files (`package-lock.json`,
+   `requirements.txt`).
+5. **Multi-stage** -- shared `builder` for compile, separate `dev`
+   (hot reload) and `runner` (prod).
 
-## Production Containers
+## Production containers
 
 ### Frontend (Next.js)
 
 **File:** `frontend/Dockerfile`
 **Stages:** `deps` → `dev` | `builder` → `runner`
-**Production deploy:** Vercel (Vercel ignores this Dockerfile and builds Next.js itself).
+**Production deploy:** Vercel (Vercel ignores this Dockerfile and builds
+Next.js itself).
 
-The `runner` stage exists for prod-parity testing and any future self-host. It expects `next.config.ts` to set `output: 'standalone'` so only the standalone bundle ships.
+The `runner` stage exists for prod-parity testing and any future
+self-host. It expects `next.config.ts` to set `output: 'standalone'`
+so only the standalone bundle ships.
 
 ### Backend (Python worker)
 
@@ -34,22 +42,26 @@ The `runner` stage exists for prod-parity testing and any future self-host. It e
 **Production deploy:** Railway (uses `runner` stage, respects `$PORT`).
 
 Key features:
+
 - Venv copied across stages -- runner has no compilers.
 - Non-root `appuser` (UID 1000).
 - `HEALTHCHECK` against `/health`.
-- Single uvicorn process; one-off CLI invoked via `docker compose run` or Railway's "run command" override.
+- Single uvicorn process; one-off CLI invoked via `docker compose run`
+  or Railway's "run command" override.
 
-## Development Container
+## Development container
 
 **File:** `.devcontainer/Dockerfile`
-Unified Node + Python image, entered via `./bin/dev` (or any tool that speaks the open Devcontainer spec).
+Unified Node + Python image, entered via `./bin/dev` (or any tool that
+speaks the open Devcontainer spec).
 
 Features:
+
 - UID 1000 matches typical host user (volume permissions).
 - Both language stacks for cross-service editing.
 - Claude Code CLI baked in.
 
-## User Strategy
+## User strategy
 
 | Container | User | UID | Rationale |
 |-----------|------|-----|-----------|
@@ -59,9 +71,9 @@ Features:
 
 Never run production containers as root.
 
-## Best Practices
+## Best practices
 
-### Dependency Installation Order
+### Dependency installation order
 
 ```dockerfile
 # ✅ Good - dependencies cached separately
@@ -74,7 +86,7 @@ COPY . .
 RUN npm ci
 ```
 
-### Clean Up After Install
+### Clean up after install
 
 ```dockerfile
 # ✅ Good - single RUN layer, cleanup
@@ -83,19 +95,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 ```
 
-### Use BuildKit Cache Mounts
+### Use BuildKit cache mounts
 
 ```dockerfile
 RUN --mount=type=cache,target=/root/.npm \
     npm ci
 ```
+
 Speeds up rebuilds without inflating final image size.
 
 ### Use .dockerignore
 
-`frontend/.dockerignore` and `backend/.dockerignore` exist -- update them when adding new caches or build artifacts.
+`frontend/.dockerignore` and `backend/.dockerignore` exist -- update them
+when adding new caches or build artifacts.
 
-## Volume Strategy
+## Volume strategy
 
 ### Development
 
@@ -114,20 +128,25 @@ Speeds up rebuilds without inflating final image size.
 
 ## Healthchecks
 
-Both production stages include a `HEALTHCHECK`. Keep them simple (single curl/wget) -- complex healthchecks become their own debug surface.
+Both production stages include a `HEALTHCHECK`. Keep them simple (single
+curl/wget) -- complex healthchecks become their own debug surface.
 
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD curl --fail http://localhost:${PORT}/health || exit 1
 ```
 
-The Next.js app should expose a trivial `/api/health` route handler that does not touch the DB. The worker should expose a `/health` route that does -- if the DB is unreachable, Railway should restart the worker.
+The Next.js app should expose a trivial `/api/health` route handler that
+does not touch the DB. The worker should expose a `/health` route that
+does -- if the DB is unreachable, Railway should restart the worker.
 
-## Build-Time Secrets
+## Build-time secrets
 
 Never `COPY .env` into an image. Use:
+
 - Vercel project env settings.
 - Railway service env variables.
 - BuildKit `--secret` for build-time-only values, never runtime.
 
-If you find yourself wanting to bake an API key into a layer, stop -- you are about to leak it to anyone with `docker history`.
+If you find yourself wanting to bake an API key into a layer, stop -- you
+are about to leak it to anyone with `docker history`.

@@ -22,7 +22,7 @@ Cross-service logging, monitoring, and observability guidelines.
 - Suitable for docker-compose and k8s log aggregation
 - Manual log inspection via `docker logs` or `kubectl logs`
 
-## Log Levels
+## Log levels
 
 | Level | When to Use | Examples |
 |-------|-------------|----------|
@@ -31,25 +31,28 @@ Cross-service logging, monitoring, and observability guidelines.
 | WARNING | Recoverable issues | Cache miss, retry attempt, deprecated usage |
 | ERROR | Failures requiring attention | External service down, data error, DB error |
 
-### Level Selection Guide
+### Level selection guide
 
 - If it helps debug during development only → DEBUG
 - If you'd want to know it happened in production → INFO
 - If something is wrong but we recovered → WARNING
 - If something failed and needs fixing → ERROR
 
-## What to Log
+## What to log
 
-### Always Log
+### Always log
+
 - Request start with identifiers (resource_id, user_id)
 - Operation completion with duration
 - Error context (type, message, relevant IDs)
 - Data sizes for performance profiling
 - External service calls (URL, status, duration)
 
-### Contextual Logging
+### Contextual logging
+
 Include enough context to debug without additional queries:
-```
+
+```text
 # Good
 INFO - User 42: Order processed successfully in 1.2s
 
@@ -57,7 +60,7 @@ INFO - User 42: Order processed successfully in 1.2s
 INFO - Order processed
 ```
 
-## What NOT to Log
+## What NOT to log
 
 - Passwords, API keys, tokens, secrets
 - Full request/response bodies (unless DEBUG level)
@@ -65,7 +68,7 @@ INFO - Order processed
 - Session data or authentication tokens
 - Credit card numbers or financial data
 
-## Correlation ID Pattern
+## Correlation ID pattern
 
 Track requests across services:
 
@@ -73,7 +76,7 @@ Track requests across services:
 2. Pass via `X-Correlation-ID` header to downstream services
 3. Include in all log lines for that request
 
-```
+```text
 # Backend
 INFO - [corr:abc-123] User 42: Processing order
 
@@ -81,30 +84,35 @@ INFO - [corr:abc-123] User 42: Processing order
 INFO - [corr:abc-123] [process_order] Validating payment
 ```
 
-## Service-Specific Guidelines
+## Service-specific guidelines
 
 See detailed logging guidelines:
+
 - `backend/observability.md` -- Python logging setup
 - `frontend/observability.md` -- Browser console logging
 
-## Long-term Roadmap
+## Long-term roadmap
 
-### Phase 2: Structured Logging (3-6 months)
+### Phase 2: Structured logging (3-6 months)
+
 - JSON format for all services
-- Consistent field names: `timestamp`, `level`, `service`, `correlation_id`, `message`
+- Consistent field names: `timestamp`, `level`, `service`, `correlation_id`,
+  `message`
 - Environment-based log level configuration (`LOG_LEVEL` env var)
 
-### Phase 3: Centralized Logging (6-12 months)
+### Phase 3: Centralized logging (6-12 months)
+
 - ELK stack (Elasticsearch, Logstash, Kibana) or similar
 - Log aggregation from all services
 - Searchable, filterable logs
 
-### Phase 4: Metrics & Tracing (12+ months)
+### Phase 4: Metrics and tracing (12+ months)
+
 - Prometheus metrics (request latency, error rates, queue depths)
 - Distributed tracing (OpenTelemetry)
 - Error tracking service (Sentry)
 
-## Performance Considerations
+## Performance considerations
 
 - Logging should not significantly impact request latency
 - Use async logging where possible

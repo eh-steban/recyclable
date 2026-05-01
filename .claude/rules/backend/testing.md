@@ -6,7 +6,7 @@ paths:
 ---
 # Backend Testing Standards
 
-## Domain Tests
+## Domain tests
 
 Unit test all domain entities, value objects, and domain services:
 
@@ -15,7 +15,7 @@ Unit test all domain entities, value objects, and domain services:
 - Examples: validation rules, calculation logic, state transitions
 
 ```python
-# ✅ Good domain test
+# Good domain test
 def test_order_item_rejects_negative_quantity():
     with pytest.raises(ValueError):
         OrderItem(product_id=1, quantity=-1, unit_price=Decimal("9.99"))
@@ -25,7 +25,7 @@ def test_discount_calculation_applies_percentage():
     assert result == Decimal("80")
 ```
 
-## Application Tests
+## Application tests
 
 Test use cases with mocked infrastructure:
 
@@ -42,14 +42,15 @@ def test_get_user_returns_mapped_domain_model(mock_repo, mock_mapper):
     mock_mapper.to_domain.assert_called_once()
 ```
 
-## Integration Tests
+## Integration tests
 
 Focus areas:
+
 - Repository implementations against test database
 - API endpoints end-to-end
 - External API client behavior
 
-## Coverage Goals
+## Coverage goals
 
 | Layer | Target |
 |-------|--------|
@@ -57,11 +58,12 @@ Focus areas:
 | Application | 80%+ |
 | Infrastructure | Critical paths |
 
-## Error Path Testing
+## Error path testing
 
-Every error path should be tested. API endpoints must have tests for each error category.
+Every error path should be tested. API endpoints must have tests for each
+error category.
 
-### Required Error Tests
+### Required error tests
 
 | Scenario | Status Code | Test Pattern |
 |----------|-------------|--------------|
@@ -70,7 +72,7 @@ Every error path should be tested. API endpoints must have tests for each error 
 | External service failure | 502/503 | Dependency timeout/error |
 | Database error | 500 | Connection failure |
 
-### Mocking External Failures
+### Mocking external failures
 
 ```python
 import pytest
@@ -92,7 +94,7 @@ async def test_external_failure_returns_502(async_client, mock_external_failure)
     assert "upstream" in response.json()["detail"].lower()
 ```
 
-### Exception Behavior Tests
+### Exception behavior tests
 
 ```python
 def test_not_found_exception_includes_resource_id():
@@ -102,7 +104,7 @@ def test_not_found_exception_includes_resource_id():
     assert "42" in str(exc_info.value)
 ```
 
-### Edge Case Testing
+### Edge case testing
 
 | Scenario | Expected |
 |----------|----------|

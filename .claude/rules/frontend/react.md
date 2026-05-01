@@ -6,13 +6,15 @@ paths:
 ---
 # React Patterns (Next.js App Router)
 
-Default to **server components**. Reach for client components only for browser APIs, event handlers, or stateful hooks. See `frontend/CLAUDE.md` § Server vs Client Components.
+Default to **server components**. Reach for client components only for
+browser APIs, event handlers, or stateful hooks. See
+`frontend/CLAUDE.md` § Server vs Client Components.
 
 ## Component Organization
 
 Feature-based organization, colocate related components, hooks, and types.
 
-```
+```text
 components/
 ├── answer-card/
 │   ├── index.ts                  # Public exports
@@ -62,8 +64,10 @@ export function FeedbackButtons({ traceId }: { traceId: string }) {
 
 ## Data Fetching
 
-- Server components: call `lib/db` / `lib/retrieval` directly. Cache with `unstable_cache` or rely on the route's render mode.
-- Client components: fetch via `/api/...` route handlers. Never import server-only modules.
+- Server components: call `lib/db` / `lib/retrieval` directly. Cache with
+  `unstable_cache` or rely on the route's render mode.
+- Client components: fetch via `/api/...` route handlers. Never import
+  server-only modules.
 - Tag all DB-touching modules with `import 'server-only'` at the top.
 
 ## Props
@@ -109,5 +113,6 @@ export function useUserData(userId: string) {
 
 ```tsx
 // ✅ Good - logical grouping
-<div className="flex items-center gap-4 p-4 text-sm text-gray-700 bg-white rounded-lg shadow">
+<div className="flex items-center gap-4 p-4
+  text-sm text-gray-700 bg-white rounded-lg shadow">
 ```

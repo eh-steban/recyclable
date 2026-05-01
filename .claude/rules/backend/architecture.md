@@ -4,11 +4,12 @@ paths:
   - "backend/**/**/*.py"
   - "backend/**/**/**/*.py"
 ---
+
 # Backend Architecture Rules
 
-## DDD Layer Structure
+## DDD layer structure
 
-```
+```text
 backend/
 ├── app/
 │   ├── api/              # HTTP layer (thin routes)
@@ -27,7 +28,7 @@ backend/
 │   └── utils/            # Cross-cutting utilities
 ```
 
-## Layer Dependency Rules
+## Layer dependency rules
 
 | Layer | Can Import |
 |-------|------------|
@@ -41,16 +42,19 @@ backend/
 | `infra/external/` | `domain/models/`, `utils/` |
 | `utils/` | Nothing (pure utilities) |
 
-## Key Patterns
+## Key patterns
 
-### Domain vs Application Services
+### Domain vs application services
 
-- **Domain services** (`domain/services/`): Pure business logic, no I/O, no framework dependencies
-- **Application services** (`application/`): Orchestration, use cases, coordinates domain + infra
+- **Domain services** (`domain/services/`): Pure business logic, no I/O,
+  no framework dependencies
+- **Application services** (`application/`): Orchestration, use cases,
+  coordinates domain + infra
 
-### Repository Return Types
+### Repository return types
 
-Repositories return ORM models. Mapping to domain models happens in `application/mappers/`.
+Repositories return ORM models. Mapping to domain models happens in
+`application/mappers/`.
 
 ```python
 # ✅ Repository returns ORM model
@@ -70,9 +74,10 @@ class GetUserUseCase:
         return self.mapper.to_domain(orm_model)
 ```
 
-### Service Naming Convention
+### Service naming convention
 
-Domain services follow the `Class.verb()` pattern so the call reads naturally:
+Domain services follow the `Class.verb()` pattern so the call reads
+naturally:
 
 ```python
 # ✅ Good - reads as "OrderService calculate"
@@ -87,6 +92,9 @@ class OrderTotalCalculator:
 ```
 
 **Guidelines:**
-- Class name = noun (what data you're working with), suffixed with `Service`
+
+- Class name = noun (what data you're working with), suffixed with
+  `Service`
 - Method name = verb (what action you're performing)
-- Use plural form for services handling multiple items (`UsersService` vs `UserService`)
+- Use plural form for services handling multiple items (`UsersService` vs
+  `UserService`)

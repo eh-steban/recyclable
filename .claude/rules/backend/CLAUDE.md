@@ -4,15 +4,21 @@ paths:
   - "backend/**/**/*.py"
   - "backend/**/**/**/*.py"
 ---
+
 # Backend Service
 
-Python research worker. Asynchronous source ingestion, extraction, conflict detection, regression-suite runs, and operator CLI/admin endpoints. **Not** on the user request path -- the user-facing `/api/ask` lives in the Next.js frontend. This service uses Claude **Opus** for the agentic research loop.
+Python research worker. Asynchronous source ingestion, extraction,
+conflict detection, regression-suite runs, and operator CLI/admin
+endpoints. **Not** on the user request path -- the user-facing `/api/ask`
+lives in the Next.js frontend. This service uses Claude **Opus** for the
+agentic research loop.
 
 Implements domain-driven design.
 
 ## Structure
 
-```
+<!-- markdownlint-disable MD013 -->
+```text
 backend/
 ├── app/
 │   ├── api/                          # Operator/admin HTTP routes (thin)
@@ -62,6 +68,7 @@ backend/
 ├── pyproject.toml
 └── requirements.txt
 ```
+<!-- markdownlint-enable MD013 -->
 
 ## Commands
 
@@ -70,7 +77,8 @@ backend/
 docker compose up backend
 
 # One-off ingestion (CLI)
-cd backend && python -m app.cli ingest --source https://example-city.gov/recycling
+cd backend && python -m app.cli ingest \
+  --source https://example-city.gov/recycling
 
 # Apply an approved ingestion report
 cd backend && python -m app.cli apply-report --id <uuid>
@@ -96,7 +104,7 @@ alembic upgrade head
 alembic revision --autogenerate -m "description"
 ```
 
-## Testing Notes
+## Testing notes
 
 - Test files mirror `app/` structure in `tests/`
 - Use `conftest.py` for shared fixtures
@@ -110,9 +118,12 @@ alembic revision --autogenerate -m "description"
 - Never edit existing migrations
 - Test migrations up AND down
 
-## Code Quality
+## Code quality
 
 - Split modules at ~200-300 lines
 - Use cases with >5-7 injected dependencies are a refactor signal
-- Functions with >4-5 parameters are a refactor signal -- bundle into a dataclass or schema
-- Inject ALL external dependencies (DB, APIs, services) via FastAPI `Depends` -- never instantiate concrete infrastructure inside a use case or domain service
+- Functions with >4-5 parameters are a refactor signal -- bundle into a
+  dataclass or schema
+- Inject ALL external dependencies (DB, APIs, services) via FastAPI
+  `Depends` -- never instantiate concrete infrastructure inside a use case
+  or domain service
