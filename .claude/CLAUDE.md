@@ -7,8 +7,13 @@ Recycling Law Assistant -- a grounded, source-cited recycling Q&A product. Two c
 
 ## Writing Style
 
-- Use `--` (double-hyphen) instead of em-dashes (`—`) in all prose, docs, and commit messages. Em-dashes render as `<E2><80><94>` in git diffs and some terminals.
-- Never hard-wrap prose lines in markdown files. Do not insert manual line breaks mid-sentence. Let lines be as long as needed -- editors and renderers handle wrapping.
+- Use `--` (double-hyphen) instead of em-dashes (`—`) in all prose, docs,
+  and commit messages. Em-dash rendering depends on terminal and locale
+  (`<E2><80><94>` byte sequence appears in some environments) and breaks
+  across machines; the double-hyphen is portable.
+- Markdown style follows `.claude/rules/markdown-style.md` (adapted from
+  Google's styleguide). Soft cap of 80 columns enforced via
+  `.markdownlint.json`; semantic wraps only -- no orphan lines.
 
 ## Quick Reference
 
