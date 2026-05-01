@@ -4,7 +4,8 @@ Create a new experiment directory in private/product/experiments/.
 2. Create the next number (e.g., if 003 exists, create 004)
 3. Ask me for:
    - Experiment name (short, descriptive)
-   - Which option from private/product/strategy/current-options.md this tests (or "new option")
+   - Which option from private/product/strategy/current-options.md this tests
+     (or "new option")
    - Target condition (must be specific and measurable)
    - Current condition (quantified baseline)
    - First obstacle to address
