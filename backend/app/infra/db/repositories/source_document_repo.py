@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Protocol
 
 from sqlalchemy import select
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class SourceDocumentRepository(Protocol):
     def upsert(self, doc: SourceDocument) -> None: ...
-    def get_by_id(self, doc_id: object) -> SourceDocumentORM | None: ...
+    def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None: ...
 
 
 class SqlSourceDocumentRepository:
@@ -55,7 +56,7 @@ class SqlSourceDocumentRepository:
         )
         self._session.execute(stmt)
 
-    def get_by_id(self, doc_id: object) -> SourceDocumentORM | None:
+    def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None:
         return self._session.scalar(
             select(SourceDocumentORM).where(SourceDocumentORM.id == doc_id)
         )
