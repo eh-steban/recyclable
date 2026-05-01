@@ -99,14 +99,15 @@ def test_source_document_model():
     assert doc.authority_level == 1
 
 
-def test_source_document_authority_level_bounds():
+@pytest.mark.parametrize("level", [0, 7])
+def test_source_document_authority_level_bounds(level: int):
     with pytest.raises(ValidationError):
         SourceDocument(
             id=SOURCE_DOC_ID,
             jurisdiction_id=JURISDICTION_ID,
             url="https://example.com",
             title="Test",
-            authority_level=0,  # out of range
+            authority_level=level,
             source_text="text",
             source_text_hash="hash",
             fetched_at=NOW,
