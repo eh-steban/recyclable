@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,7 +15,7 @@ class SourceDocument(BaseModel):
     url: str
     title: str
     authority_level: int = Field(ge=1, le=6)
-    fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    fetched_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     effective_date: date | None = None
     source_text: str
     source_text_hash: str
