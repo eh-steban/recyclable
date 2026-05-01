@@ -125,6 +125,33 @@ See the [Denver rules page][denver-rules] for details.
 [denver-rules]: https://example.com/very/long/path/that/would/clutter
 ```
 
+**Inline links that force short lines: prefer reference-style.** When an
+inline link's URL is long enough that wrapping around it leaves
+neighboring lines noticeably short of the 80-column cap (e.g. under
+~60 columns), convert it to a reference-style link. The wrap is only
+useful when it falls at a semantic boundary in continuous prose; if the
+URL itself is what is forcing the break, the result reads as a stutter
+of half-empty lines and harms readability more than a single longer
+line would.
+
+Bad (wrapping forced by URL length, leaves a 33-col orphan):
+
+```markdown
+This repo uses [pre-commit](https://pre-commit.com) to run
+[gitleaks](https://github.com/gitleaks/gitleaks) (secret scanner) on
+every commit.
+```
+
+Good (reference-style; prose flows at full width):
+
+```markdown
+This repo uses [pre-commit][pre-commit] to run [gitleaks][gitleaks]
+(secret scanner) on every commit.
+
+[pre-commit]: https://pre-commit.com
+[gitleaks]: https://github.com/gitleaks/gitleaks
+```
+
 ### Product names and capitalization
 
 Preserve the capitalization of product and project names exactly as they
@@ -200,7 +227,10 @@ Every table must have a header row and a separator row.
 
 **Line length:** keep table rows under 80 columns where possible.
 For cells containing long URLs, use reference-style links to shorten
-the cell content:
+the cell content. The MD013 line-length rule is disabled for table
+rows in `.markdownlint.json` (`tables: false`) because forcing 80
+columns inside a table almost always harms readability more than it
+helps; the soft cap still applies to surrounding prose.
 
 ```markdown
 | Page | Source |
