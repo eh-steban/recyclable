@@ -226,8 +226,14 @@ def test_jurisdiction_orm_to_domain_roundtrip():
         created_at=orm.created_at,
         updated_at=orm.updated_at,
     )
-    assert domain.slug == "denver"
-    assert domain.type == JurisdictionType.CITY
+    assert domain.id == orm.id
+    assert domain.name == orm.name
+    assert domain.slug == orm.slug
+    assert domain.type.value == orm.type
+    assert domain.country == orm.country
+    assert domain.supported_status.value == orm.supported_status
+    assert domain.created_at == orm.created_at
+    assert domain.updated_at == orm.updated_at
 
 
 def test_material_orm_to_domain_roundtrip():
@@ -245,7 +251,11 @@ def test_material_orm_to_domain_roundtrip():
         category=MaterialCategory(orm.category),
         parent_id=orm.parent_id,
     )
-    assert domain.slug == "aluminum-cans"
+    assert domain.id == orm.id
+    assert domain.canonical_name == orm.canonical_name
+    assert domain.slug == orm.slug
+    assert domain.category.value == orm.category
+    assert domain.parent_id == orm.parent_id
 
 
 def test_rule_orm_to_domain_roundtrip():
@@ -279,7 +289,19 @@ def test_rule_orm_to_domain_roundtrip():
         effective_from=orm.effective_from,
         superseded_by=orm.superseded_by,
     )
-    assert domain.accepted_status == AcceptedStatus.ACCEPTED
+    assert domain.id == orm.id
+    assert domain.jurisdiction_id == orm.jurisdiction_id
+    assert domain.material_id == orm.material_id
+    assert domain.disposition.value == orm.disposition
+    assert domain.accepted_status.value == orm.accepted_status
+    assert domain.preparation_steps == orm.preparation_steps
+    assert domain.exceptions == orm.exceptions
+    assert domain.warnings == orm.warnings
+    assert domain.source_document_id == orm.source_document_id
+    assert domain.source_quote == orm.source_quote
+    assert domain.confidence.value == orm.confidence
+    assert domain.effective_from == orm.effective_from
+    assert domain.superseded_by == orm.superseded_by
 
 
 def test_source_document_orm_to_domain_roundtrip():
@@ -307,8 +329,16 @@ def test_source_document_orm_to_domain_roundtrip():
         source_text_hash=orm.source_text_hash,
         last_reviewed_at=orm.last_reviewed_at,
     )
-    assert domain.url == "https://denvergov.org/recycling"
-    assert domain.authority_level == 1
+    assert domain.id == orm.id
+    assert domain.jurisdiction_id == orm.jurisdiction_id
+    assert domain.url == orm.url
+    assert domain.title == orm.title
+    assert domain.authority_level == orm.authority_level
+    assert domain.fetched_at == orm.fetched_at
+    assert domain.effective_date == orm.effective_date
+    assert domain.source_text == orm.source_text
+    assert domain.source_text_hash == orm.source_text_hash
+    assert domain.last_reviewed_at == orm.last_reviewed_at
 
 
 def test_material_alias_orm_to_domain_roundtrip():
@@ -322,8 +352,9 @@ def test_material_alias_orm_to_domain_roundtrip():
         alias=orm.alias,
         weight=orm.weight,
     )
-    assert domain.alias == "soda can"
-    assert domain.weight == 2
+    assert domain.material_id == orm.material_id
+    assert domain.alias == orm.alias
+    assert domain.weight == orm.weight
 
 
 def test_regression_case_orm_to_domain_roundtrip():
@@ -349,7 +380,15 @@ def test_regression_case_orm_to_domain_roundtrip():
         refusal_required=orm.refusal_required,
         notes=orm.notes,
     )
-    assert domain.expected_status == AcceptedStatus.ACCEPTED
+    assert domain.id == orm.id
+    assert domain.query == orm.query
+    assert domain.jurisdiction_id == orm.jurisdiction_id
+    assert domain.expected_material_id == orm.expected_material_id
+    assert domain.expected_status.value == orm.expected_status
+    assert domain.expected_disposition.value == orm.expected_disposition
+    assert domain.must_cite_source == orm.must_cite_source
+    assert domain.refusal_required == orm.refusal_required
+    assert domain.notes == orm.notes
 
 
 def test_answer_trace_orm_to_domain_roundtrip():
@@ -389,4 +428,19 @@ def test_answer_trace_orm_to_domain_roundtrip():
         cache_hit=orm.cache_hit,
         created_at=orm.created_at,
     )
-    assert domain.prompt_name == "ask_compose"
+    assert domain.id == orm.id
+    assert domain.user_query == orm.user_query
+    assert domain.jurisdiction_id == orm.jurisdiction_id
+    assert domain.normalized_materials == list(orm.normalized_materials)
+    assert domain.retrieved_rule_ids == list(orm.retrieved_rule_ids)
+    assert domain.retrieved_source_ids == list(orm.retrieved_source_ids)
+    assert domain.prompt_name == orm.prompt_name
+    assert domain.prompt_version == orm.prompt_version
+    assert domain.model_id == orm.model_id
+    assert domain.raw_model_output == orm.raw_model_output
+    assert domain.final_answer == orm.final_answer
+    assert domain.validator_result == orm.validator_result
+    assert domain.confidence == orm.confidence
+    assert domain.latency_ms == orm.latency_ms
+    assert domain.cache_hit == orm.cache_hit
+    assert domain.created_at == orm.created_at
