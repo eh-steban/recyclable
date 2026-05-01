@@ -19,3 +19,20 @@ docker compose up
 - Worker admin: http://localhost:8000
 - Postgres: `localhost:5432` (user `recyclable`, db `recyclable`)
 
+## Pre-commit hooks
+
+This repo uses [pre-commit](https://pre-commit.com) to run [gitleaks](https://github.com/gitleaks/gitleaks) (secret scanner) on every commit. One-time setup per machine:
+
+```bash
+pip install pre-commit       # or: pipx install pre-commit
+pre-commit install           # installs the git hook into .git/hooks
+```
+
+After that, `git commit` will scan the staged diff for accidentally-committed API keys / tokens and abort the commit if any are found. To run against the full repo on demand:
+
+```bash
+pre-commit run --all-files
+```
+
+If gitleaks flags a false positive (e.g. a fake key in a test fixture), add an allowlist entry to `.gitleaks.toml` rather than disabling the hook.
+
