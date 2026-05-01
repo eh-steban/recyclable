@@ -38,4 +38,9 @@ def run_migrations() -> None:
             context.run_migrations()
 
 
+if context.is_offline_mode():
+    raise RuntimeError(
+        "Offline mode is not supported. Run alembic with a live DATABASE_URL."
+    )
+
 run_migrations()
