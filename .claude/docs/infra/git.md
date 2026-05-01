@@ -67,8 +67,8 @@ Breaking changes MUST be indicated in one of two ways:
 - Type MUST be one from the types table above
 - Description MUST be written in imperative mood (e.g., "add", "fix", "remove")
 - Subject line MUST NOT exceed 72 characters total
-- Body SHOULD be preceded by a blank line
-- Body bullets SHOULD convey impact, not mechanics -- three to four bullets is enough
+- Body is OPTIONAL -- omit it for changes whose subject line is self-explanatory (small fixes, one-file edits, obvious renames). A subject-only commit is fine when the diff is small enough that prose would just restate it.
+- When a body IS included: precede it with a blank line; bullets SHOULD convey impact, not mechanics; three to four bullets is enough.
 - MUST NOT append `Co-Authored-By` or any attribution lines
 - SHOULD NOT include implementation details -- describe *what* changed and *why*, not *how*
 
