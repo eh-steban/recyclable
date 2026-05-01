@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.DS_Store
+
+# Env
+.env
+.env.local
