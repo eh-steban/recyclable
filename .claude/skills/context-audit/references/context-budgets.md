@@ -21,10 +21,11 @@ root CLAUDE.md, and the claude-md-management plugin.
 
 ## Operational Rules
 
-- **Clear at 30%:** Don't wait for context window to fill. Quality degrades noticeably
-  past 30% context utilization. Prefer early summarization/compaction.
-- **MCP servers:** Maximum 3 active simultaneously. Each adds tool definitions to the
-  system prompt.
+- **Clear at 30%:** Don't wait for context window to fill. Quality degrades
+  noticeably past 30% context utilization. Prefer early
+  summarization/compaction.
+- **MCP servers:** Maximum 3 active simultaneously. Each adds tool
+  definitions to the system prompt.
 - **Subdirectory CLAUDE.md:** Lazy-loaded only when Claude reads files in that subtree.
   Don't put universal rules here -- they belong in root CLAUDE.md.
 - **Skills descriptions:** Load at session start (always in context). Keep descriptions
