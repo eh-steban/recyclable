@@ -4,7 +4,7 @@
 
 ### Format
 
-```
+```text
 <type>[optional scope]: <description>
 
 [optional body]
@@ -13,7 +13,8 @@
 ```
 
 **Example:**
-```
+
+```text
 feat(parser): add creep wave tracking to lane pressure analysis
 
 - Parse all four creep entities per wave
@@ -42,9 +43,10 @@ Commits MUST use one of the following types:
 
 ### Scope
 
-Scope is OPTIONAL. When included, it MUST describe the affected service or area in lowercase, enclosed in parentheses.
+Scope is OPTIONAL. When included, it MUST describe the affected service or
+area in lowercase, enclosed in parentheses.
 
-```
+```text
 feat(parser): ...
 fix(frontend): ...
 chore(backend): ...
@@ -65,12 +67,18 @@ Breaking changes MUST be indicated in one of two ways:
 
 - Subject line MUST follow `<type>[optional scope]: <description>`
 - Type MUST be one from the types table above
-- Description MUST be written in imperative mood (e.g., "add", "fix", "remove")
+- Description MUST be written in imperative mood (e.g., "add", "fix",
+  "remove")
 - Subject line MUST NOT exceed 72 characters total
-- Body is OPTIONAL -- omit it for changes whose subject line is self-explanatory (small fixes, one-file edits, obvious renames). A subject-only commit is fine when the diff is small enough that prose would just restate it.
-- When a body IS included: precede it with a blank line; bullets SHOULD convey impact, not mechanics; three to four bullets is enough.
+- Body is OPTIONAL -- omit it for changes whose subject line is
+  self-explanatory (small fixes, one-file edits, obvious renames). A
+  subject-only commit is fine when the diff is small enough that prose
+  would just restate it.
+- When a body IS included: precede it with a blank line; bullets SHOULD
+  convey impact, not mechanics; three to four bullets is enough.
 - MUST NOT append `Co-Authored-By` or any attribution lines
-- SHOULD NOT include implementation details -- describe *what* changed and *why*, not *how*
+- SHOULD NOT include implementation details -- describe *what* changed and
+  *why*, not *how*
 
 ---
 
@@ -87,9 +95,11 @@ Breaking changes MUST be indicated in one of two ways:
 
 ## Branch Names
 
-Branches MUST follow [Conventional Branch](https://conventional-branch.github.io/) format:
+Branches MUST follow [Conventional Branch][conventional-branch] format:
 
-```
+[conventional-branch]: https://conventional-branch.github.io/
+
+```text
 <type>/<description>
 ```
 
@@ -108,11 +118,12 @@ Branches MUST follow [Conventional Branch](https://conventional-branch.github.io
 - Description MUST be lowercase, using only `a-z`, `0-9`, and hyphens
 - No consecutive hyphens, no leading/trailing hyphens in the description
 - Include ticket number when applicable: `feature/issue-123-login-flow`
-- Dots are permitted only in `release/` branches for version numbers: `release/v1.2.0`
+- Dots are permitted only in `release/` branches for version numbers:
+  `release/v1.2.0`
 
 ### Examples
 
-```
+```text
 feature/player-lane-pressure
 fix/parse-timing
 hotfix/security-patch
@@ -123,7 +134,8 @@ feature/issue-42-souls-tracking
 
 ### `scripts/wt` integration
 
-`wt create <name>` defaults the branch to `feature/<name>`. Pass an explicit second arg for other types:
+`wt create <name>` defaults the branch to `feature/<name>`. Pass an explicit
+second arg for other types:
 
 ```bash
 scripts/wt create fix-parse-timing fix/parse-timing        # fix/ branch
