@@ -84,11 +84,26 @@ def test_downgrade_removes_all_tables(alembic_cfg, engine):
 
 
 @pytest.mark.integration
-def test_double_upgrade_is_idempotent(alembic_cfg, engine):
-    """Running upgrade head twice should not error (no-op on second run)."""
+def test_upgrade_creates_partial_unique_index_on_rules(alembic_cfg, engine):
+    """The partial unique index on rules must restrict only NULL-superseded rows.
+
+    Alembic itself guarantees a no-op second upgrade -- testing that adds no signal.
+    This instead asserts schema content the migration must produce: a migration that
+    drops the WHERE clause or omits the index entirely would silently break the
+    one-active-rule-per-(jurisdiction,material) invariant otherwise.
+    """
     command.downgrade(alembic_cfg, "base")
     command.upgrade(alembic_cfg, "head")
-    command.upgrade(alembic_cfg, "head")  # second run -- should be a no-op
 
-    tables = _get_public_tables(engine)
-    assert IN_SCOPE_TABLES.issubset(tables)
+    with engine.connect() as conn:
+        index_def = conn.execute(
+            text(
+                "SELECT indexdef FROM pg_indexes "
+                "WHERE schemaname = 'public' AND tablename = 'rules' "
+                "AND indexname = 'uq_rules_active_per_jurisdiction_material'"
+            )
+        ).scalar_one_or_none()
+
+    assert index_def is not None, "partial unique index missing from rules table"
+    assert "UNIQUE" in index_def.upper()
+    assert "superseded_by IS NULL" in index_def
