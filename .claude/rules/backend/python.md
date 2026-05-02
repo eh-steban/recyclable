@@ -10,6 +10,8 @@ paths:
 - Use type hints everywhere
 - Prefer `dataclass(frozen=True)` for immutable domain models
 - Use Pydantic models for API validation and DTOs
+- Formatting: 80-col line limit, enforced by `ruff format`. See
+  `.claude/rules/formatting.md`.
 
 ## Naming Conventions
 
