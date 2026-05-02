@@ -5,6 +5,7 @@ These tests are pure (no DB) -- they verify that:
 2. Each domain model can be instantiated with valid data.
 3. ORM model can be reflected back to a domain model (round-trip via dict).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -50,6 +51,7 @@ NOW = datetime.now(tz=UTC)
 
 
 # ---- Domain model instantiation ----
+
 
 def test_jurisdiction_model():
     j = Jurisdiction(
@@ -158,6 +160,7 @@ def test_answer_trace_model():
 
 # ---- Enum validation ----
 
+
 def test_jurisdiction_type_rejects_invalid():
     with pytest.raises(ValidationError):
         Jurisdiction(
@@ -192,6 +195,7 @@ def test_rule_disposition_rejects_invalid():
 
 # ---- ORM model import (no DB needed) ----
 
+
 def test_orm_models_importable():
     """All 7 ORM classes must be importable and have the correct tablename."""
     assert JurisdictionORM.__tablename__ == "jurisdictions"
@@ -204,6 +208,7 @@ def test_orm_models_importable():
 
 
 # ---- ORM -> Pydantic round-trip (no DB) ----
+
 
 def test_jurisdiction_orm_to_domain_roundtrip():
     """Simulate reading an ORM row and mapping to the Pydantic domain model."""

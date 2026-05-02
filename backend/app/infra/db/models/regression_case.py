@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for regression / eval cases."""
+
 from __future__ import annotations
 
 import uuid
@@ -14,7 +15,9 @@ class RegressionCaseORM(Base):
     __tablename__ = "regression_cases"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
     query: Mapped[str] = mapped_column(Text, nullable=False)
     jurisdiction_id: Mapped[uuid.UUID] = mapped_column(

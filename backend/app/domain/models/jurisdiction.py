@@ -1,4 +1,5 @@
 """Domain model for jurisdictions."""
+
 from __future__ import annotations
 
 import uuid

@@ -1,4 +1,8 @@
-"""ORM model registry. Import Base and all mapped classes here so Alembic autogenerate sees them."""
+"""ORM model registry.
+
+Import Base and all mapped classes here so Alembic autogenerate sees them.
+"""
+
 from app.infra.db.models.answer_trace import AnswerTraceORM
 from app.infra.db.models.base import Base
 from app.infra.db.models.jurisdiction import JurisdictionORM

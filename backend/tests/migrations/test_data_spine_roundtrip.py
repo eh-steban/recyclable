@@ -1,8 +1,11 @@
-"""Migration round-trip test: upgrade head then downgrade base leaves information_schema clean.
+"""Migration round-trip test: upgrade head then downgrade base.
 
-Requires a live Postgres. Uses the DATABASE_URL from the environment (or the default
-pointing at the compose app-db). Skipped if the DB is unreachable.
+Confirms information_schema is clean after the round-trip.
+Requires a live Postgres. Uses DATABASE_URL from the environment
+(or the default pointing at the compose app-db).
+Skipped if the DB is unreachable.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -65,7 +68,12 @@ def test_upgrade_creates_all_seven_tables(alembic_cfg, engine):
     assert not missing, f"Tables missing after upgrade: {missing}"
 
     # Out-of-scope tables must NOT be present.
-    out_of_scope = {"facilities", "ingestion_reports", "feedback", "escalations"}
+    out_of_scope = {
+        "facilities",
+        "ingestion_reports",
+        "feedback",
+        "escalations",
+    }
     unexpected = out_of_scope & tables
     assert not unexpected, f"Out-of-scope tables found after upgrade: {unexpected}"
 
@@ -85,12 +93,12 @@ def test_downgrade_removes_all_tables(alembic_cfg, engine):
 
 @pytest.mark.integration
 def test_upgrade_creates_partial_unique_index_on_rules(alembic_cfg, engine):
-    """The partial unique index on rules must restrict only NULL-superseded rows.
+    """The partial unique index on rules restricts only NULL-superseded rows.
 
-    Alembic itself guarantees a no-op second upgrade -- testing that adds no signal.
-    This instead asserts schema content the migration must produce: a migration that
-    drops the WHERE clause or omits the index entirely would silently break the
-    one-active-rule-per-(jurisdiction,material) invariant otherwise.
+    Alembic guarantees a no-op second upgrade -- testing that adds no signal.
+    This asserts schema content the migration must produce: a migration that
+    drops the WHERE clause or omits the index would silently break the
+    one-active-rule-per-(jurisdiction,material) invariant.
     """
     command.downgrade(alembic_cfg, "base")
     command.upgrade(alembic_cfg, "head")

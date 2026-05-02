@@ -4,6 +4,7 @@ Integration tests that need a real Postgres connection consume the `db_url`
 fixture, which probes connectivity and skips the test (rather than failing)
 when the database is unreachable.
 """
+
 from __future__ import annotations
 
 import os
@@ -26,5 +27,8 @@ def db_url() -> str:
             pass
         engine.dispose()
     except OperationalError as exc:
-        pytest.skip(f"Postgres unreachable at {DATABASE_URL}: {exc}", allow_module_level=True)
+        pytest.skip(
+            f"Postgres unreachable at {DATABASE_URL}: {exc}",
+            allow_module_level=True,
+        )
     return DATABASE_URL

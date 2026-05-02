@@ -1,4 +1,5 @@
 """Alembic environment configuration."""
+
 from __future__ import annotations
 
 import os
@@ -39,8 +40,6 @@ def run_migrations() -> None:
 
 
 if context.is_offline_mode():
-    raise RuntimeError(
-        "Offline mode is not supported. Run alembic with a live DATABASE_URL."
-    )
+    raise RuntimeError("Offline mode is not supported. Run alembic with a live DATABASE_URL.")
 
 run_migrations()

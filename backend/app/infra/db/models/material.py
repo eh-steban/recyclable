@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for materials."""
+
 from __future__ import annotations
 
 import uuid
@@ -17,12 +18,12 @@ _CATEGORIES = (
 
 class MaterialORM(Base):
     __tablename__ = "materials"
-    __table_args__ = (
-        CheckConstraint(f"category IN {_CATEGORIES}", name="ck_materials_category"),
-    )
+    __table_args__ = (CheckConstraint(f"category IN {_CATEGORIES}", name="ck_materials_category"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
     canonical_name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, nullable=False, unique=True)

@@ -1,4 +1,5 @@
 """Domain model for LLM answer traces."""
+
 from __future__ import annotations
 
 import uuid

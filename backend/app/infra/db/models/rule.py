@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for recycling rules."""
+
 from __future__ import annotations
 
 import uuid
@@ -32,10 +33,11 @@ class RuleORM(Base):
     __table_args__ = (
         CheckConstraint(f"disposition IN {_DISPOSITIONS}", name="ck_rules_disposition"),
         CheckConstraint(
-            f"accepted_status IN {_ACCEPTED_STATUSES}", name="ck_rules_accepted_status"
+            f"accepted_status IN {_ACCEPTED_STATUSES}",
+            name="ck_rules_accepted_status",
         ),
         CheckConstraint(f"confidence IN {_CONFIDENCES}", name="ck_rules_confidence"),
-        # Partial unique index: only one active rule per (jurisdiction, material).
+        # Partial unique index: one active rule per (jurisdiction, material).
         # Superseded rules (superseded_by IS NOT NULL) are exempt.
         Index(
             "uq_rules_active_per_jurisdiction_material",
@@ -47,7 +49,9 @@ class RuleORM(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
     jurisdiction_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -78,9 +82,7 @@ class RuleORM(Base):
         nullable=False,
     )
     source_quote: Mapped[str] = mapped_column(Text, nullable=False)
-    confidence: Mapped[str] = mapped_column(
-        String, nullable=False, server_default=text("'high'")
-    )
+    confidence: Mapped[str] = mapped_column(String, nullable=False, server_default=text("'high'"))
     effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     superseded_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

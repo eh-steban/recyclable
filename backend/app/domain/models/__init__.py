@@ -1,5 +1,9 @@
 from app.domain.models.answer_trace import AnswerTrace
-from app.domain.models.jurisdiction import Jurisdiction, JurisdictionType, SupportedStatus
+from app.domain.models.jurisdiction import (
+    Jurisdiction,
+    JurisdictionType,
+    SupportedStatus,
+)
 from app.domain.models.material import Material, MaterialCategory
 from app.domain.models.material_alias import MaterialAlias
 from app.domain.models.regression_case import RegressionCase

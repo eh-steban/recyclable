@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for jurisdictions."""
+
 from __future__ import annotations
 
 import uuid
@@ -25,7 +26,9 @@ class JurisdictionORM(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, nullable=False, unique=True)

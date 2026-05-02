@@ -1,4 +1,5 @@
 """Domain model for material aliases."""
+
 from __future__ import annotations
 
 import uuid

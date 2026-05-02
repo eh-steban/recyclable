@@ -1,4 +1,5 @@
 """Domain model for recycling rules."""
+
 from __future__ import annotations
 
 import uuid

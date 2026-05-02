@@ -1,4 +1,5 @@
 """Domain model for regression / eval cases."""
+
 from __future__ import annotations
 
 import uuid

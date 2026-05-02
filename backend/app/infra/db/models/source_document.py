@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for source documents."""
+
 from __future__ import annotations
 
 import uuid
@@ -15,7 +16,9 @@ class SourceDocumentORM(Base):
     __tablename__ = "source_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
     jurisdiction_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
