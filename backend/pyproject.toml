@@ -40,7 +40,7 @@ markers = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 80
 target-version = "py313"
 
 [tool.ruff.lint]
@@ -50,3 +50,9 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.13"
 strict = true
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.3",
+    "types-pyyaml>=6.0.12.20260408",
+]
