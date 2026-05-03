@@ -93,6 +93,13 @@ See `.claude/rules/` for detailed standards:
   eval harness
 - `contracts.md` -- Interservice contract ownership and contract-first rule
 - `doc-ownership.md` -- Which agent owns which docs/dirs (canonical)
+- `invariants.md` -- Non-negotiable system truths; cite IDs in plans,
+  reviews, and audits when a change touches one
+- `refactoring.md` -- What counts as a refactor; allowed transformations
+  and forbidden-by-default categories; loaded by the refactorer agent
+- `validation.md` -- Evidence shape for plan validation (command, exit
+  code, output excerpt, why this validates); plans link here, do not
+  duplicate the discipline
 
 Git standards live in `.claude/docs/infra/git.md`.
 
