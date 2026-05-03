@@ -12,6 +12,9 @@ findings and a patch plan; it does not modify files.
 Use this command:
 
 - After adding, renaming, or removing any agent, skill, command, or rule
+- After `/consolidate-learnings` if any rules or agent files were
+  touched (`/consolidate-learnings` delegates reference-integrity
+  checks here rather than duplicating them)
 - Before starting a new experiment or spec
 - When agentic-dev-enforcement-plan phases land, to verify wiring
 - Periodically (monthly) to detect drift

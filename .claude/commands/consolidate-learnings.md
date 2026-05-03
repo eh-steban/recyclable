@@ -30,7 +30,9 @@ For each promoted learning, check if it should propagate to other files:
 For files touched during the current session:
 
 - Check if any session insights should be captured but weren't
-- Verify file paths still resolve correctly after any changes
+- Run `/process-doctor` to verify reference integrity after edits.
+  This command does not duplicate that audit -- broken refs, stale
+  `paths:` globs, and enforcement scaffolding drift are checked there.
 
 Only write to spec-writer-owned files (rules, learnings,
 knowledge-management.md). For owner-managed files (agents, commands, skills,
@@ -46,6 +48,10 @@ After consolidation, report:
 - Current learnings.md token estimate
 - Owner-managed files flagged for review (if any) -- suggest running the
   context-audit skill for full audit details
+
+If any owner-managed or rule files were flagged, also run
+`/process-doctor` to confirm the broader process graph is still
+coherent (agent refs, command refs, rule paths, enforcement wiring).
 
 Recommended cadence: weekly (pairs with /kata-check), end-of-session, or
 when the `## Drafts` section has 3+ entries.
