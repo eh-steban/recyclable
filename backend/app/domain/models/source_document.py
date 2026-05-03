@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class SourceDocument(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     jurisdiction_id: uuid.UUID

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from enum import StrEnum
-from typing import Annotated
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,16 +34,16 @@ class Confidence(StrEnum):
 
 
 class Rule(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     jurisdiction_id: uuid.UUID
     material_id: uuid.UUID
     disposition: Disposition
     accepted_status: AcceptedStatus
-    preparation_steps: Annotated[list[str], Field(default_factory=list)]
-    exceptions: Annotated[list[str], Field(default_factory=list)]
-    warnings: Annotated[list[str], Field(default_factory=list)]
+    preparation_steps: list[str] = Field(default_factory=list)
+    exceptions: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     source_document_id: uuid.UUID
     source_quote: str
     confidence: Confidence = Confidence.HIGH

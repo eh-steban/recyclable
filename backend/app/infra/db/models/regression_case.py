@@ -12,7 +12,7 @@ from app.infra.db.models.base import Base
 
 
 class RegressionCaseORM(Base):
-    __tablename__ = "regression_cases"
+    __tablename__: str = "regression_cases"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

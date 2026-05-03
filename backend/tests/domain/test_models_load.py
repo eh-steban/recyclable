@@ -102,9 +102,9 @@ def test_source_document_model():
 
 
 @pytest.mark.parametrize("level", [0, 7])
-def test_source_document_authority_level_bounds(level: int):
+def test_source_document_authority_level_bounds(level: int) -> None:
     with pytest.raises(ValidationError):
-        SourceDocument(
+        _ = SourceDocument(
             id=SOURCE_DOC_ID,
             jurisdiction_id=JURISDICTION_ID,
             url="https://example.com",
@@ -161,35 +161,44 @@ def test_answer_trace_model():
 # ---- Enum validation ----
 
 
-def test_jurisdiction_type_rejects_invalid():
+def test_jurisdiction_type_rejects_invalid() -> None:
+    # Intentionally passing an invalid type value to test Pydantic validation.
     with pytest.raises(ValidationError):
-        Jurisdiction(
-            name="Test",
-            slug="test",
-            type="village",  # not in enum
-            country="US",
-            supported_status=SupportedStatus.SUPPORTED,
+        _ = Jurisdiction.model_validate(
+            {
+                "name": "Test",
+                "slug": "test",
+                "type": "village",  # not in enum
+                "country": "US",
+                "supported_status": "supported",
+            }
         )
 
 
-def test_material_category_rejects_invalid():
+def test_material_category_rejects_invalid() -> None:
+    # Intentionally passing an invalid category to test Pydantic validation.
     with pytest.raises(ValidationError):
-        Material(
-            canonical_name="Mystery material",
-            slug="mystery",
-            category="unknown_category",  # not in enum
+        _ = Material.model_validate(
+            {
+                "canonical_name": "Mystery material",
+                "slug": "mystery",
+                "category": "unknown_category",  # not in enum
+            }
         )
 
 
-def test_rule_disposition_rejects_invalid():
+def test_rule_disposition_rejects_invalid() -> None:
+    # Intentionally passing an invalid disposition to test Pydantic validation.
     with pytest.raises(ValidationError):
-        Rule(
-            jurisdiction_id=JURISDICTION_ID,
-            material_id=MATERIAL_ID,
-            disposition="magic",  # not in enum
-            accepted_status=AcceptedStatus.ACCEPTED,
-            source_document_id=SOURCE_DOC_ID,
-            source_quote="quote",
+        _ = Rule.model_validate(
+            {
+                "jurisdiction_id": str(JURISDICTION_ID),
+                "material_id": str(MATERIAL_ID),
+                "disposition": "magic",  # not in enum
+                "accepted_status": "accepted",
+                "source_document_id": str(SOURCE_DOC_ID),
+                "source_quote": "quote",
+            }
         )
 
 

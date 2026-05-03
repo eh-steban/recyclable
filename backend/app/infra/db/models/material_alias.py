@@ -12,9 +12,13 @@ from app.infra.db.models.base import Base
 
 
 class MaterialAliasORM(Base):
-    __tablename__ = "material_aliases"
-    __table_args__ = (
-        UniqueConstraint("material_id", "alias", name="uq_material_aliases_material_id_alias"),
+    __tablename__: str = "material_aliases"
+    __table_args__: tuple[UniqueConstraint, ...] = (
+        UniqueConstraint(
+            "material_id",
+            "alias",
+            name="uq_material_aliases_material_id_alias",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -28,4 +32,6 @@ class MaterialAliasORM(Base):
         nullable=False,
     )
     alias: Mapped[str] = mapped_column(String, nullable=False)
-    weight: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+    weight: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )

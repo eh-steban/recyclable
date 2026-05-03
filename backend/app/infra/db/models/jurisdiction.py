@@ -16,9 +16,11 @@ _SUPPORTED_STATUSES = "('supported', 'coming_soon', 'unsupported')"
 
 
 class JurisdictionORM(Base):
-    __tablename__ = "jurisdictions"
-    __table_args__ = (
-        CheckConstraint(f"type IN {_JURISDICTION_TYPES}", name="ck_jurisdictions_type"),
+    __tablename__: str = "jurisdictions"
+    __table_args__: tuple[CheckConstraint, ...] = (
+        CheckConstraint(
+            f"type IN {_JURISDICTION_TYPES}", name="ck_jurisdictions_type"
+        ),
         CheckConstraint(
             f"supported_status IN {_SUPPORTED_STATUSES}",
             name="ck_jurisdictions_supported_status",

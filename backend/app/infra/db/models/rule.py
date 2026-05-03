@@ -29,14 +29,18 @@ _CONFIDENCES = "('high', 'medium', 'low')"
 
 
 class RuleORM(Base):
-    __tablename__ = "rules"
-    __table_args__ = (
-        CheckConstraint(f"disposition IN {_DISPOSITIONS}", name="ck_rules_disposition"),
+    __tablename__: str = "rules"
+    __table_args__: tuple[CheckConstraint | Index, ...] = (
+        CheckConstraint(
+            f"disposition IN {_DISPOSITIONS}", name="ck_rules_disposition"
+        ),
         CheckConstraint(
             f"accepted_status IN {_ACCEPTED_STATUSES}",
             name="ck_rules_accepted_status",
         ),
-        CheckConstraint(f"confidence IN {_CONFIDENCES}", name="ck_rules_confidence"),
+        CheckConstraint(
+            f"confidence IN {_CONFIDENCES}", name="ck_rules_confidence"
+        ),
         # Partial unique index: one active rule per (jurisdiction, material).
         # Superseded rules (superseded_by IS NOT NULL) are exempt.
         Index(
@@ -82,7 +86,9 @@ class RuleORM(Base):
         nullable=False,
     )
     source_quote: Mapped[str] = mapped_column(Text, nullable=False)
-    confidence: Mapped[str] = mapped_column(String, nullable=False, server_default=text("'high'"))
+    confidence: Mapped[str] = mapped_column(
+        String, nullable=False, server_default=text("'high'")
+    )
     effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     superseded_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

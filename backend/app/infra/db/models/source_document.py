@@ -13,7 +13,7 @@ from app.infra.db.models.base import Base
 
 
 class SourceDocumentORM(Base):
-    __tablename__ = "source_documents"
+    __tablename__: str = "source_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

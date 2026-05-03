@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from enum import StrEnum
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -21,7 +22,7 @@ class MaterialCategory(StrEnum):
 
 
 class Material(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     canonical_name: str

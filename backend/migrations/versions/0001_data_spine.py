@@ -19,7 +19,7 @@ depends_on = None
 
 def upgrade() -> None:
     # ---- jurisdictions ----
-    op.create_table(
+    _ = op.create_table(
         "jurisdictions",
         sa.Column(
             "id",
@@ -44,7 +44,9 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.CheckConstraint("type IN ('city', 'county', 'state')", name="ck_jurisdictions_type"),
+        sa.CheckConstraint(
+            "type IN ('city', 'county', 'state')", name="ck_jurisdictions_type"
+        ),
         sa.CheckConstraint(
             "supported_status IN ('supported', 'coming_soon', 'unsupported')",
             name="ck_jurisdictions_supported_status",
@@ -53,7 +55,7 @@ def upgrade() -> None:
     )
 
     # ---- materials ----
-    op.create_table(
+    _ = op.create_table(
         "materials",
         sa.Column(
             "id",
@@ -66,8 +68,10 @@ def upgrade() -> None:
         sa.Column("category", sa.String(), nullable=False),
         sa.Column("parent_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.CheckConstraint(
-            "category IN ('glass', 'plastic', 'metal', 'paper', 'organic', "
-            "'hazardous', 'electronic', 'textile', 'other')",
+            (
+                "category IN ('glass', 'plastic', 'metal', 'paper',"
+                " 'organic', 'hazardous', 'electronic', 'textile', 'other')"
+            ),
             name="ck_materials_category",
         ),
         sa.ForeignKeyConstraint(
@@ -80,7 +84,7 @@ def upgrade() -> None:
     )
 
     # ---- material_aliases ----
-    op.create_table(
+    _ = op.create_table(
         "material_aliases",
         sa.Column(
             "id",
@@ -90,18 +94,22 @@ def upgrade() -> None:
         ),
         sa.Column("material_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("alias", sa.String(), nullable=False),
-        sa.Column("weight", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column(
+            "weight", sa.Integer(), nullable=False, server_default=sa.text("1")
+        ),
         sa.ForeignKeyConstraint(
             ["material_id"],
             ["materials.id"],
             name="fk_material_aliases_material_id",
             ondelete="RESTRICT",
         ),
-        sa.UniqueConstraint("material_id", "alias", name="uq_material_aliases_material_id_alias"),
+        sa.UniqueConstraint(
+            "material_id", "alias", name="uq_material_aliases_material_id_alias"
+        ),
     )
 
     # ---- source_documents ----
-    op.create_table(
+    _ = op.create_table(
         "source_documents",
         sa.Column(
             "id",
@@ -109,7 +117,9 @@ def upgrade() -> None:
             primary_key=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
-        sa.Column("jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False
+        ),
         sa.Column("url", sa.String(), nullable=False),
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("authority_level", sa.Integer(), nullable=False),
@@ -122,7 +132,9 @@ def upgrade() -> None:
         sa.Column("effective_date", sa.Date(), nullable=True),
         sa.Column("source_text", sa.Text(), nullable=False),
         sa.Column("source_text_hash", sa.String(64), nullable=False),
-        sa.Column("last_reviewed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column(
+            "last_reviewed_at", sa.DateTime(timezone=True), nullable=True
+        ),
         sa.ForeignKeyConstraint(
             ["jurisdiction_id"],
             ["jurisdictions.id"],
@@ -132,7 +144,7 @@ def upgrade() -> None:
     )
 
     # ---- rules ----
-    op.create_table(
+    _ = op.create_table(
         "rules",
         sa.Column(
             "id",
@@ -140,7 +152,9 @@ def upgrade() -> None:
             primary_key=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
-        sa.Column("jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False
+        ),
         sa.Column("material_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("disposition", sa.String(), nullable=False),
         sa.Column("accepted_status", sa.String(), nullable=False),
@@ -162,7 +176,9 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("ARRAY[]::text[]"),
         ),
-        sa.Column("source_document_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "source_document_id", postgresql.UUID(as_uuid=True), nullable=False
+        ),
         sa.Column("source_quote", sa.Text(), nullable=False),
         sa.Column(
             "confidence",
@@ -171,15 +187,21 @@ def upgrade() -> None:
             server_default=sa.text("'high'"),
         ),
         sa.Column("effective_from", sa.Date(), nullable=True),
-        sa.Column("superseded_by", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column(
+            "superseded_by", postgresql.UUID(as_uuid=True), nullable=True
+        ),
         sa.CheckConstraint(
-            "disposition IN ("
-            "'curbside_recycle', 'dropoff', 'compost', 'landfill',"
-            " 'hazardous_waste', 'donate', 'unknown')",
+            (
+                "disposition IN ('curbside_recycle', 'dropoff', 'compost',"
+                " 'landfill', 'hazardous_waste', 'donate', 'unknown')"
+            ),
             name="ck_rules_disposition",
         ),
         sa.CheckConstraint(
-            "accepted_status IN (" "'accepted', 'rejected', 'conditional', 'unknown')",
+            (
+                "accepted_status IN"
+                " ('accepted', 'rejected', 'conditional', 'unknown')"
+            ),
             name="ck_rules_accepted_status",
         ),
         sa.CheckConstraint(
@@ -224,7 +246,7 @@ def upgrade() -> None:
     )
 
     # ---- regression_cases ----
-    op.create_table(
+    _ = op.create_table(
         "regression_cases",
         sa.Column(
             "id",
@@ -233,8 +255,12 @@ def upgrade() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("query", sa.Text(), nullable=False),
-        sa.Column("jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("expected_material_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column(
+            "jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=False
+        ),
+        sa.Column(
+            "expected_material_id", postgresql.UUID(as_uuid=True), nullable=True
+        ),
         sa.Column("expected_status", sa.String(), nullable=False),
         sa.Column("expected_disposition", sa.String(), nullable=False),
         sa.Column(
@@ -265,7 +291,7 @@ def upgrade() -> None:
     )
 
     # ---- answer_traces ----
-    op.create_table(
+    _ = op.create_table(
         "answer_traces",
         sa.Column(
             "id",
@@ -274,7 +300,9 @@ def upgrade() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("user_query", sa.Text(), nullable=False),
-        sa.Column("jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column(
+            "jurisdiction_id", postgresql.UUID(as_uuid=True), nullable=True
+        ),
         sa.Column(
             "normalized_materials",
             postgresql.ARRAY(postgresql.UUID(as_uuid=True)),
@@ -341,7 +369,9 @@ def downgrade() -> None:
     # Drop in reverse FK-safe order.
     op.drop_table("answer_traces")
     op.drop_table("regression_cases")
-    op.drop_index("uq_rules_active_per_jurisdiction_material", table_name="rules")
+    op.drop_index(
+        "uq_rules_active_per_jurisdiction_material", table_name="rules"
+    )
     op.drop_index("ix_rules_material_id", table_name="rules")
     op.drop_index("ix_rules_jurisdiction_id", table_name="rules")
     op.drop_table("rules")

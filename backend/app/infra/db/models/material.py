@@ -17,8 +17,12 @@ _CATEGORIES = (
 
 
 class MaterialORM(Base):
-    __tablename__ = "materials"
-    __table_args__ = (CheckConstraint(f"category IN {_CATEGORIES}", name="ck_materials_category"),)
+    __tablename__: str = "materials"
+    __table_args__: tuple[CheckConstraint, ...] = (
+        CheckConstraint(
+            f"category IN {_CATEGORIES}", name="ck_materials_category"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

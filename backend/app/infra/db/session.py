@@ -1,9 +1,10 @@
 """SQLAlchemy session factory."""
+
 from __future__ import annotations
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
@@ -25,5 +26,5 @@ def get_session() -> Generator[Session]:
         session.close()
 
 
-def get_engine():
+def get_engine() -> Engine:
     return _engine

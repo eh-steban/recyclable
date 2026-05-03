@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# JSON-compatible dict: str keys, values are primitive scalars or nested
+# JSON structures.  Using object avoids `Any` while remaining broad enough
+# for arbitrary JSONB payloads.
+JsonDict = dict[str, object]
+
 
 class AnswerTrace(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_query: str
@@ -21,9 +26,9 @@ class AnswerTrace(BaseModel):
     prompt_name: str
     prompt_version: int
     model_id: str
-    raw_model_output: dict[str, Any] = Field(default_factory=dict)
-    final_answer: dict[str, Any] = Field(default_factory=dict)
-    validator_result: dict[str, Any] = Field(default_factory=dict)
+    raw_model_output: JsonDict = Field(default_factory=dict)
+    final_answer: JsonDict = Field(default_factory=dict)
+    validator_result: JsonDict = Field(default_factory=dict)
     confidence: str | None = None
     latency_ms: int | None = None
     cache_hit: bool = False

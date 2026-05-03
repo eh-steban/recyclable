@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
+        env_file=".env", extra="ignore"
+    )
 
     database_url: str = "postgresql+psycopg://recyclable:recyclable_dev@localhost:5432/recyclable"
     log_level: str = "INFO"
