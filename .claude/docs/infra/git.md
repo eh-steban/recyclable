@@ -29,7 +29,7 @@ feat(parser): add creep wave tracking to lane pressure analysis
 Commits MUST use one of the following types:
 
 | Type | When to Use |
-|------|-------------|
+| ------ | ------------- |
 | `feat` | New user-facing feature (SemVer MINOR) |
 | `fix` | Bug fix (SemVer PATCH) |
 | `refactor` | Code restructuring without behavior change |
@@ -85,7 +85,7 @@ Breaking changes MUST be indicated in one of two ways:
 ### What to Write
 
 | Good | Bad |
-|------|-----|
+| ------ | ----- |
 | `feat: add lane pressure visualization` | `feat: add LanePressureChart component that uses useMemo to memoize filtered array` |
 | `fix: correct creep wave count off-by-one` | `fix: change <= 4 to < 4 in creep entity loop condition` |
 | `feat(parser): expose boss state in output` | `feat(parser): add boss_snapshots: Vec<BossSnapshot> field and serialize with serde` |
@@ -106,7 +106,7 @@ Branches MUST follow [Conventional Branch][conventional-branch] format:
 ### Types
 
 | Type | When to Use |
-|------|-------------|
+| ------ | ------------- |
 | `feature/` | New feature work |
 | `fix/` | Bug fix |
 | `hotfix/` | Urgent production fix |

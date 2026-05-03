@@ -62,7 +62,7 @@ Features:
 ## User strategy
 
 | Container | User | UID | Rationale |
-|-----------|------|-----|-----------|
+| ----------- | ------ | ----- | ----------- |
 | Devcontainer | `lifted` | 1000 | Matches host user for volume permissions |
 | Backend runner | `appuser` | 1000 | Non-root |
 | Frontend runner | `node` | 1000 | Built-in Node image user |

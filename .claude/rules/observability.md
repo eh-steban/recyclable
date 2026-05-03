@@ -18,7 +18,7 @@ Cross-service logging, monitoring, and observability guidelines.
 ## Log levels
 
 | Level | When to Use | Examples |
-|-------|-------------|----------|
+| ------- | ------------- | ---------- |
 | DEBUG | Development troubleshooting | Variable values, flow tracing, SQL queries |
 | INFO | Normal operations worth noting | Request received, resource created, user logged in |
 | WARNING | Recoverable issues | Cache miss, retry attempt, deprecated usage |

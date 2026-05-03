@@ -20,7 +20,7 @@ update both `frontend/lib/domain/` types and
 ### `jurisdictions`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `name` | text | Display name ("City and County of Denver") |
 | `slug` | text unique | URL slug ("denver") |
@@ -32,7 +32,7 @@ update both `frontend/lib/domain/` types and
 ### `materials`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `canonical_name` | text | "Glass beverage bottle" |
 | `slug` | text unique | "glass-bottles" |
@@ -42,7 +42,7 @@ update both `frontend/lib/domain/` types and
 ### `material_aliases`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `material_id` | uuid FK | |
 | `alias` | text | "milk jug", "wine glass", "bubble mailer" |
@@ -51,7 +51,7 @@ update both `frontend/lib/domain/` types and
 ### `source_documents`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `jurisdiction_id` | uuid FK | |
 | `url` | text | |
@@ -66,7 +66,7 @@ update both `frontend/lib/domain/` types and
 ### `rules`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `jurisdiction_id` | uuid FK | |
 | `material_id` | uuid FK | |
@@ -87,7 +87,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `facilities`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `jurisdiction_id` | uuid FK | |
 | `name` | text | |
@@ -101,7 +101,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `answer_traces`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `user_query` | text | |
 | `jurisdiction_id` | uuid null FK | Null if location resolution failed |
@@ -122,7 +122,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `feedback`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `trace_id` | uuid FK | |
 | `kind` | text | `helpful` \| `wrong` \| `outdated` \| `missing_source` |
@@ -132,7 +132,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `escalations`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `trace_id` | uuid null FK | If triggered by a low-confidence answer |
 | `query` | text | |
@@ -144,7 +144,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `ingestion_reports`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `jurisdiction_id` | uuid FK | |
 | `seed_url` | text | |
@@ -160,7 +160,7 @@ unique. Only one active rule per (jurisdiction, material).
 ### `regression_cases`
 
 | Column | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | uuid PK | |
 | `query` | text | |
 | `jurisdiction_id` | uuid FK | |

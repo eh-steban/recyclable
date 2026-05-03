@@ -55,7 +55,7 @@ export function FeedbackButtons({ traceId }: { traceId: string }) {
 ## State Management
 
 | State Type | Approach |
-|------------|----------|
+| ------------ | ---------- |
 | Server-fetched data | Fetch in server components; pass as props |
 | URL state (filters, page) | `searchParams` in server components |
 | UI-only client state | `useState` in a client component |

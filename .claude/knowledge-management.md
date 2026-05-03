@@ -14,7 +14,7 @@ not all at once. Use `private/learnings-index.md` to find what's relevant.
 ### Decision matrix
 
 | Discovery Type | Destination | When to Use | Size |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Cross-project pattern (appears 2+ times) | `private/learnings.md` | "We keep making this mistake" across services | 20-40 lines |
 | Service-specific architecture constraint | `.claude/rules/[service]/[service]-mental-model.md` | Full explanation unique to one service | 200-400 lines |
 | Feature-specific requirement/assumption | `private/specs/NNN-feature.md` → Assumptions section | This feature depends on X being true | 5-15 lines |
@@ -228,7 +228,7 @@ lives (learnings.md, mental model, interview notes, etc.)
 ## Maintenance schedule
 
 | Tier | When to Update | Action |
-|---|---|---|
+| --- | --- | --- |
 | `private/learnings.md` ## Drafts | When pattern discovered | Append draft finding |
 | `private/learnings.md` (promoted) | Weekly via /consolidate-learnings | Promote, deduplicate, prune |
 | `private/learnings-index.md` | During /consolidate-learnings | Add/update index entries |

@@ -14,7 +14,7 @@ production runs on Vercel + Railway + Neon, not on Compose.
 ## Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `docker-compose.yaml` (repo root) | Prod-shape local stack: web + worker + Postgres |
 | `.devcontainer/docker-compose.yml` | Dev-container overlay (Node + Python + DB client); entered via `./bin/dev` |
 | `.devcontainer/Dockerfile` | Devcontainer image |
@@ -48,7 +48,7 @@ services:
 ### Volumes
 
 | Type | Use |
-|---|---|
+| --- | --- |
 | Named volume (`app-db-data`) | Postgres persistence between restarts |
 | Bind mount (`./frontend`, `./backend`) | Hot reload |
 | Anonymous volume (`/app/node_modules`, `/app/.next`) | Container-only, prevents host/container conflict |
@@ -107,7 +107,7 @@ The local Compose shape mirrors the prod topology, but each service deploys
 to a different platform:
 
 | Local Compose | Prod | Build From |
-|---|---|---|
+| --- | --- | --- |
 | `app-frontend` | Vercel | Repo root, Vercel auto-detects Next.js (ignores `frontend/Dockerfile`) |
 | `app-backend` | Railway | `backend/Dockerfile` target `runner` |
 | `app-db` | Neon | Managed; not built |

@@ -140,7 +140,7 @@ describe('UserProfile error handling', () => {
 ### Required Error Scenarios
 
 | Scenario | Test Pattern |
-|----------|--------------|
+| ---------- | -------------- |
 | Network failure | Mock fetch rejection |
 | 404 response | Mock 404 status |
 | 500 response | Mock 500 status |

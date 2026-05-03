@@ -34,7 +34,7 @@ container.
 ## Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `.devcontainer/Dockerfile` | Devcontainer image |
 | `.devcontainer/docker-compose.yml` | Devcontainer service definition |
 | `.devcontainer/devcontainer.json` | Devcontainer spec manifest (editor-agnostic; consumed by the open-source `devcontainer` CLI, JetBrains, GitHub Codespaces, etc.) |
@@ -87,7 +87,7 @@ id -u
 ## Volumes
 
 | Mount | Purpose |
-|---|---|
+| --- | --- |
 | `..:/workspaces/myproject:cached` | Project root (`:cached` optimizes I/O on macOS/Windows) |
 | `~/.claude:/home/lifted/.claude` | Claude Code auth + history persistence |
 | `~/.container-bashrc:/home/lifted/.bashrc` | Shell history |

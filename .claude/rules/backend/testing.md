@@ -52,7 +52,7 @@ Focus areas:
 ## Coverage goals
 
 | Layer | Target |
-|-------|--------|
+| ------- | -------- |
 | Domain | 90%+ |
 | Application | 80%+ |
 | Infrastructure | Critical paths |
@@ -65,7 +65,7 @@ error category.
 ### Required error tests
 
 | Scenario | Status Code | Test Pattern |
-|----------|-------------|--------------|
+| ---------- | ------------- | -------------- |
 | Invalid input | 400 | Validation failures |
 | Resource not found | 404 | Missing entity |
 | External service failure | 502/503 | Dependency timeout/error |
@@ -106,7 +106,7 @@ def test_not_found_exception_includes_resource_id():
 ### Edge case testing
 
 | Scenario | Expected |
-|----------|----------|
+| ---------- | ---------- |
 | Empty list response | 200 with empty arrays |
 | Malformed external response | 500 with logged error |
 | Concurrent access | Consistent state, no data corruption |

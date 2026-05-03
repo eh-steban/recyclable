@@ -56,7 +56,7 @@ type PriceCalculator = (quantity: number, unitPrice: number) => number;
 ## Naming Conventions
 
 | Type | Convention | Example |
-|------|------------|---------|
+| ------ | ------------ | --------- |
 | Files (general) | camelCase | `userService.ts`, `useUserData.ts` |
 | Files (components) | PascalCase | `UserCard.tsx`, `OrderList.tsx` |
 | Interfaces | PascalCase | `User`, `OrderItem` |

@@ -24,7 +24,7 @@ alembic downgrade base
 ## Environment
 
 | Variable | Description |
-|---|---|
+| --- | --- |
 | `DATABASE_URL` | Postgres connection string |
 | `ANTHROPIC_API_KEY` | Anthropic API key (ingestion only) |
 | `LOG_LEVEL` | Log level |

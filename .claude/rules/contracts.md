@@ -26,7 +26,7 @@ shape) and one or more consumer agents (services that read the shape).
 The owner updates the spec; consumers read it.
 
 | Contract | Boundary | Owner | Consumer |
-|----------|----------|-------|----------|
+| ---------- | ---------- | ------- | ---------- |
 | `answer.md` | Postgres / DB layer -> Next.js `/api/ask` -> client | `frontend-react` (the route handler that produces the shape) | client `<AnswerCard />`; regression suite (`backend-python`) |
 | `ingestion-report.md` | `backend-python` worker -> admin UI / DB | `backend-python` | admin UI in `frontend-react` |
 | `db-schema.md` | Postgres tables -> both services | `backend-python` (owns Alembic migrations) | `frontend-react` (`lib/domain/` types must match) |

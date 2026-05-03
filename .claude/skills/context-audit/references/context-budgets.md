@@ -6,7 +6,7 @@ root CLAUDE.md, and the claude-md-management plugin.
 ## File Budgets
 
 | File Type | Budget | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Root CLAUDE.md | ≤200 lines (~2,000 tokens) | Index/pointers only, loads every session |
 | Subdirectory CLAUDE.md | ≤100 lines each | Lazy-loads when Claude reads files in subtree |
 | Agent definitions | No hard limit, target ≤150 lines | Longer agents may need scope reduction |

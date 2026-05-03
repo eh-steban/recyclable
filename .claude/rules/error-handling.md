@@ -20,7 +20,7 @@ Cross-service error handling philosophy and principles.
 ## Error categories
 
 | Category | Example | HTTP Status | Response Strategy |
-|----------|---------|-------------|-------------------|
+| ---------- | --------- | ------------- | ------------------- |
 | Client Error | Invalid input format | 400 | Helpful message explaining the issue |
 | Not Found | Resource doesn't exist | 404 | Clear "not found" message |
 | Upstream Failure | External API/service down | 502/503 | Retry hint, generic message |
@@ -78,7 +78,7 @@ For external services with repeated failures:
 ### User-facing messages
 
 | Scenario | Good | Bad |
-|----------|------|-----|
+| ---------- | ------ | ----- |
 | Invalid input | "ID must be a number" | "ValueError: invalid literal for int()" |
 | Not found | "Resource not found" | "NullPointerException at line 42" |
 | Server error | "Something went wrong. Please try again." | "PostgreSQL connection refused at 10.0.0.5:5432" |

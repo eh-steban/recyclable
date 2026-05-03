@@ -102,7 +102,7 @@ client imports a build-time error.
 ## Rendering strategy
 
 | Surface | Rendering | Why |
-|---|---|---|
+| --- | --- | --- |
 | `/` | Static | Fast landing |
 | `/recycling/[city]` | SSG, event-driven revalidation (`revalidatePath` on ingestion-apply) | Crawlable, rarely changes |
 | `/recycling/[city]/[material]` | SSG, event-driven revalidation (`revalidatePath` on ingestion-apply) | Crawlable per-material |
@@ -131,7 +131,7 @@ lib/domain/   -> nothing (pure type definitions)
 ```
 
 | Layer | Can Import |
-|-------|------------|
+| ------- | ------------ |
 | `app/api/` | `lib/llm`, `lib/db`, `lib/retrieval`, `lib/domain`, `lib/utils` |
 | `app/(routes)/` | `components/`, `lib/db` (server only), `lib/domain`, `lib/utils` |
 | `components/` | `lib/domain`, `lib/utils`, other `components/` |

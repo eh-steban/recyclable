@@ -22,7 +22,7 @@ Exception
 ## HTTP status code mapping
 
 | Exception | Status | Client Message |
-|-----------|--------|----------------|
+| ----------- | -------- | ---------------- |
 | ValidationException | 400 | Describe the validation error |
 | EntityNotFoundException | 404 | "Resource not found" |
 | ExternalAPIError | 502 | "Upstream service unavailable" |

@@ -40,7 +40,7 @@ output.
 Tag interpretations explicitly:
 
 | Label | Meaning |
-|---|---|
+| --- | --- |
 | `confirmed` | Directly observed in a primary source (ordinance text, official municipal page, schema column, code path) |
 | `inferred` | Strongly implied by neighboring rules, field names, or context |
 | `hypothesis` | Plausible guess -- needs validation (re-fetch, second source, regression case) |
@@ -60,7 +60,7 @@ Example:
 ## Citation format
 
 | Source type | Format |
-|---|---|
+| --- | --- |
 | Local file | `path/to/file.py:42` |
 | Database column or row | `table.column` or `table#id=...` |
 | Municipal ordinance | `Jurisdiction Code <section>` plus URL with fetch date |

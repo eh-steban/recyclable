@@ -29,7 +29,7 @@ backend/
 ## Layer dependency rules
 
 | Layer | Can Import |
-|-------|------------|
+| ------- | ------------ |
 | `api/` | `application/`, `domain/models/`, `utils/` |
 | `application/use_cases/` | `application/mappers/`, `domain/`, `infra/`, `utils/` |
 | `application/mappers/` | `domain/models/`, `infra/db/models/`, `utils/` |

@@ -130,7 +130,7 @@ function saveToStorage(key: string, value: unknown): void {
 ## User-facing error messages
 
 | Error Type | User Message | Show Retry? |
-|------------|--------------|-------------|
+| ------------ | -------------- | ------------- |
 | Network | "Unable to connect. Check your connection." | Yes |
 | 404 | "Not found. Check the ID and try again." | No |
 | 500 | "Something went wrong. Please try again." | Yes |

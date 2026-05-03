@@ -16,7 +16,7 @@ paths:
 ## Naming Conventions
 
 | Type | Convention | Example |
-|------|------------|---------|
+| ------ | ------------ | --------- |
 | Files | snake_case | `create_order.py`, `user_repository.py` |
 | Classes | PascalCase | `UserRepository`, `OrderService` |
 | Functions | snake_case | `calculate_total_price` |

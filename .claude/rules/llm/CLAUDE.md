@@ -15,7 +15,7 @@ frameworks.
 ## Model selection
 
 | Path | Model | Rationale |
-|---|---|---|
+| --- | --- | --- |
 | `/api/ask` user retrieval (frontend) | `claude-sonnet-4-6` | Low-latency, deterministic synthesis bounded by retrieved context |
 | Material normalizer fallback (frontend) | `claude-haiku-4-5-20251001` | Cheap classification only when alias matching fails |
 | Source extraction / ingestion (backend) | `claude-opus-4-7` | Higher reasoning for messy real-world pages; offline so latency does not matter |
