@@ -1,10 +1,11 @@
 """Repository for jurisdictions."""
+
 from __future__ import annotations
 
 import logging
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -20,6 +21,8 @@ class JurisdictionRepository(Protocol):
 
 
 class SqlJurisdictionRepository:
+    _session: Session
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -44,11 +47,21 @@ class SqlJurisdictionRepository:
                     "type": jurisdiction.type.value,
                     "country": jurisdiction.country,
                     "supported_status": jurisdiction.supported_status.value,
-                    "updated_at": jurisdiction.updated_at,
+                    # Only bump updated_at when content actually changed.
+                    "updated_at": func.now(),
                 },
+                where=(
+                    (JurisdictionORM.name != jurisdiction.name)
+                    | (JurisdictionORM.type != jurisdiction.type.value)
+                    | (JurisdictionORM.country != jurisdiction.country)
+                    | (
+                        JurisdictionORM.supported_status
+                        != jurisdiction.supported_status.value
+                    )
+                ),
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)
 
     def get_by_slug(self, slug: str) -> JurisdictionORM | None:
         return self._session.scalar(

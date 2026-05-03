@@ -1,4 +1,5 @@
 """Repository for regression cases."""
+
 from __future__ import annotations
 
 import logging
@@ -18,11 +19,15 @@ class RegressionCaseRepository(Protocol):
 
 
 class SqlRegressionCaseRepository:
+    _session: Session
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
     def upsert(self, case: RegressionCase) -> None:
-        logger.debug("upserting regression_case id=%s query=%.40s", case.id, case.query)
+        logger.debug(
+            "upserting regression_case id=%s query=%.40s", case.id, case.query
+        )
         stmt = (
             insert(RegressionCaseORM)
             .values(
@@ -48,6 +53,26 @@ class SqlRegressionCaseRepository:
                     "refusal_required": case.refusal_required,
                     "notes": case.notes,
                 },
+                # Only update when content actually changed.
+                where=(
+                    (RegressionCaseORM.query != case.query)
+                    | (
+                        RegressionCaseORM.expected_status
+                        != case.expected_status.value
+                    )
+                    | (
+                        RegressionCaseORM.expected_disposition
+                        != case.expected_disposition.value
+                    )
+                    | (
+                        RegressionCaseORM.refusal_required
+                        != case.refusal_required
+                    )
+                    | (
+                        RegressionCaseORM.must_cite_source
+                        != case.must_cite_source
+                    )
+                ),
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)

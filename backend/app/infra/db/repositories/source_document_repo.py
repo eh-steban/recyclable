@@ -1,4 +1,5 @@
 """Repository for source documents."""
+
 from __future__ import annotations
 
 import logging
@@ -21,6 +22,8 @@ class SourceDocumentRepository(Protocol):
 
 
 class SqlSourceDocumentRepository:
+    _session: Session
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -52,9 +55,13 @@ class SqlSourceDocumentRepository:
                     "source_text_hash": doc.source_text_hash,
                     "last_reviewed_at": doc.last_reviewed_at,
                 },
+                # Only update when content hash actually changed.
+                where=(
+                    SourceDocumentORM.source_text_hash != doc.source_text_hash
+                ),
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)
 
     def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None:
         return self._session.scalar(

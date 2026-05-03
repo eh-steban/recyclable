@@ -1,4 +1,5 @@
 """Repository for rules."""
+
 from __future__ import annotations
 
 import logging
@@ -18,6 +19,8 @@ class RuleRepository(Protocol):
 
 
 class SqlRuleRepository:
+    _session: Session
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -46,7 +49,7 @@ class SqlRuleRepository:
             )
             .on_conflict_do_update(
                 # Conflict on the partial unique index for active rules.
-                # SQLAlchemy uses index_where for partial index conflict targets.
+                # index_where targets the partial index conflict.
                 index_elements=["jurisdiction_id", "material_id"],
                 index_where=(RuleORM.superseded_by.is_(None)),
                 set_={
@@ -60,6 +63,14 @@ class SqlRuleRepository:
                     "confidence": rule.confidence.value,
                     "effective_from": rule.effective_from,
                 },
+                # Only update when content actually changed.
+                where=(
+                    (RuleORM.disposition != rule.disposition.value)
+                    | (RuleORM.accepted_status != rule.accepted_status.value)
+                    | (RuleORM.source_quote != rule.source_quote)
+                    | (RuleORM.confidence != rule.confidence.value)
+                    | (RuleORM.source_document_id != rule.source_document_id)
+                ),
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)

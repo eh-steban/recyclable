@@ -1,4 +1,5 @@
 """Repository for materials and aliases."""
+
 from __future__ import annotations
 
 import logging
@@ -23,6 +24,8 @@ class MaterialRepository(Protocol):
 
 
 class SqlMaterialRepository:
+    _session: Session
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -44,12 +47,27 @@ class SqlMaterialRepository:
                     "category": material.category.value,
                     "parent_id": material.parent_id,
                 },
+                # Only update when content actually changed.
+                where=(
+                    (MaterialORM.canonical_name != material.canonical_name)
+                    | (MaterialORM.category != material.category.value)
+                    | (
+                        # parent_id nullable -- NULL IS DISTINCT FROM guard.
+                        (MaterialORM.parent_id != material.parent_id)
+                        if material.parent_id is not None
+                        else (MaterialORM.parent_id.is_not(None))
+                    )
+                ),
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)
 
     def upsert_alias(self, alias: MaterialAlias) -> None:
-        logger.debug("upserting alias material_id=%s alias=%s", alias.material_id, alias.alias)
+        logger.debug(
+            "upserting alias material_id=%s alias=%s",
+            alias.material_id,
+            alias.alias,
+        )
         stmt = (
             insert(MaterialAliasORM)
             .values(
@@ -62,7 +80,7 @@ class SqlMaterialRepository:
                 constraint="uq_material_aliases_material_id_alias",
             )
         )
-        self._session.execute(stmt)
+        _ = self._session.execute(stmt)
 
     def get_by_slug(self, slug: str) -> MaterialORM | None:
         return self._session.scalar(
