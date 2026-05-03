@@ -212,8 +212,11 @@ docker build \
 
 ## Tables
 
-Use tables for structured, multi-column data where the relationships
-between columns carry meaning. Do not use tables for simple lists.
+Use tables only for short, narrow, genuinely tabular data. Every
+table must have a header row and a separator row. The 80-column
+soft cap applies to table rows -- if a row would exceed it, the
+data does not belong in a table; use sub-headings or bullet lists
+with bold labels instead.
 
 **Alignment syntax:**
 
@@ -222,28 +225,6 @@ between columns carry meaning. Do not use tables for simple lists.
 | `:---` | Left-align (default) |
 | `---:` | Right-align |
 | `:---:` | Center-align |
-
-Every table must have a header row and a separator row.
-
-**Line length:** keep table rows under 80 columns where possible.
-For cells containing long URLs, use reference-style links to shorten
-the cell content. The MD013 line-length rule is disabled for table
-rows in `.markdownlint.json` (`tables: false`) because forcing 80
-columns inside a table almost always harms readability more than it
-helps; the soft cap still applies to surrounding prose.
-
-```markdown
-| Page | Source |
-| :--- | :----- |
-| Denver cardboard | [Municipal code §12.3][denver-cardboard] |
-
-[denver-cardboard]: https://example.com/denver/ordinances/recycling/12.3
-```
-
-When data legitimately cannot fit in 80 columns (e.g. a comparison table
-with many columns), a wider table is acceptable -- but consider whether
-the data belongs in a table at all, or whether a definition list or
-nested sections would serve better.
 
 ---
 
