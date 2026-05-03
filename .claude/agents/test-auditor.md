@@ -91,11 +91,25 @@ Check, per invariant in `.claude/rules/invariants.md`:
 
 ## Output format
 
-### Invariant Coverage Matrix
+### Invariant coverage
 
-| Invariant ID | Test file | Positive case | Negative / adversarial case | Missing coverage | Risk |
-|---|---|---|---|---|---|
-|  |  |  |  |  |  |
+Emit one block per invariant in `.claude/rules/invariants.md`. Use
+this exact shape so findings can be parsed mechanically:
+
+```markdown
+#### INV-XXX-NNN -- [short name]
+
+- **Positive case:** [test file:test name] OR `MISSING`
+- **Negative / adversarial case:** [test file:test name] OR `MISSING`
+- **Failure-mode regression:** [test file:test name] OR `MISSING`
+  OR `N/A` (only when the invariant has no defined failure mode)
+- **Missing coverage:** [what specifically is not tested, or `none`]
+- **Risk:** [what can fail in production if this gap stays open]
+```
+
+Skip the block for an invariant only if the diff being audited is
+explicitly out of that invariant's scope -- and say so. Do not omit
+invariants silently.
 
 ### CRITICAL GAPS (untested critical paths)
 
