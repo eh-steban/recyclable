@@ -1,0 +1,5 @@
+- slug: denver
+  name: City and County of Denver
+  type: city
+  country: US
+  supported_status: supported

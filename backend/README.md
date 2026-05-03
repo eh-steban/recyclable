@@ -29,9 +29,25 @@ alembic downgrade base
 | `ANTHROPIC_API_KEY` | Anthropic API key (ingestion only) |
 | `LOG_LEVEL` | Log level |
 
+## Seed datasets
+
+Seed datasets live under `backend/seeds/<dataset>/`. The `denver-easy`
+dataset is the Phase C seed for experiment `01-grounded-retrieval`:
+
+| File | Description |
+| :--- | :---------- |
+| `jurisdiction.yaml` | Denver jurisdiction row |
+| `source_documents.yaml` | 4 denvergov.org recycling pages (authority_level 1-2) |
+| `materials.yaml` | 8 materials with aliases (6 accepted, 2 rejected) |
+| `rules.yaml` | 8 active rules, each with a verbatim source_quote |
+| `regression_cases.yaml` | 8 eval cases (accepted/rejected/conditional/OOJ) |
+
 ## What This Is
 
-Phase A of experiment `01-grounded-retrieval`. Establishes the 7-table
-knowledge-base schema and the seed/verify CLI. See
+Experiment `01-grounded-retrieval`, Step 1. Establishes the 7-table
+knowledge-base schema, a seed/verify CLI, and the first Denver dataset.
+The `denver-easy` seed proves the pipeline before any LLM retrieval
+code is written. See
 `private/product/experiments/01-grounded-retrieval/kata.md` for the full
-experiment context.
+experiment context and
+`private/specs/01-data-spine.md` for the acceptance criteria.

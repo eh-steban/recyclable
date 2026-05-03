@@ -1,0 +1,66 @@
+# Denver-easy seed -- materials with aliases.
+# 6 accepted + 2 rejected = 8 materials total.
+
+- slug: aluminum-cans
+  canonical_name: Aluminum beverage can
+  category: metal
+  aliases:
+    - aluminum can
+    - soda can
+    - beer can
+
+- slug: corrugated-cardboard
+  canonical_name: Corrugated cardboard box
+  category: paper
+  aliases:
+    - cardboard box
+    - shipping box
+    - moving box
+
+- slug: glass-bottles
+  canonical_name: Glass beverage bottle
+  category: glass
+  aliases:
+    - glass bottle
+    - glass jar
+    - wine bottle
+
+- slug: pet-bottles
+  canonical_name: PET plastic bottle (#1)
+  category: plastic
+  aliases:
+    - plastic bottle
+    - water bottle
+    - soda bottle
+
+- slug: hdpe-bottles
+  canonical_name: HDPE plastic bottle (#2)
+  category: plastic
+  aliases:
+    - milk jug
+    - juice jug
+    - detergent bottle
+
+- slug: paper
+  canonical_name: Mixed paper
+  category: paper
+  aliases:
+    - office paper
+    - newspaper
+    - mail
+
+- slug: plastic-bags
+  canonical_name: Plastic shopping bag
+  category: plastic
+  aliases:
+    - grocery bag
+    - trash bag
+    - plastic bag
+
+- slug: styrofoam
+  canonical_name: Expanded polystyrene (styrofoam)
+  category: plastic
+  aliases:
+    - foam cup
+    - packing peanuts
+    - foam container
