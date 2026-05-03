@@ -126,7 +126,7 @@ Specialized subagents for autonomous work:
 - `code-reviewer` -- Security, convention, logic, and test coverage review
   (read-only)
 - `test-auditor` -- Periodic test suite audit across all services (read-only)
-- `e2e-playwright` -- End-to-end tests spanning Next.js UI + worker + DB
+- `e2e-testing` -- End-to-end tests spanning Next.js UI + worker + DB
 
 ## Workflow
 
