@@ -1,0 +1,17 @@
+- id: 00000000-0005-0000-0000-000000000001
+  query: Can I recycle aluminum cans in Test City?
+  jurisdiction: test-city
+  material: aluminum-cans-test
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- id: 00000000-0005-0000-0000-000000000002
+  query: Are plastic bags recyclable in Test City?
+  jurisdiction: test-city
+  material: plastic-bags-test
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: true
+  refusal_required: false

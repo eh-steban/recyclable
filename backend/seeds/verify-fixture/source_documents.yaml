@@ -1,0 +1,26 @@
+# Synthetic source documents for verifier happy-path test.
+# Two authority_level=1 docs to satisfy the acceptance query.
+- id: 00000000-0002-0000-0000-000000000091
+  jurisdiction: denver
+  url: https://synthetic.example.com/recycling-guide
+  title: Synthetic Recycling Guide
+  authority_level: 1
+  source_text: >-
+    Aluminum cans are accepted for curbside recycling. Place them in your
+    blue bin. Plastic bottles are accepted for curbside recycling. Rinse
+    before placing in the bin. Glass bottles are accepted for recycling.
+    Place them in the clear bin. Cardboard is accepted for curbside recycling.
+    Flatten before placing at curb. Plastic bags are not accepted in the
+    curbside program. Take them to a drop-off location. Paper is accepted
+    for curbside recycling. Bundle and place at curb. Motor oil is not
+    accepted in curbside. It requires hazardous waste drop-off.
+
+- id: 00000000-0002-0000-0000-000000000092
+  jurisdiction: denver
+  url: https://synthetic.example.com/materials-policy
+  title: Synthetic Materials Policy
+  authority_level: 2
+  source_text: >-
+    Conditional items such as electronics require special handling.
+    Electronics must be dropped off at a certified facility.
+    Items classified as hazardous waste require special disposal.

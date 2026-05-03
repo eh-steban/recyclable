@@ -1,0 +1,9 @@
+- id: 00000000-0002-0000-0000-000000000001
+  jurisdiction: test-city
+  url: https://example.com/recycling
+  title: Test City Recycling Guide
+  authority_level: 1
+  source_text: >-
+    Aluminum cans are accepted for curbside recycling.
+    Place them in your blue bin.
+    Plastic bags are not accepted in the curbside program.

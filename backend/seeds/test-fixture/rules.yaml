@@ -1,0 +1,17 @@
+- slug: test-city-aluminum-cans
+  jurisdiction: test-city
+  material: aluminum-cans-test
+  source_document: https://example.com/recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Aluminum cans are accepted for curbside recycling.
+  confidence: high
+
+- slug: test-city-plastic-bags
+  jurisdiction: test-city
+  material: plastic-bags-test
+  source_document: https://example.com/recycling
+  disposition: landfill
+  accepted_status: rejected
+  source_quote: Plastic bags are not accepted in the curbside program.
+  confidence: high

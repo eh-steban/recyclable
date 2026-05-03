@@ -1,0 +1,40 @@
+# Synthetic materials for verifier happy-path test (5 materials).
+- id: 00000000-0003-0000-0000-000000000091
+  slug: syn-aluminum-cans
+  canonical_name: Synthetic Aluminum Can
+  category: metal
+
+- id: 00000000-0003-0000-0000-000000000092
+  slug: syn-plastic-bottles
+  canonical_name: Synthetic Plastic Bottle
+  category: plastic
+
+- id: 00000000-0003-0000-0000-000000000093
+  slug: syn-glass-bottles
+  canonical_name: Synthetic Glass Bottle
+  category: other
+
+- id: 00000000-0003-0000-0000-000000000094
+  slug: syn-cardboard
+  canonical_name: Synthetic Cardboard
+  category: paper
+
+- id: 00000000-0003-0000-0000-000000000095
+  slug: syn-plastic-bags
+  canonical_name: Synthetic Plastic Bag
+  category: plastic
+
+- id: 00000000-0003-0000-0000-000000000096
+  slug: syn-paper
+  canonical_name: Synthetic Paper
+  category: paper
+
+- id: 00000000-0003-0000-0000-000000000097
+  slug: syn-electronics
+  canonical_name: Synthetic Electronics
+  category: electronic
+
+- id: 00000000-0003-0000-0000-000000000098
+  slug: syn-motor-oil
+  canonical_name: Synthetic Motor Oil
+  category: hazardous
