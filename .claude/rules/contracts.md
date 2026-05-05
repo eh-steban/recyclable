@@ -25,11 +25,29 @@ Each contract has exactly one owner agent (the service that produces the
 shape) and one or more consumer agents (services that read the shape).
 The owner updates the spec; consumers read it.
 
-| Contract | Boundary | Owner | Consumer |
-| ---------- | ---------- | ------- | ---------- |
-| `answer.md` | Postgres / DB layer -> Next.js `/api/ask` -> client | `frontend-react` (the route handler that produces the shape) | client `<AnswerCard />`; regression suite (`backend-python`) |
-| `ingestion-report.md` | `backend-python` worker -> admin UI / DB | `backend-python` | admin UI in `frontend-react` |
-| `db-schema.md` | Postgres tables -> both services | `backend-python` (owns Alembic migrations) | `frontend-react` (`lib/domain/` types must match) |
+One block per contract. A wide table here violates the
+markdown-style 80-col cap once the boundary and consumer fields
+are filled in.
+
+### `answer.md`
+
+- **Boundary:** Postgres / DB layer -> Next.js `/api/ask` -> client.
+- **Owner:** `frontend-react` (the route handler that produces the
+  shape).
+- **Consumers:** client `<AnswerCard />`; regression suite
+  (`backend-python`).
+
+### `ingestion-report.md`
+
+- **Boundary:** `backend-python` worker -> admin UI / DB.
+- **Owner:** `backend-python`.
+- **Consumers:** admin UI in `frontend-react`.
+
+### `db-schema.md`
+
+- **Boundary:** Postgres tables -> both services.
+- **Owner:** `backend-python` (owns Alembic migrations).
+- **Consumers:** `frontend-react` (`lib/domain/` types must match).
 
 The `db-schema.md` contract is special: it is the only "shape" that both
 services consume directly (Next.js reads tables for the user path, the
@@ -63,11 +81,13 @@ should verify:
 - [ ] Did you read the spec, not infer field types by reading the owner's
   source code?
 
-## Phase 0 in implementation plans
+## Contract phase in implementation plans
 
 Any implementation plan spanning multiple services should include a
-Phase 0 that locks the contract before parallel work begins. This prevents
-owner and consumer agents from diverging mid-flight.
+contract phase (Phase 1 in the implementation template at
+`private/templates/plans/implementation.md`) that locks the contract
+before parallel work begins. This prevents owner and consumer agents
+from diverging mid-flight.
 
 ## When contracts are not required
 
