@@ -93,8 +93,6 @@ See `.claude/rules/` for detailed standards:
   eval harness
 - `contracts.md` -- Interservice contract ownership and contract-first rule
 - `doc-ownership.md` -- Which agent owns which docs/dirs (canonical)
-- `invariants.md` -- Non-negotiable system truths; cite IDs in plans,
-  reviews, and audits when a change touches one
 - `refactoring.md` -- What counts as a refactor; allowed transformations
   and forbidden-by-default categories; loaded by the refactorer agent
 - `validation.md` -- Evidence shape for plan validation (command, exit
@@ -145,6 +143,8 @@ Product Kata-driven development.
 - Active experiments: `private/product/experiments/` (find
   `Status: active-experiment`)
 - Feature specs: `private/specs/`
+- Invariants: `private/invariants.md` -- non-negotiable system truths;
+  cite IDs in plans, reviews, and audits when a change touches one
 - Machine-switch state: `private/CONTEXT.md` (read at session start only)
 
 ### Active experiments

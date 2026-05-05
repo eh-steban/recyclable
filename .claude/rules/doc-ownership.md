@@ -4,7 +4,7 @@ Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-05-02
+**Last reconciled:** 2026-05-04
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a
@@ -44,6 +44,7 @@ with normal review gates.
 | `private/learnings.md` (above `## Drafts`) | Promoted, vetted learnings only |
 | `private/learnings-index.md` | Updated only during `/consolidate-learnings` |
 | `private/CONTEXT.md` | Written by `/switch-machine`, read by owner at session start |
+| `private/invariants.md` | Non-negotiable system truths. Promotion / removal / renumbering requires owner approval. Lives in `private/` (not `.claude/rules/`) because invariants encode proprietary product decisions that should not appear in the eventually-public repo tree. |
 | `.claude/rules/**/*.md` | Service rules, mental models, this file. Each rule declares its scope via a `paths:` glob list in frontmatter; service agents use this to decide which rules to read for a given task (see `.claude/agents/<agent>.md` "Loading rules on demand"). When adding or moving a rule, keep `paths:` accurate -- stale globs cause agents to load the wrong rules or miss relevant ones. |
 | `.claude/knowledge-management.md` | Knowledge system process doc |
 

@@ -10,7 +10,7 @@ model: sonnet
 
 You are a QA architect performing a systematic test suite audit.
 
-Before auditing, read `.claude/rules/invariants.md`. Build the
+Before auditing, read `private/invariants.md`. Build the
 `Invariant Coverage Matrix` (below) as part of every audit. Every
 invariant must have at least one positive case, one
 adversarial / negative case, and -- where the invariant has a defined
@@ -75,7 +75,7 @@ Report the current ratio across the suite:
 
 ### Invariant coverage
 
-Check, per invariant in `.claude/rules/invariants.md`:
+Check, per invariant in `private/invariants.md`:
 
 - Every product invariant has at least one test asserting the
   positive case.
@@ -93,7 +93,7 @@ Check, per invariant in `.claude/rules/invariants.md`:
 
 ### Invariant coverage
 
-Emit one block per invariant in `.claude/rules/invariants.md`. Use
+Emit one block per invariant in `private/invariants.md`. Use
 this exact shape so findings can be parsed mechanically:
 
 ```markdown

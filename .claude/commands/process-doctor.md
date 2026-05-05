@@ -54,10 +54,10 @@ severity heading.
 
 ### Enforcement scaffolding (per agentic-dev-enforcement-plan)
 
-- `.claude/rules/invariants.md` exists.
+- `private/invariants.md` exists.
 - `.claude/agents/refactorer.md`, `code-reviewer.md`,
   `adversarial-reviewer.md`, and `test-auditor.md` each contain a
-  reference to `.claude/rules/invariants.md`.
+  reference to `private/invariants.md`.
 - Implementation, fix, and refactor plan templates include a
   `Behavior Preservation Contract` block.
 - Plan templates and the PR template include a `Validation Evidence`
@@ -111,7 +111,7 @@ ignore_re="$ignore_re|\.venv|dist|build|\.next|\.cache)"
 grep -E "$ignore_re" .gitignore
 
 # Enforcement scaffolding presence
-test -f .claude/rules/invariants.md && echo "ok" || echo "missing"
+test -f private/invariants.md && echo "ok" || echo "missing"
 test -f .github/PULL_REQUEST_TEMPLATE.md && echo "ok" || echo "missing"
 test -f .github/workflows/quality-gate.yml && echo "ok" || echo "missing"
 ```

@@ -37,7 +37,7 @@ Every validation evidence record carries four fields, in this order:
    lines; do not paste 500-line dumps.
 4. **Why this validates** -- one or two sentences naming what the
    evidence proves. Cite invariant IDs from
-   `.claude/rules/invariants.md` when applicable, the changed
+   `private/invariants.md` when applicable, the changed
    behavior, and the error path or regression case the run
    exercised.
 
@@ -108,7 +108,7 @@ covers the food-contamination negative path.
 
 ## Cross-references
 
-- `.claude/rules/invariants.md` -- invariant IDs cited in "Why
+- `private/invariants.md` -- invariant IDs cited in "Why
   this validates"
 - `.claude/rules/refactoring.md` -- refactor-specific use of this
   shape (baseline + post-change records)

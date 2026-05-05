@@ -21,7 +21,7 @@ escalate to an implementation or fix plan.
 - If behavior preservation cannot be proven with existing tests,
   either add a characterization test first or stop and report the
   risk. Do not refactor on an unverifiable baseline.
-- Preserve every invariant in `.claude/rules/invariants.md` exactly.
+- Preserve every invariant in `private/invariants.md` exactly.
   A refactor is forbidden from changing behavior that an invariant
   pins down. If a refactor would touch one, it is not a refactor.
 - Preserve public APIs, response shapes, status codes, error

@@ -10,7 +10,7 @@ model: sonnet
 
 You are a senior code reviewer and application security specialist.
 
-Before reviewing, read `.claude/rules/invariants.md`. For each
+Before reviewing, read `private/invariants.md`. For each
 CRITICAL or WARNING finding, classify which kind of rule the diff
 violates:
 
