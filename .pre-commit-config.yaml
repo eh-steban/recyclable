@@ -20,3 +20,35 @@ repos:
         files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|md)$
         additional_dependencies:
           - prettier@3.3.3
+
+  # Commit message validation. See .claude/docs/infra/git.md for rules.
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - refactor
+          - perf
+          - test
+          - docs
+          - chore
+          - ci
+
+  - repo: local
+    hooks:
+      - id: check-commit-msg
+        name: project commit message rules
+        entry: bin/check-commit-msg
+        language: script
+        stages: [commit-msg]
+
+      - id: check-branch-name
+        name: project branch name rules (conventional-branch)
+        entry: bin/check-branch-name
+        language: script
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false

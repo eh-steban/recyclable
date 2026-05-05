@@ -28,19 +28,31 @@ docker compose up
 ## Pre-commit hooks
 
 This repo uses [pre-commit][pre-commit] to run [gitleaks][gitleaks]
-(secret scanner) on every commit. One-time setup per machine:
+(secret scanner), `ruff` / `prettier` formatters, and commit-message
+validation against `.claude/docs/infra/git.md`. One-time setup per
+machine:
 
 [pre-commit]: https://pre-commit.com
 [gitleaks]: https://github.com/gitleaks/gitleaks
 
 ```bash
 pip install pre-commit       # or: pipx install pre-commit
-pre-commit install           # installs the git hook into .git/hooks
+pre-commit install --hook-type pre-commit \
+                   --hook-type commit-msg \
+                   --hook-type pre-push
 ```
 
+`bin/dev` runs the same install on entry, so contributors who use the
+dev-container script get hooks installed automatically.
+
 After that, `git commit` will scan the staged diff for accidentally-committed
-API keys / tokens and abort the commit if any are found. To run against the
-full repo on demand:
+API keys / tokens, reject commit messages that violate the project git
+rules (wrong type, subject too long, attribution footers, em-dashes), and
+`git push` will reject branch names that don't match conventional-branch
+format. The same commit-msg checks also run in CI as a merge gate, so
+locally-bypassed commits are caught at PR time.
+
+To run against the full repo on demand:
 
 ```bash
 pre-commit run --all-files

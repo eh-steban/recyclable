@@ -1,35 +1,36 @@
 # Git Standards
 
-## Commit Messages
+Commit messages follow [Conventional Commits][cc-spec]; branch names
+follow [Conventional Branch][cb-spec]. The format rules in those specs
+are the canonical source -- this file lists only the **project deltas**:
+the type sets we use, project-specific rules the specs do not cover,
+and links to where each rule is enforced.
 
-### Format
+[cc-spec]: https://www.conventionalcommits.org/
+[cb-spec]: https://conventional-branch.github.io/
 
-```text
-<type>[optional scope]: <description>
+## Enforcement
 
-[optional body]
+- **Local `git commit`** -- `conventional-pre-commit` (type / format) +
+  `bin/check-commit-msg` (project rules), wired in
+  `.pre-commit-config.yaml` at the `commit-msg` stage.
+- **Local `git push`** -- `bin/check-branch-name`, wired at the
+  `pre-push` stage.
+- **CI on every PR** -- `.github/workflows/commit-msg.yml` re-runs the
+  same `commit-msg` hooks against every commit on the PR branch, so
+  locally-bypassed commits are caught at PR time.
 
-[optional footer(s)]
-```
-
-**Example:**
-
-```text
-feat(parser): add creep wave tracking to lane pressure analysis
-
-- Parse all four creep entities per wave
-- Expose wave data via /parse endpoint
-- Store snapshots at 1-second intervals
-```
+Run `pre-commit install --hook-type pre-commit --hook-type commit-msg
+--hook-type pre-push` once per clone, or use `bin/dev` (auto-installs).
 
 ---
 
-### Types
+## Commit Messages
 
-Commits MUST use one of the following types:
+### Allowed types
 
 | Type | When to Use |
-| ------ | ------------- |
+| :------ | :------------- |
 | `feat` | New user-facing feature (SemVer MINOR) |
 | `fix` | Bug fix (SemVer PATCH) |
 | `refactor` | Code restructuring without behavior change |
@@ -39,87 +40,85 @@ Commits MUST use one of the following types:
 | `chore` | Tooling, dependencies, build process |
 | `ci` | CI/CD pipeline changes |
 
----
+The list above is mirrored verbatim in `.pre-commit-config.yaml` under
+`conventional-pre-commit`'s `args:`. If you add a type here, add it
+there too.
 
-### Scope
+### Project rules (in addition to the spec)
 
-Scope is OPTIONAL. When included, it MUST describe the affected service or
-area in lowercase, enclosed in parentheses.
+These are not enforced by `conventional-pre-commit`. The first three
+are checked by `bin/check-commit-msg`; the rest are guidance for
+humans and agents.
 
-```text
-feat(parser): ...
-fix(frontend): ...
-chore(backend): ...
-```
+- Subject line MUST NOT exceed **72 characters** total.
+- MUST NOT append `Co-Authored-By`, `Signed-off-by`, `Reviewed-by`,
+  `Acked-by`, or any attribution footer.
+- MUST NOT contain em-dashes (`—`); use `--` (double-hyphen). See
+  `.claude/CLAUDE.md` ## Writing style for the rationale.
+- Scope (when present) MUST be lowercase and describe a service or
+  area: `feat(parser): ...`, `fix(frontend): ...`, `chore(backend): ...`.
+- Description MUST be in imperative mood: "add", "fix", "remove" --
+  not "added", "fixes", "removing".
+- Body is OPTIONAL. Omit it for changes whose subject line is
+  self-explanatory (one-file edits, obvious renames). When included:
+  precede with a blank line; bullets convey impact, not mechanics;
+  three to four bullets is enough.
+- Describe **what** changed and **why**, not **how**. Implementation
+  details belong in code comments or PR descriptions, not commit
+  subjects.
 
----
+### What to write
 
-### Breaking Changes
+Each block contrasts a good subject with a bad one for the same change.
 
-Breaking changes MUST be indicated in one of two ways:
-
-1. Append `!` after the type/scope: `feat!: remove legacy parse endpoint`
-2. Include a `BREAKING CHANGE:` footer in the commit body
-
----
-
-### Rules
-
-- Subject line MUST follow `<type>[optional scope]: <description>`
-- Type MUST be one from the types table above
-- Description MUST be written in imperative mood (e.g., "add", "fix",
-  "remove")
-- Subject line MUST NOT exceed 72 characters total
-- Body is OPTIONAL -- omit it for changes whose subject line is
-  self-explanatory (small fixes, one-file edits, obvious renames). A
-  subject-only commit is fine when the diff is small enough that prose
-  would just restate it.
-- When a body IS included: precede it with a blank line; bullets SHOULD
-  convey impact, not mechanics; three to four bullets is enough.
-- MUST NOT append `Co-Authored-By` or any attribution lines
-- SHOULD NOT include implementation details -- describe *what* changed and
-  *why*, not *how*
-
----
-
-### What to Write
-
-| Good | Bad |
-| ------ | ----- |
-| `feat: add lane pressure visualization` | `feat: add LanePressureChart component that uses useMemo to memoize filtered array` |
-| `fix: correct creep wave count off-by-one` | `fix: change <= 4 to < 4 in creep entity loop condition` |
-| `feat(parser): expose boss state in output` | `feat(parser): add boss_snapshots: Vec<BossSnapshot> field and serialize with serde` |
-| `chore: upgrade parser dependencies` | `chore: run cargo update and bump serde from 1.0.195 to 1.0.197` |
+- **Good:** `feat: add lane pressure visualization`
+  **Bad:** `feat: add LanePressureChart component that uses useMemo to
+  memoize filtered array`
+  -- the bad form names internal symbols and APIs.
+- **Good:** `fix: correct creep wave count off-by-one`
+  **Bad:** `fix: change <= 4 to < 4 in creep entity loop condition`
+  -- the bad form describes the diff, not the user-visible behavior.
+- **Good:** `feat(parser): expose boss state in output`
+  **Bad:** `feat(parser): add boss_snapshots: Vec<BossSnapshot> field
+  and serialize with serde`
+  -- the bad form leaks types and library names.
+- **Good:** `chore: upgrade parser dependencies`
+  **Bad:** `chore: run cargo update and bump serde from 1.0.195 to
+  1.0.197`
+  -- the bad form rots the moment the version moves.
 
 ---
 
 ## Branch Names
 
-Branches MUST follow [Conventional Branch][conventional-branch] format:
+Format: `<type>/<description>` per [Conventional Branch][cb-spec].
 
-[conventional-branch]: https://conventional-branch.github.io/
-
-```text
-<type>/<description>
-```
-
-### Types
+### Allowed types
 
 | Type | When to Use |
-| ------ | ------------- |
+| :------ | :------------- |
 | `feature/` | New feature work |
 | `fix/` | Bug fix |
 | `hotfix/` | Urgent production fix |
 | `release/` | Release preparation |
 | `chore/` | Tooling, deps, maintenance |
 
-### Rules
+The list above is mirrored in `bin/check-branch-name`'s regex. If you
+add a type here, update the regex too.
 
-- Description MUST be lowercase, using only `a-z`, `0-9`, and hyphens
-- No consecutive hyphens, no leading/trailing hyphens in the description
-- Include ticket number when applicable: `feature/issue-123-login-flow`
-- Dots are permitted only in `release/` branches for version numbers:
-  `release/v1.2.0`
+### Project rules (in addition to the spec)
+
+Enforced by `bin/check-branch-name`:
+
+- Description MUST be lowercase, using only `a-z`, `0-9`, and hyphens.
+- No consecutive hyphens, no leading or trailing hyphens.
+- Dots are permitted **only** in `release/` branches, for version
+  numbers: `release/v1.2.0`.
+
+Project conventions (not enforced):
+
+- Include a ticket number when applicable:
+  `feature/issue-123-login-flow`.
 
 ### Examples
 
@@ -134,8 +133,8 @@ feature/issue-42-souls-tracking
 
 ### `scripts/wt` integration
 
-`wt create <name>` defaults the branch to `feature/<name>`. Pass an explicit
-second arg for other types:
+`wt create <name>` defaults the branch to `feature/<name>`. Pass an
+explicit second arg for other types:
 
 ```bash
 scripts/wt create fix-parse-timing fix/parse-timing        # fix/ branch
