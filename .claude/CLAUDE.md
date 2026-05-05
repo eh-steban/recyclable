@@ -128,6 +128,8 @@ Specialized subagents for autonomous work:
   handlers, client components, tests
 - `spec-writer` -- Specs, experiment katas, strategy docs, learnings
   consolidation
+- `refactorer` -- Behavior-preserving cleanup of recently changed code
+  (reads `.claude/rules/refactoring.md`)
 - `code-reviewer` -- Security, convention, logic, and test coverage review
   (read-only)
 - `test-auditor` -- Periodic test suite audit across all services (read-only)
