@@ -132,6 +132,9 @@ Specialized subagents for autonomous work:
   (reads `.claude/rules/refactoring.md`)
 - `code-reviewer` -- Security, convention, logic, and test coverage review
   (read-only)
+- `adversarial-reviewer` -- Red-team review for invariant violations,
+  auth/data boundaries, LLM grounding/injection, ingestion-time
+  hostile input, and operational failure modes (read-only, opus)
 - `test-auditor` -- Periodic test suite audit across all services (read-only)
 - `e2e-testing` -- End-to-end tests spanning Next.js UI + worker + DB
 
