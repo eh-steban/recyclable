@@ -198,6 +198,14 @@ something the shard governs; otherwise the hub is enough.
   Tell-Don't-Ask + Law of Demeter at the Root, Application
   Services (not Aggregates) own dependency lookup, optimistic
   concurrency placed where the invariant lives, named rule-breaks.
+- [`factories.md`](factories.md) -- Vernon Ch. 11. Factories:
+  placing Factory Methods on the parent Aggregate and naming them in
+  the language, enforcing identity and tenancy correctness through
+  the Factory, hiding the target Aggregate's constructor, guarding
+  only state-of-parent invariants, publishing creation Events from
+  the Factory Method, the create-vs-persist split, Domain Service
+  as Factory when crossing Bounded Contexts, accounting for the
+  parent-load cost.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -206,8 +214,7 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Factories, Repositories, Integrating Bounded Contexts,
-Application.
+the book): Repositories, Integrating Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
