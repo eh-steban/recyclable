@@ -181,6 +181,14 @@ something the shard governs; otherwise the hub is enough.
   Event-with-Aggregate persistence (Event Store), choosing REST
   notifications vs messaging, latency as a domain question,
   at-least-once delivery and de-duplication.
+- [`modules.md`](modules.md) -- Vernon Ch. 9. Modules: names as
+  Ubiquitous Language, group by cohesive concept (not by tactical
+  pattern type or mechanical attribute), the
+  org/context/compartment/concept hierarchy, refactor Modules as
+  readily as classes, prefer acyclic dependencies (relax for
+  parent/child cohesion), don't strip typed identity for "loose
+  coupling," reach for a new Module before a new Bounded Context,
+  apply the same discipline outside the domain layer.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -189,8 +197,8 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Modules, Aggregates, Factories, Repositories,
-Integrating Bounded Contexts, Application.
+the book): Aggregates, Factories, Repositories, Integrating
+Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
