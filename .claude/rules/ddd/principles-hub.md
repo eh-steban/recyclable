@@ -243,19 +243,30 @@ something the shard governs; otherwise the hub is enough.
   promote it to a new Bounded Context, infrastructure implements
   interfaces declared with the consuming layer (DIP), one DI / Service
   Factory / constructor convention per project.
+- [`event-sourcing.md`](event-sourcing.md) -- Vernon Appendix A
+  (contributed by Rinat Abdullin). A+ES as Aggregate persistence:
+  adopt when reconstruction and history are first-class business
+  concerns (audit, replay, regulated industries) -- not by default,
+  Aggregate state is the fold of its Event Stream, separating
+  `Apply` (record + mutate) from `Mutate` / `When` (state update
+  only), the load → execute → append Application Service shape with
+  stream version as the optimistic-concurrency guard, retry-and-replay
+  vs event-conflict-resolution by whether the behavior has external
+  side effects, planning for replay cost via snapshots / caching /
+  partitioning, layering a typed Event Store over an untyped append-
+  only primitive, reads via disposable Projections of the Event
+  Stream (CQRS becomes mandatory), Events serving both reconstitution
+  and publication (enrich for the 80 % of subscribers), tag-based
+  serialization + immutability + Value Object payloads + optional
+  contract DSL, A+ES making Aggregates cheap so aim for Focused
+  Aggregates, Given-past-Events / When-command / Then-new-Events
+  testing.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
 "Foundations" section above rather than given its own shard --
 the material is context for agentic reasoning, not a
 principles list to apply per task.
-
-Vernon's Appendix A (Aggregates and Event Sourcing: A+ES,
-contributed by Rinat Abdullin) is intentionally not yet folded in;
-its placement -- own shard or split across `architecture.md`,
-`aggregates.md`, and `domain-events.md` -- is an open
-question to revisit once the project's stance on Event Sourcing is
-clearer.
 
 ## How this interacts with other rules
 
