@@ -8,14 +8,14 @@ paths:
 # DDD shard -- architecture
 
 Architectural-style principles for **how DDD code is organized and
-how concerns are layered** in this repo. Distilled from Vaughn
-Vernon, *Implementing Domain-Driven Design*, Chapter 4
-("Architecture," PDF pp. 97--132).
+how concerns are layered** inside a bounded context. Distilled
+from Vaughn Vernon, *Implementing Domain-Driven Design*,
+Chapter 4 ("Architecture").
 
-This shard covers **what architectural style each context uses, and
+This shard covers **what architectural style a context uses, and
 why**. For *what* a bounded context is, see `bounded-contexts.md`;
-for relationships *between* contexts, see `context-maps.md`; for the
-project-level index, see `../ddd-principles.md`.
+for relationships *between* contexts, see `context-maps.md`; for
+the index of shards, see `../ddd-principles.md`.
 
 ## Vernon's framing in one paragraph
 
@@ -23,11 +23,11 @@ DDD does not prescribe an architecture. Pick architectural styles
 the way you pick anything else in DDD: **drive selection by real
 quality demands** (latency, testability, scalability,
 auditability), not by fashion. Every style in use must be
-justifiable against a specific risk it mitigates; if it can't be
+justifiable against a specific risk it mitigates; if it cannot be
 justified, drop it. Vernon walks Layers → DIP → Hexagonal → SOA /
 REST → CQRS → EDA → Event Sourcing → Data Fabric, in roughly
-ascending complexity, and is emphatic that adding a style you
-don't need is itself a risk.
+ascending complexity, and is emphatic that adding a style you do
+not need is itself a risk.
 
 ## Principles
 
@@ -45,218 +45,191 @@ without this?", remove the pattern.
 
 ### 2. Use Layers + DIP as the default inside a bounded context
 
-Inside the backend we use the classic four DDD layers --
-**user-interface / api / application / domain / infrastructure** --
-with the Dependency Inversion Principle: high-level layers depend
-only on abstractions, and infrastructure implements interfaces
-defined by the domain.
+The classic four DDD layers -- **user-interface / application /
+domain / infrastructure** -- with the Dependency Inversion
+Principle applied: high-level layers depend only on abstractions,
+and infrastructure implements interfaces defined by the domain.
 
-In practice for `backend/`:
+In practice:
 
-- `app/api/` -- FastAPI routes; thin Adapters that translate HTTP
-  into application calls. No business logic.
-- `app/application/` (or whatever name `backend/CLAUDE.md` uses for
-  application services) -- orchestration only. An application
-  service loads an Aggregate via a Repository interface, calls one
+- **User-interface / API** -- thin Adapters that translate the
+  external protocol into application calls. No business logic.
+- **Application** -- orchestration only. An application service
+  loads an Aggregate via a Repository interface, calls one
   command method on it, and returns. If it grows complex, domain
   logic is leaking out of the model.
-- `app/domain/` -- pure Python, no framework imports. Owns
-  Aggregates, Value Objects, Domain Services, Repository
-  *interfaces*, and Domain Events. No SQLAlchemy, no Pydantic, no
-  HTTP types.
-- `app/infra/` -- SQLAlchemy models, Alembic migrations,
-  Repository *implementations*, external clients. Implements
-  interfaces from `domain/`. Never referenced from `domain/`.
+- **Domain** -- pure: no framework imports, no persistence types,
+  no transport types. Owns Aggregates, Value Objects, Domain
+  Services, Repository *interfaces*, and Domain Events.
+- **Infrastructure** -- persistence implementations, external
+  clients, messaging adapters. Implements interfaces from the
+  domain. The domain never imports it.
 
-Vernon's "anemic-model" warning (see hub Foundations) applies most
-sharply here: a thick application layer that mutates many fields
-on a domain object is the symptom. The cure is to push the
+Vernon's "anemic-model" warning (see hub Foundations) applies
+most sharply here: a thick application layer that mutates many
+fields on a domain object is the symptom. The cure is to push the
 behavior onto the Aggregate.
 
-**Apply when:** placing a new file. If it imports from
-`domain/`, it is application or infrastructure. If `domain/` would
+**Apply when:** placing a new file. If it imports from the
+domain, it is application or infrastructure. If the domain would
 have to import it, the design is inverted -- fix it.
 
-### 3. The backend is one Hexagon with two driving adapters
+### 3. Hexagonal (Ports and Adapters): one inside, many outsides
 
-The backend hosts **two driving (input) adapters** -- the FastAPI
-HTTP service and the ingestion worker -- both of which depend
-inward on the same domain. The domain is the **inside** of the
-hexagon. Everything outside (HTTP, the LLM, Postgres, external
-sources, Vercel revalidation) reaches the inside through an
-Adapter.
+A bounded context is **one hexagon**. The inside is the
+application + domain. The outside is everything else: clients
+that drive the system (HTTP, CLI, message subscribers, schedulers)
+and resources the system drives (databases, external APIs,
+message buses, caches, LLMs). Each outside concern reaches the
+inside through an Adapter that translates between the foreign
+shape and the application's API.
 
-Driven (output) adapters in this repo:
-
-- **Postgres** -- SQLAlchemy repositories implementing
-  `domain/` interfaces.
-- **Sonnet (user path) and Opus (worker path)** -- LLM calls
-  wrapped behind a domain port; the validator is part of the
-  Adapter, not the domain.
-- **External sources (worker)** -- HTTP fetchers, PDF extractors,
-  jurisdiction-portal clients. Each is an ACL into the
-  knowledge-base language (see `context-maps.md` Principle 7).
-- **Cache invalidation / revalidation hooks** -- the worker emits
-  a Domain Event on apply; the HTTP layer translates that into a
-  Vercel revalidation call.
+A context may have **multiple driving (input) adapters** sharing
+the same domain. Adding a new client surface or output mechanism
+must not require changing the domain.
 
 Vernon's rule: design the inside per **functional requirements**,
-not per the number or shape of adapters. Adding a new client or
-output mechanism must not require changing the domain.
+not per the number or shape of adapters.
 
-**Apply when:** adding a new ingestion source, swapping LLMs, or
-exposing a new client surface. The change should land in an
-Adapter, not in `domain/`.
+**Apply when:** adding a new client surface, swapping a backing
+store, or wiring a new external service. The change should land
+in an Adapter, not in the domain.
 
-### 4. HTTP is the Open Host Service; TS client is the Published Language
+### 4. REST / Open Host Service: do not expose the domain directly
 
-Per `context-maps.md` Principle 3 the backend → frontend
-integration is Open Host Service + Published Language. In Vernon's
-Ch. 4 framing this is also where REST sits: the FastAPI routes are
-Adapters that translate HTTP into application calls; the OpenAPI
-spec + generated TS client is the published interface.
+When publishing a bounded context's capabilities over HTTP (or
+any wire protocol) the wire schema is its **own type**, not the
+domain object. Vernon is explicit that **directly exposing the
+domain model over REST is brittle** -- every change to a domain
+type ripples into every client.
 
-Vernon is explicit that **directly exposing the domain model over
-REST is brittle** -- every change to a domain type ripples into
-every client. We follow his preferred approach: the HTTP layer
-exposes use-case-shaped resources whose payloads are derived from
-domain objects but are not them. Pydantic response models in
-`app/api/` are the wire schema; they are translated from domain
+The HTTP layer exposes use-case-shaped resources whose payloads
+are *derived from* domain objects but are not them. Wire schemas
+live in the API/adapter layer; they are translated from domain
 objects, not equated to them.
 
 **Apply when:** adding an endpoint or changing a response shape.
 The wire schema is its own type; do not return a domain object
 directly.
 
-### 5. Reject the Smart UI; the frontend is a presentation Adapter
+### 5. Reject the Smart UI
 
-Domain decisions do not live in the frontend. "Did this answer
-meet the grounding bar?" is decided in the backend's Retrieval
-Context and surfaced as a refusal state in the response payload.
-The frontend renders the state; it does not compute it.
+Domain decisions do not live in the user interface. The UI
+**renders** domain state and **collects** input; it does not
+decide what counts as valid, complete, or authoritative. Anything
+that requires invariant knowledge belongs inside the hexagon.
 
-The generated TS client + thin wrappers in `frontend/lib/` are the
-**input Adapter** translating from the Published Language to the
-Presentation Context's local language. Treat them like an ACL: do
-not let response-shape vocabulary leak past the wrapper into
-components.
+When a presentation surface consumes a Published Language (an
+OpenAPI-generated client, an event schema, a wire-format DTO),
+treat the consumer-side wrapper as an **input Adapter**: the
+foreign vocabulary stops at the wrapper and is translated into
+the presentation context's own terms. Do not let wire vocabulary
+leak into components.
 
-**Apply when:** any frontend change tempted to inspect, compose,
-or override the backend's grounding/refusal logic. Push the
-decision back to the backend.
+**Apply when:** any UI change tempted to inspect, compose, or
+override a domain decision. Push the decision back to the domain.
 
-### 6. Eventual consistency between the two driving adapters
+### 6. Eventual consistency between contexts; transactional inside one
 
-The HTTP service (Retrieval) reads. The worker (Ingestion)
-writes. Across that surface we follow `context-maps.md`
-Principle 5: do not span a transaction; design the reader to
-tolerate temporary disagreement.
+Inside a single bounded context a single transaction may enforce
+invariants. **Across two contexts -- or across two driving
+adapters that share a domain but write under different lifecycles
+-- do not span a transaction.** Design the reader to tolerate
+temporary disagreement (per `context-maps.md` Principle 5).
 
-The domain expression of "we don't yet have grounded evidence" is
-a **refusal**, not a 500 -- per `context-maps.md` Principle 6.
-The domain expression of "ingestion produced a conflict" is a
-named conflict-state row, not an exception escaping to the user.
+The domain expression of "the upstream context has nothing to
+report yet" is a named state, not an exception (per
+`context-maps.md` Principle 6). The domain expression of "two
+sources disagree" is a named conflict state, not a thrown error.
 
-**Apply when:** the worker writes data the HTTP path will read,
-or vice versa. Cross-surface failure modes get domain names.
+**Apply when:** one adapter writes data another adapter will
+read, or a downstream context reads from an upstream one. Cross-
+surface failure modes get domain names.
 
-### 7. CQRS only if the read shape genuinely diverges from the write shape
+### 7. CQRS only when the read shape genuinely diverges from the write shape
 
 Vernon's CQRS guidance: split command and query models only when
 view sophistication or scaling demands it. Otherwise it is
 accidental complexity.
 
-For us, today, **we do not adopt full CQRS.** SQLAlchemy
-repositories serve both write (ingestion) and read (retrieval +
-SSG page builds). We may, in the future, justify a denormalized
-read store for SSG pages or for the `/ask` retrieval index --
-that decision belongs in a spec, must name the risk it mitigates
-(page build latency, retrieval recall, etc.), and is not part of
-the default architecture.
+A spec that proposes CQRS must cite the read-vs-write divergence
+(views that cut across multiple Aggregates, scaling asymmetry,
+eventual-consistency tolerance) and the failure mode without the
+split. Default is **not** CQRS: a single repository serves both
+write and read paths.
 
 **Apply when:** a spec proposes a separate read store. Require it
-to cite the read-vs-write divergence and the failure mode without
-the split.
+to name the risk and the failure mode without the split.
 
 ### 8. Event-Driven across contexts where it removes coupling, not as a default
 
-Vernon's EDA, Pipes-and-Filters, and Long-Running Process patterns
-fit when work is naturally distributed and asynchronous and when
-synchronous coupling would create timeouts or fragility.
+Vernon's EDA, Pipes-and-Filters, and Long-Running Process
+patterns fit when work is naturally distributed and asynchronous
+and when synchronous coupling would create timeouts or fragility.
 
-For us, the natural EDA seam is **ingestion-apply → cache
-revalidation → eval rerun**. An ingestion-apply emits a Domain
-Event; downstream subscribers (Vercel revalidation, eval
-re-runs, alerting on grounding regressions) react. We do **not**
-event-drive the user path: the `/ask` loop is synchronous,
-deterministic, and Sonnet-bounded by design (see hub: "Sonnet on
-the user path, Opus on the research path").
+Default to synchronous calls inside a context and across an Open
+Host Service. Reach for Domain Events between contexts when the
+publisher and subscriber have **different lifecycles** (one is
+batch, one is interactive; one is offline, one is online) or when
+a single trigger must fan out to multiple independent
+subscribers.
 
-If a future ingestion workflow becomes a multi-step research loop
-that must outlive a single worker invocation, *then* it becomes a
-Long-Running Process with an explicit state-tracker Aggregate
-(per Vernon's "executive + tracker" pattern). Today, the worker
-runs one source per invocation and the state tracker is the
-ingestion trace row.
+If a workflow becomes a multi-step process that must outlive a
+single invocation, it becomes a **Long-Running Process** with an
+explicit state-tracker Aggregate (Vernon's "executive + tracker"
+pattern). The state tracker carries a unique Process identity on
+every related Domain Event so out-of-order completions can be
+correlated.
 
-**Apply when:** designing how worker output reaches the HTTP path
-or the frontend. Prefer a Domain Event + subscriber over direct
-calls. Apply also when proposing multi-step ingestion -- the
-state-tracker pattern is the model.
+**Apply when:** designing how output from one context reaches
+another. Prefer a Domain Event + subscriber over direct calls
+when lifecycles differ. Apply the Long-Running Process pattern
+when a workflow spans more than one invocation.
 
-### 9. Event Sourcing is not adopted; ingestion traces serve the audit need
+### 9. Event Sourcing has a high cost of entry; justify it explicitly
 
 Vernon's Event Sourcing trades ORM persistence for an event log
 that can be replayed. Its main payoffs are auditability,
-debuggability, and "what-if" replay.
+debuggability, and "what-if" replay. Its costs are: a dedicated
+Event Store, snapshotting to bound replay latency, an almost
+mandatory pairing with CQRS for queryability, and a domain model
+that rebuilds itself from history rather than holding state
+directly.
 
-For us, the audit need is real (every assistant claim cites a
-source; every ingestion change must be traceable to its source
-document and extraction step) but it is met by **ingestion trace
-rows**, not by event-sourcing the whole domain. Trace rows record
-source, extractor, model, prompt version, validator outcome, and
-applied diff -- enough to reconstruct *why* a knowledge-base row
-looks the way it does.
-
-We do not Event-Source Aggregates. If we ever need full replay --
-e.g., to re-run all extractions under a new validator -- the
-trace rows plus stored source documents are the replay input,
-not a domain Event Store.
+Adopt Event Sourcing only when the audit / replay requirement
+genuinely cannot be met by simpler means (e.g., enriched audit
+records, append-only trace tables, periodic snapshots of
+aggregate state). A spec proposing Event Sourcing names the
+requirement and the simpler alternative it ruled out.
 
 **Apply when:** a spec asks for "audit" or "replay." Reach for
-trace-row enrichment first; escalate to event-sourcing only if
-trace rows demonstrably can't carry the requirement.
+the simpler shape first; escalate to event-sourcing only if the
+simpler shape demonstrably cannot carry the requirement.
 
-### 10. Data Fabric / Grid is out of scope
+### 10. Data Fabric / Grid is out of scope by default
 
-Vernon covers in-memory data grids (GemFire, Coherence) for
-scaling. We deploy Postgres (Neon) on a serverless tier for the
-backend and Vercel SSG + edge cache for the frontend. Adding a
+Vernon covers in-memory data grids for scaling. Adding a
 distributed cache is forbidden by default; if a future spec needs
 it, the spec must justify the operational cost against the
 quality requirement.
 
 ## What this shard does **not** govern
 
-- The exact directory layout inside `backend/app/` -- that is in
-  `backend/CLAUDE.md`. This shard governs the *style*; that file
-  governs the *names*.
+- The exact directory layout inside a service -- that lives in
+  the service's own conventions doc. This shard governs the
+  *style*; the service doc governs the *names*.
 - The HTTP wire schema -- that is `../contracts.md`.
 - Cross-context relationships -- that is `context-maps.md`.
 
 ## Cross-references
 
-- `../ddd-principles.md` -- DDD hub: index of shards, candidate
-  contexts, classification.
+- `../ddd-principles.md` -- DDD hub: index of shards.
 - `bounded-contexts.md` -- defining and sizing one context;
   Smart-UI anti-pattern.
 - `context-maps.md` -- integration patterns, ACLs, eventual
   consistency, modeling unavailability.
 - `../contracts.md` -- HTTP wire-schema discipline; complementary
   to the Hexagonal framing here.
-- `../../backend/CLAUDE.md` -- concrete layering inside
-  `backend/app/` (domain / application / infra / api). The
-  *naming* lives there; the *style* lives here.
-- `../refactoring.md` -- a refactor may not move code across a
-  layer boundary in a way that inverts the dependency direction
-  (e.g., importing infra from domain) without authorization.
+- `../refactoring.md` -- a refactor may not invert a layer
+  dependency direction (e.g., importing infrastructure from
+  domain) without authorization.

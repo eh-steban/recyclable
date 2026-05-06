@@ -7,44 +7,39 @@ paths:
 
 # DDD principles -- hub
 
-How we apply Domain-Driven Design in this repo, distilled from
-Vaughn Vernon, *Implementing Domain-Driven Design*, and adapted
-to a two-service codebase (FastAPI backend + ingestion worker,
-Next.js frontend) backed by a single Postgres knowledge base.
+How to apply Domain-Driven Design, distilled from Vaughn Vernon,
+*Implementing Domain-Driven Design*.
 
 This file is a **navigation hub**. The principles themselves live
-in topic-specific shards under `ddd/`. The hub holds:
+in topic-specific shards under `ddd/`. The hub holds the
+foundational context, the shard index, and the philosophy of
+partial adoption. The project's own catalog of bounded contexts
+and their classifications belongs in specs and design docs, not
+here.
 
-- the philosophy (why we use DDD partially),
-- the index of shard files,
-- the project's catalog of bounded contexts and their
-  classification,
-- pointers to neighboring rules.
+## Why partial adoption is fine
 
-## Why we use DDD here, partially
-
-DDD is not all-or-nothing. We use only the parts that help us:
+DDD is not all-or-nothing. Use only the parts that mitigate a
+real risk:
 
 - **Strategic design first.** Bounded contexts and a context map
-  give us a shared mental model for how the user-path service,
-  the ingestion worker, the frontend, and external sources
-  interact. This is the highest-leverage DDD investment for a
-  small team.
+  give a shared mental model for how systems interact. This is
+  the highest-leverage DDD investment.
 - **Tactical patterns à la carte.** Use Aggregates, Value
   Objects, Repositories, or Domain Events when the model
-  genuinely calls for them. Don't introduce them as scaffolding.
-- **Ubiquitous Language is non-negotiable.** Whatever we model,
+  genuinely calls for them. Do not introduce them as scaffolding.
+- **Ubiquitous Language is non-negotiable.** Whatever is modeled,
   the names in code, schema, prompts, specs, and UI must match
-  what we call the thing in conversation. This is the cheapest
-  DDD habit with the largest long-term payoff.
+  what the team calls the thing in conversation. This is the
+  cheapest DDD habit with the largest long-term payoff.
 
 If a principle in any shard would force ceremony without
 clarity, skip it and note why in the relevant spec.
 
 ## Foundations (Vernon Ch. 1)
 
-Distilled context an agent needs before reasoning about DDD in
-this repo. Not exhaustive -- the shards carry the detail.
+Distilled context an agent needs before reasoning about DDD.
+Not exhaustive -- the shards carry the detail.
 
 ### The two pillars
 
@@ -70,10 +65,9 @@ artifacts; the code is the truth.
 ### Useful, not realistic
 
 DDD models what is *useful to the business*, not the "real
-world." When usefulness and realism diverge, choose useful. For
-us: the model is whatever lets us answer recycling questions
-with grounded citations or honest refusals -- not a faithful
-replica of municipal-recycling reality.
+world." When usefulness and realism diverge, choose useful. The
+model is whatever lets the business answer its questions
+correctly -- not a faithful replica of reality.
 
 ### The anemic-model warning
 
@@ -94,10 +88,9 @@ release" and "uncommit from prior sprint first" *inside the
 aggregate*, and emits the Domain Event as a final step. The
 caller cannot get it half-right.
 
-**For this repo:** retrieval, validation, refusal, and
-ingestion-conflict logic must live on domain types or domain
-services -- not as ad-hoc field-mutation in API handlers or
-worker glue.
+**Apply when:** invariant-bearing logic is about to land in an
+API handler, an application service, or framework glue. Push it
+onto the domain type that owns the invariant.
 
 ### The DDD-Lite trap
 
@@ -108,24 +101,19 @@ benefit and produces a brittle technical scaffold. Strategic
 design is what pays; tactical patterns are tools applied
 *inside* a strategically named context.
 
-Our partial-DDD stance (see above) is a deliberate strategic
-choice -- bounded contexts and Ubiquitous Language first,
-tactical patterns à la carte where they earn their keep. It is
-not DDD-Lite as long as we do not skip the strategic step.
+Partial adoption is not DDD-Lite as long as the strategic step
+(naming bounded contexts and their language) is not skipped.
 
 ### Three recurring challenges
 
-Vernon's list of what makes DDD hard, with the local form:
+Vernon's list of what makes DDD hard:
 
-- **Time to grow the language.** Naming things in
-  domain terms (jurisdiction, material, rule, source, citation,
-  refusal) takes deliberate work and re-work. Resist the urge
-  to ship with placeholder names that calcify.
-- **Sustained domain-expert involvement.** For us the "domain
-  expert" is whoever understands a jurisdiction's actual
-  recycling rules and source documents. Their input is needed
-  continuously, not once at spec time. Specs and katas should
-  name who plays this role for the work in question.
+- **Time to grow the language.** Naming things in domain terms
+  takes deliberate work and re-work. Resist the urge to ship
+  with placeholder names that calcify.
+- **Sustained domain-expert involvement.** Domain experts must
+  remain involved continuously, not once at spec time. Specs
+  should name who plays this role for the work in question.
 - **Changing how developers think.** Behavior on the type that
   owns the invariant is unfamiliar to a service-script habit.
   When in doubt, ask "what business behavior does this type
@@ -147,9 +135,8 @@ Cite this section when a spec, plan, or review is about to:
 ## Shards
 
 Each shard distills one chapter (or one cohesive topic) of
-Vernon's book into project-specific principles. Follow the link
-when working on something the shard governs; otherwise the hub is
-enough.
+Vernon's book into principles. Follow the link when working on
+something the shard governs; otherwise the hub is enough.
 
 - [`ddd/bounded-contexts.md`](ddd/bounded-contexts.md) --
   Vernon Ch. 2. Defining a single bounded context: domains vs
@@ -163,10 +150,10 @@ enough.
   consistency, translation maps, modeling unavailability.
 - [`ddd/architecture.md`](ddd/architecture.md) -- Vernon Ch. 4.
   Architectural styles inside a context: risk-driven selection,
-  Layers + DIP as default, Hexagonal with two driving adapters
-  (HTTP + worker), REST as Open Host Service, Smart-UI rejection,
-  eventual consistency between adapters, when (not) to adopt
-  CQRS / EDA / Event Sourcing / Data Fabric.
+  Layers + DIP as default, Hexagonal (Ports and Adapters), REST
+  as Open Host Service, Smart-UI rejection, eventual consistency
+  between adapters, when (not) to adopt CQRS / EDA / Event
+  Sourcing / Data Fabric.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -174,87 +161,20 @@ DDD-Lite trap, three recurring challenges) is folded into the
 the material is context for agentic reasoning, not a
 principles list to apply per task.
 
-Future shards (one per chapter, added as we work through the
-book): Entities, Value Objects, Services, Domain Events, Modules,
-Aggregates, Factories, Repositories, Integrating Bounded Contexts,
-Application.
-
-## Candidate bounded contexts in this repo
-
-These are the boundaries we currently believe exist. Treat this
-list as the **starting context map**; refine it in
-`private/specs/` as we learn.
-
-- **Knowledge Base Context** -- jurisdictions, materials, rules,
-  sources, facilities, traces. Owned by the backend; SQLAlchemy +
-  Alembic is the source of truth. Lives in `backend/app/domain/`
-  and `backend/app/infra/db/`.
-- **Retrieval Context (user path)** -- the Sonnet loop:
-  retrieval, prompt composition, validator, refusal, response.
-  Lives in `backend/app/api/` + the domain services it composes.
-- **Ingestion Context (research path)** -- the Opus loop: source
-  fetch, extraction, conflict detection, eval. Lives in
-  `backend/app/worker/`.
-- **Presentation Context** -- SSG jurisdiction/material pages and
-  the `/ask` UI. Lives in `frontend/app/` and `frontend/lib/`.
-
-The HTTP API and generated TS client are the **boundary** between
-backend contexts and the Presentation Context. The Postgres
-schema is **internal** to the backend contexts and must not leak
-across.
-
-### Classification (Core / Supporting / Generic)
-
-Vernon's classification, applied to our current candidate
-contexts. Revisable as we learn.
-
-- **Retrieval -- Core.** The product *is* "ask a recycling
-  question, get a cited answer or an honest refusal." This is
-  the differentiator.
-- **Knowledge Base -- Core.** "Postgres is the product asset"
-  per `CLAUDE.md`. The structured, sourced data is what we sell.
-- **Ingestion -- Core.** The autonomous research loop is what
-  lets the knowledge base scale beyond hand-curation.
-  Non-trivial, differentiating.
-- **Presentation -- Supporting.** Essential -- this is the
-  surface users see -- but the model lives in the backend. The
-  frontend is presentation around the core, not the core itself.
-
-If we adopt third-party services (auth, billing, content
-moderation, geocoding), classify them as **Generic** and wrap
-them in an ACL.
-
-### Caveat on Retrieval and Ingestion
-
-Today these two surfaces share a single domain layer
-(`backend/app/domain/`) and a single persistence layer
-(`backend/app/infra/db/`) per `backend/CLAUDE.md`. By Vernon's
-strict test (one model, one Ubiquitous Language = one context),
-they are currently **application-service-level distinctions
-inside a single backend context**, not two fully separate
-bounded contexts. We list them separately because they have
-distinct integration patterns (sync HTTP vs. async worker),
-distinct LLM models (Sonnet vs. Opus), and distinct lifecycles --
-useful for reasoning about upstream/downstream and ACL placement.
-The boundary that today actually enforces a separate language is
-the HTTP API surface between backend and frontend. Revisit this
-split if Retrieval and Ingestion ever grow incompatible
-vocabulary or stop sharing the domain layer.
+Future shards (one per chapter, added as the team works through
+the book): Entities, Value Objects, Services, Domain Events,
+Modules, Aggregates, Factories, Repositories, Integrating
+Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
-- **`contracts.md`** governs the *shape* of the HTTP boundary
-  (the Open Host Service / Published Language for the
-  backend → frontend integration). The DDD shards govern *why*
-  that boundary exists and what counts as crossing it.
-- **`backend/CLAUDE.md`** describes the DDD layering inside the
-  backend (domain / application / infrastructure / api). Layering
-  is *within* a context; bounded contexts are the larger
-  boundary.
+- **`contracts.md`** governs the *shape* of HTTP-boundary
+  contracts. The DDD shards govern *why* that boundary exists
+  and what counts as crossing it.
 - **`refactoring.md`** forbids changing public contracts without
   authorization. An integration surface between bounded contexts
-  -- even a purely internal Python module boundary -- is a public
-  contract in this sense when other contexts depend on it. A
+  is a public contract in this sense when other contexts depend
+  on it -- even when both sides live in the same codebase. A
   refactor may not move or rename that surface without updating
   all dependents.
 - **`private/invariants.md`** -- if a DDD principle in any shard
@@ -263,14 +183,13 @@ vocabulary or stop sharing the domain layer.
 
 ## When to revisit
 
-Update the hub when:
+Update the hub or a shard when:
 
-- A new context appears (new service, new external integration).
-- Two contexts merge or split.
-- An integration pattern between two contexts changes (e.g., we
-  move from synchronous RPC to event-driven).
-- We add a new shard for a chapter we've worked through.
-- A shard's principles outgrow it and need to be split or renamed.
+- A shard's principles outgrow it and need to be split or
+  renamed.
+- A new shard is added for a chapter worked through.
+- A principle proves harmful or vacuous in practice and needs
+  revision or removal.
 
 Update via the `spec-writer` agent or with explicit user
 approval, per `.claude/rules/doc-ownership.md`.
