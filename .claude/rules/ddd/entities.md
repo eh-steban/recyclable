@@ -17,7 +17,7 @@ This shard covers **what an Entity is and how to design one**. For Value
 Objects (the immutable counterpart) see the value-objects shard when it
 lands; for Aggregates (clusters of Entities + Values with a Root and an
 invariant boundary) see the aggregates shard when it lands. For the
-index of shards, see `principles.md`.
+index of shards, see `principles-hub.md`.
 
 ## When to model a concept as an Entity
 
@@ -269,7 +269,7 @@ carry the requirement -- see `architecture.md` Principle 9.
 
 ## Cross-references
 
-- `principles.md` -- DDD hub: index of shards, anemic-model warning,
+- `principles-hub.md` -- DDD hub: index of shards, anemic-model warning,
   DDD-Lite trap.
 - `bounded-contexts.md` -- an Entity belongs to exactly one bounded
   context; its name lives in that context's Ubiquitous Language.

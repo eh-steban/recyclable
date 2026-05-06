@@ -15,7 +15,7 @@ Bounded Contexts").
 This shard covers **what a bounded context is and how to draw
 one**. For relationships *between* contexts (integration patterns,
 upstream/downstream, ACLs, translation), see `context-maps.md`.
-For the index of shards, see `principles.md`.
+For the index of shards, see `principles-hub.md`.
 
 ## Domain, Subdomain, Bounded Context
 
@@ -165,7 +165,7 @@ Shared Kernel by accident, and it always rots.
 
 ## Cross-references
 
-- `principles.md` -- DDD hub: index of shards.
+- `principles-hub.md` -- DDD hub: index of shards.
 - `context-maps.md` -- principles for relationships *between*
   bounded contexts.
 - `architecture.md` -- architectural styles *inside* a context
