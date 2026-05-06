@@ -172,6 +172,15 @@ something the shard governs; otherwise the hub is enough.
   Repositories from Services not Aggregates, Separated Interface as
   opt-in, mini-layer drift toward Anemic Model, testing from the
   client and modeling normal failures as values not exceptions.
+- [`domain-events.md`](domain-events.md) -- Vernon Ch. 8. Domain
+  Events: discovering them in the language and naming them in the
+  past tense, immutable Value shape and minimum payload, when an
+  Event needs an identity, the one-Aggregate-per-transaction rule,
+  in-process publisher with no middleware in the model, Application
+  Services registering subscribers and owning transactions, durable
+  Event-with-Aggregate persistence (Event Store), choosing REST
+  notifications vs messaging, latency as a domain question,
+  at-least-once delivery and de-duplication.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -180,8 +189,8 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Domain Events, Modules, Aggregates, Factories,
-Repositories, Integrating Bounded Contexts, Application.
+the book): Modules, Aggregates, Factories, Repositories,
+Integrating Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
