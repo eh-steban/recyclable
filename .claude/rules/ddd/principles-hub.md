@@ -206,6 +206,15 @@ something the shard governs; otherwise the hub is enough.
   the Factory Method, the create-vs-persist split, Domain Service
   as Factory when crossing Bounded Contexts, accounting for the
   parent-load cost.
+- [`repositories.md`](repositories.md) -- Vernon Ch. 12.
+  Repositories: one Repository per Aggregate Root, the Set-mimicking
+  contract (no re-save), collection-vs-persistence styles chosen by
+  the store's change-tracking, interface in the domain Module and
+  implementation in `infrastructure`, `nextIdentity()` on the
+  Repository, persistence-exception translation at the boundary, no
+  bypassing the Aggregate boundary, use-case-optimal queries as a
+  smell, transactions in the Application Service, real-store tests
+  for the Repository and in-memory tests for its clients.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -214,7 +223,7 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Repositories, Integrating Bounded Contexts, Application.
+the book): Integrating Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
