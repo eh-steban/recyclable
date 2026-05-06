@@ -10,9 +10,24 @@ paths:
 
 # Frontend Service
 
-Next.js (App Router) + TypeScript web app. Serves SEO-crawlable
-jurisdiction/material pages and the assistant UI. Owns the synchronous
-user request path (Sonnet).
+Next.js (App Router) + TypeScript presentation layer. Serves
+SEO-crawlable jurisdiction/material pages and the assistant UI.
+
+**Does not connect to Postgres.** All data and LLM calls go through
+the backend FastAPI HTTP service. The Sonnet user path executes in
+the backend; the frontend renders its result.
+
+**Does not own schema knowledge.** Row shapes, query construction,
+and SQL live in the backend. The frontend consumes a TypeScript
+client generated from the backend's OpenAPI spec (see
+`.claude/rules/contracts.md`). When the schema changes, the frontend
+re-runs codegen and the compiler catches type drift.
+
+**Strategic DDD applies here** (Bounded Contexts, Ubiquitous
+Language, translation at boundaries). Tactical patterns
+(Aggregates, Repositories, Domain Events) are backend-only. See
+`.claude/rules/ddd/principles-hub.md`; load applicable shards by
+`paths:` frontmatter.
 
 ## Structure
 
@@ -29,10 +44,9 @@ frontend/
 │   │       ├── page.tsx                 # SSG -- jurisdiction landing (revalidated on ingestion-apply)
 │   │       └── [material]/
 │   │           └── page.tsx             # SSG -- material page (revalidated on ingestion-apply)
-│   └── api/
-│       ├── ask/route.ts                 # Sonnet user path
-│       ├── feedback/route.ts            # Answer feedback persistence
-│       └── ingest/route.ts              # Operator-only (admin guarded)
+│   └── api/                             # BFF proxy routes (browser → Next.js → backend)
+│       ├── ask/route.ts                 # Proxies POST /ask to backend
+│       └── feedback/route.ts            # Proxies feedback to backend
 │
 ├── components/                          # Feature-grouped components
 │   ├── answer-card/
@@ -43,10 +57,11 @@ frontend/
 │       └── ...
 │
 ├── lib/                                 # Pure utilities + clients
-│   ├── db/                              # Postgres client + queries (server-only)
-│   ├── llm/                             # Anthropic SDK wrapper, prompt versions, validators
-│   ├── domain/                          # Type definitions mirroring backend domain
-│   └── retrieval/                       # Material normalizer, rule retriever, source retriever
+│   ├── api/                             # Backend HTTP client (server-only by default)
+│   │   ├── client.ts                    # Generated OpenAPI client (do not hand-edit)
+│   │   ├── types.ts                     # Generated request/response types
+│   │   └── index.ts                     # Hand-written wrappers + error normalization
+│   └── utils/                           # Cross-cutting utilities
 │
 ├── tests/                               # Mirrors app/ + components/ + lib/
 │   ├── api/
@@ -77,27 +92,39 @@ keep them as small as possible. Server components can render client
 components freely; the inverse requires passing server-rendered content as
 `children`.
 
-**Server-only modules** (DB clients, secret-bearing config, Anthropic SDK
-calls) should be imported only from server components and route handlers.
-Use `import 'server-only'` at the top of those modules to make accidental
-client imports a build-time error.
+**Server-only modules** (server-side `lib/api/` calls that use the
+backend's internal URL, secret-bearing config) should be imported only
+from server components and route handlers. Use `import 'server-only'`
+at the top of those modules to make accidental client imports a
+build-time error.
 
-## Route handlers (`app/api/.../route.ts`)
+**Browser-side data calls go through Next.js BFF route handlers, not
+the backend directly.** Client components fetch from `/api/[route]`;
+that handler proxies to the backend with the correct internal URL,
+auth, and error mapping. The backend HTTP service is not exposed
+directly to the browser. Server components and `generateStaticParams`
+may call the backend directly (server-to-server, no CORS surface).
 
-- Validate inputs at system boundaries with `zod`. Specifically:
-  (a) `/api/ask` request bodies, and (b) parsed output from Sonnet (LLM
-  structured responses). Do NOT use zod to validate DB query results (the
-  backend's SQLAlchemy models and Alembic-managed schema guarantee row
-  shape on write) or internal function boundaries (TS types are
-  sufficient).
-- Return typed JSON matching the contract spec in
-  `private/specs/contracts/`.
-- Wrap every Anthropic SDK call per `.claude/rules/llm/CLAUDE.md`
-  (timeout, retry, prompt-version log, trace persistence).
-- Set `runtime = 'nodejs'` (default) -- the edge runtime cannot use the
-  `pg` driver.
-- Persist an `AnswerTrace` for every `/api/ask` invocation, even on error
-  paths.
+## Route handlers (`app/api/.../route.ts`) -- BFF proxies only
+
+Frontend route handlers are thin proxies between the browser and the
+backend HTTP API. They do **not** contain business logic, DB access, or
+LLM calls.
+
+- **Validate inputs.** Use `zod` to parse the browser's request body
+  before forwarding. Reject malformed input with HTTP 400 before
+  touching the backend.
+- **Forward to the backend.** Use `lib/api/` (the generated client) to
+  call the backend route. Pass through error responses with their
+  status codes; do not swallow them.
+- **Set `runtime = 'nodejs'`** (default). The Edge runtime is fine for
+  pure proxies but not required.
+- **No `AnswerTrace` writes here.** Trace persistence is the backend's
+  responsibility (the backend writes one row per `POST /ask`). The
+  frontend route handler should pass the backend's `trace_id` back to
+  the browser so feedback can correlate.
+- **No retries here.** The backend handles upstream LLM retries. A
+  failed backend call should propagate to the browser as-is.
 
 ## Rendering strategy
 
@@ -121,25 +148,25 @@ full Vercel rebuild.
 ## Layer dependency rules
 
 ```text
-app/api/      -> lib/llm, lib/db, lib/retrieval, lib/domain
-app/(routes)/ -> components/, lib/db, lib/domain
-components/   -> lib/domain, lib/utils, other components/
-lib/llm/      -> lib/domain
-lib/db/       -> lib/domain
-lib/retrieval -> lib/db, lib/llm, lib/domain
-lib/domain/   -> nothing (pure type definitions)
+app/api/      -> lib/api, lib/utils
+app/(routes)/ -> components/, lib/api, lib/utils
+components/   -> lib/api (types only), lib/utils, other components/
+lib/api/      -> lib/utils  (generated client + thin wrappers)
+lib/utils/    -> nothing
 ```
 
 | Layer | Can Import |
 | ------- | ------------ |
-| `app/api/` | `lib/llm`, `lib/db`, `lib/retrieval`, `lib/domain`, `lib/utils` |
-| `app/(routes)/` | `components/`, `lib/db` (server only), `lib/domain`, `lib/utils` |
-| `components/` | `lib/domain`, `lib/utils`, other `components/` |
-| `lib/llm/` | `lib/domain`, `lib/utils` |
-| `lib/db/` | `lib/domain`, `lib/utils` |
-| `lib/retrieval/` | `lib/db`, `lib/llm`, `lib/domain`, `lib/utils` |
-| `lib/domain/` | Nothing (pure types) |
-| `lib/utils/` | Nothing (pure utilities) |
+| `app/api/` (BFF route handlers) | `lib/api`, `lib/utils` |
+| `app/(routes)/` (server components, SSG) | `components/`, `lib/api` (server side), `lib/utils` |
+| `components/` | `lib/api` (types only), `lib/utils`, other `components/` |
+| `lib/api/` | `lib/utils` |
+| `lib/utils/` | Nothing |
+
+There is no `lib/db/`, `lib/llm/`, `lib/retrieval/`, or `lib/domain/` in
+this service. Those layers live in the backend. If you find yourself
+wanting to add one of them here, the work belongs on the backend
+instead.
 
 ## Commands
 
@@ -171,18 +198,23 @@ npm run test:e2e
 - Next.js (App Router, RSC)
 - TypeScript (strict mode)
 - Tailwind CSS
-- Anthropic SDK (`@anthropic-ai/sdk`) -- see `.claude/rules/llm/CLAUDE.md`
-- `pg` (node-postgres) for DB access, server-only, with hand-written SQL.
-  Do not introduce a parallel TS ORM (Drizzle, Prisma, Kysely, etc.) --
-  the backend's SQLAlchemy schema (managed via Alembic) is the source of
-  truth, and a second ORM in TS would create a duplicate schema that
-  drifts.
+- Backend HTTP client: generated from the backend's OpenAPI spec via
+  `openapi-typescript` (types only) plus a thin hand-written fetch
+  wrapper, OR a full client generator like `orval` if request shaping
+  is repetitive. The generated artifact lives in `lib/api/` and is
+  committed (not generated at deploy time). Re-run codegen whenever
+  the backend's OpenAPI changes.
+- **Do NOT add:** `pg`, `@anthropic-ai/sdk`, Prisma, Drizzle, Kysely,
+  or any ORM/SQL/LLM-SDK package. All database and LLM access is the
+  backend's responsibility. The frontend's only outbound dependency is
+  the backend HTTP API.
 - Vitest + React Testing Library
 - Playwright for E2E
 - Test-first discipline (red / green / refactor, captured red-state
   evidence): `.claude/rules/tdd.md`
-- `zod` for the two specific boundaries above (user input on `/api/ask`,
-  parsed Sonnet output). Not for DB rows.
+- `zod` for the BFF route handlers' input validation (browser →
+  Next.js boundary). The Next.js → backend boundary is typed by the
+  generated client and does not need zod.
 
 ## Code quality
 
@@ -192,8 +224,10 @@ npm run test:e2e
 - Route handlers with > 4-5 stages should extract orchestration into
   `lib/retrieval/` or similar.
 - No "kitchen sink" props.
-- Pass data and callbacks down via props -- avoid importing `lib/db` or
-  `lib/llm` directly from components. Server components fetch and pass;
-  client components consume.
-- Never call Anthropic from a client component. Always go through
-  `/api/ask`.
+- Pass data and callbacks down via props. Server components fetch from
+  `lib/api/` (server-side, direct to backend) and pass results into
+  client components as props. Client components do not call `lib/api/`
+  directly with the backend URL -- they go through Next.js BFF route
+  handlers.
+- Never call Anthropic from anywhere in the frontend. The Sonnet user
+  path executes on the backend; the frontend renders the answer.

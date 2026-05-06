@@ -5,13 +5,32 @@ paths:
 
 # Backend Service
 
-Python research worker. Asynchronous source ingestion, extraction,
-conflict detection, regression-suite runs, and operator CLI/admin
-endpoints. **Not** on the user request path -- the user-facing `/api/ask`
-lives in the Next.js frontend. This service uses Claude **Opus** for the
-agentic research loop.
+Python service with two surfaces sharing one domain layer:
 
-Implements domain-driven design.
+1. **FastAPI HTTP API** (synchronous, user-facing). Owns the Sonnet user
+   path: location resolution, material normalization, rule retrieval,
+   prompt composition, validator, response. Powers the frontend over
+   HTTP. Latency is load-bearing -- the spec target is p50 < 3 s, p95
+   < 6 s end-to-end through Sonnet.
+2. **Ingestion worker** (asynchronous, internal). Source fetch,
+   extraction, conflict detection, eval runs. Uses Claude **Opus** for
+   the agentic research loop. Latency is not load-bearing here;
+   correctness, citation fidelity, and auditability are.
+
+Both surfaces import the same `app/domain/`. Both write through the same
+`app/infra/db/` repositories. The HTTP API never touches `app/worker/`
+internals; the worker never touches FastAPI request handling. Domain is
+the only shared layer.
+
+This service owns the Postgres schema. SQLAlchemy models are the
+canonical schema definition; Alembic generates migrations from them.
+The frontend never connects to Postgres -- it consumes the FastAPI
+contract via a generated TypeScript client (see
+`.claude/rules/contracts.md` for the contract-generation pipeline).
+
+Implements domain-driven design. Tactical and strategic principles
+live in `.claude/rules/ddd/` (hub: `principles-hub.md`); load
+applicable shards by `paths:` frontmatter.
 
 ## Structure
 
@@ -19,15 +38,30 @@ Implements domain-driven design.
 ```text
 backend/
 ├── app/
-│   ├── api/                          # Operator/admin HTTP routes (thin)
-│   │   └── [resource].py
+│   ├── api/                          # FastAPI HTTP layer
+│   │   ├── main.py                   # FastAPI() app + middleware + route mounting
+│   │   ├── deps.py                   # Dependency providers (DB session, settings)
+│   │   ├── schemas/                  # Pydantic request/response models
+│   │   │   ├── ask.py                # AskRequest, Answer, Citation, Facility
+│   │   │   ├── jurisdictions.py
+│   │   │   ├── materials.py
+│   │   │   └── rules.py
+│   │   └── routes/                   # User-facing routes (thin -- delegate to use_cases)
+│   │       ├── ask.py                # POST /ask -- Sonnet user path
+│   │       ├── jurisdictions.py      # GET /jurisdictions/{slug}
+│   │       ├── materials.py          # GET /materials, GET /materials/{slug}
+│   │       └── rules.py              # GET /rules?jurisdiction=&material=
+│   │
+│   ├── worker/                       # Ingestion worker (async, internal)
+│   │   ├── runner.py                 # Worker entry point
+│   │   └── pipelines/                # Per-source ingestion pipelines
 │   │
 │   ├── cli/                          # CLI entry points (operator workflows)
 │   │   └── ingest.py                 # `python -m app.cli ingest --source <url>`
 │   │
-│   ├── application/                  # Use Cases / Orchestration
-│   │   ├── mappers/                  # ORM → Domain model mapping
-│   │   └── use_cases/                # IngestSource, ExtractRules, RunRegressionSuite, ApplyIngestionReport
+│   ├── application/                  # Use Cases / Orchestration (called by api/ AND worker/)
+│   │   ├── mappers/                  # ORM ↔ Domain model mapping
+│   │   └── use_cases/                # AnswerQuery (user path), IngestSource, ExtractRules, ...
 │   │
 │   ├── domain/                       # Business Logic (pure, no framework deps)
 │   │   ├── models/                   # Entities & Value Objects (mirrors data-model.md)
@@ -36,20 +70,19 @@ backend/
 │   │
 │   ├── infra/                        # Infrastructure Layer
 │   │   ├── db/
-│   │   │   ├── models/               # ORM table definitions
+│   │   │   ├── models/               # ORM table definitions (canonical schema)
 │   │   │   └── repositories/         # Data access layer
 │   │   └── external/
 │   │       ├── source_fetcher.py     # HTTP/HTML fetch + caching
-│   │       └── anthropic_client.py   # Claude SDK wrapper
+│   │       └── anthropic_client.py   # Claude SDK wrapper (Sonnet + Opus + Haiku)
 │   │
 │   ├── llm/                          # Prompt templates, validators, tool defs
-│   │   ├── prompts/
+│   │   ├── prompts/                  # Versioned prompts (ask_compose, material_normalize, ingestion_*)
 │   │   ├── tools/
-│   │   └── validators/
+│   │   └── validators/               # Grounding validator (user path)
 │   │
 │   ├── utils/                        # Cross-cutting utilities
-│   ├── config.py
-│   └── main.py                       # FastAPI app for admin endpoints (optional)
+│   └── config.py
 │
 ├── migrations/                       # Alembic
 │
@@ -71,8 +104,14 @@ backend/
 ## Commands
 
 ```bash
-# Run worker locally (from repo root)
+# Run full backend (API + worker) locally
 docker compose up backend
+
+# FastAPI dev server only (auto-reload, localhost:8000)
+cd backend && uv run uvicorn app.api.main:app --reload
+
+# Worker only
+cd backend && uv run python -m app.worker.runner
 
 # One-off ingestion (CLI)
 cd backend && python -m app.cli ingest \
@@ -81,13 +120,16 @@ cd backend && python -m app.cli ingest \
 # Apply an approved ingestion report
 cd backend && python -m app.cli apply-report --id <uuid>
 
+# Emit OpenAPI spec (for frontend codegen)
+cd backend && uv run python -m app.api.export_openapi > openapi.json
+
 # Run tests
 cd backend && pytest
 
 # Run with coverage
 pytest --cov=app --cov-report=term-missing
 
-# Run regression suite
+# Run regression suite (hits the local FastAPI dev server)
 pytest tests/regression -v
 
 # Linting + formatting
@@ -95,7 +137,7 @@ ruff check app/
 ruff format app/
 
 # Type checking
-mypy app/
+basedpyright app/
 
 # Database migrations
 alembic upgrade head
@@ -118,12 +160,29 @@ alembic revision --autogenerate -m "description"
 - Never edit existing migrations
 - Test migrations up AND down
 
+## HTTP API conventions
+
+- **Routes are thin.** A route handler validates input (Pydantic), calls
+  a use case in `app/application/use_cases/`, maps the result to a
+  response schema, returns. Domain logic does not live in routes.
+- **Pydantic schemas in `app/api/schemas/`.** Request and response shapes
+  are the contract. Each route declares typed inputs and outputs;
+  FastAPI emits these into the OpenAPI spec automatically.
+- **OpenAPI is the contract.** The frontend's TS client is generated
+  from this spec (see `.claude/rules/contracts.md`). Do not hand-edit
+  the OpenAPI file; update Pydantic schemas and re-emit.
+- **Latency on the user path.** The Sonnet user path (`POST /ask`) is
+  measured: p50 < 3 s, p95 < 6 s. Avoid synchronous I/O the user does
+  not need. Cache the system prompt; do not re-query Postgres for data
+  already in memory.
+- **Inject dependencies via `Depends`.** Never instantiate concrete
+  infrastructure (DB session, Anthropic client, repository) inside a
+  use case or domain service. Tests substitute fakes via dependency
+  override.
+
 ## Code quality
 
 - Split modules at ~200-300 lines
 - Use cases with >5-7 injected dependencies are a refactor signal
 - Functions with >4-5 parameters are a refactor signal -- bundle into a
   dataclass or schema
-- Inject ALL external dependencies (DB, APIs, services) via FastAPI
-  `Depends` -- never instantiate concrete infrastructure inside a use case
-  or domain service

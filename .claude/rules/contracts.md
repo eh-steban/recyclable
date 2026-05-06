@@ -9,6 +9,12 @@ paths:
 
 Rules for agents working on features that cross service boundaries.
 
+For DDD framing of *what counts as* a contract crossing a Bounded
+Context, see `.claude/rules/ddd/integrating-bounded-contexts.md`
+Principle 3 (Published Language, not shared classes) and
+`.claude/rules/ddd/context-maps.md` for the relationship patterns
+that govern the boundary.
+
 ## What is a contract
 
 A contract is the agreed JSON shape at a service boundary -- e.g., the
@@ -49,10 +55,13 @@ are filled in.
 - **Owner:** `backend-python` (owns Alembic migrations).
 - **Consumers:** `frontend-react` (`lib/domain/` types must match).
 
-The `db-schema.md` contract is special: it is the only "shape" that both
-services consume directly (Next.js reads tables for the user path, the
-worker reads + writes for ingestion). `.claude/rules/data-model.md` is
-the human-readable form; `db-schema.md` is the per-PR contract diff.
+The `db-schema.md` contract is special: the frontend does NOT connect
+to Postgres directly. The frontend's "consumption" of this contract
+means its generated TS types (produced by `npm run codegen:api`) must
+stay in sync with what the backend's OpenAPI spec exposes, which
+reflects the schema. The worker reads + writes Postgres directly.
+`.claude/rules/data-model.md` is the human-readable form; `db-schema.md`
+is the per-PR contract diff.
 
 ## Contract-first rule
 

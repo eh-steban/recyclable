@@ -155,6 +155,41 @@ output. Map each finding to the relevant OWASP LLM ID.
 - Are migrations forward-and-backward safe under live traffic, or
   do they assume a maintenance window?
 
+### DDD-rooted invariant attacks
+
+Apply when the diff touches a domain layer, a Bounded Context
+boundary, an event consumer, or a long-running process. Every
+finding cites the relevant shard + Principle number alongside any
+matching `INV-*` ID.
+
+- **Aggregate-boundary violations under concurrency.** Can two
+  Aggregates be mutated in one transaction? Can a hot path bypass
+  the Root and modify a part directly? Is optimistic concurrency
+  placed where the invariant lives, not on the part? Cite
+  `aggregates.md` Principles 1, 7, 9; `event-sourcing.md`
+  Principle 5 if A+ES is in use.
+- **Foreign types leaking into the domain.** Does an upstream
+  context's serialization class, generated client type, or raw
+  payload reach the domain layer without translation through an
+  Anticorruption Layer? Cite `integrating-bounded-contexts.md`
+  Principles 3, 5; `factories.md` Principle 7 if the leak is at a
+  Factory.
+- **At-least-once and out-of-order consumer hazards.** Does an
+  event handler tolerate redelivery and reordering? Does every
+  command stamp `occurredOn` and let the Aggregate decide
+  supersession? Cite `integrating-bounded-contexts.md` Principle 7;
+  `event-sourcing.md` Principle 9 if events are also persisted.
+- **Aggregate dumps over HTTP / Open Host Service abuse.** Does an
+  HTTP response mirror the Aggregate's shape (a Conformist /
+  accidental Shared Kernel)? Does a REST resource expose navigable
+  Aggregate trees rather than use-case-shaped representations?
+  Cite `application.md` Principle 3;
+  `integrating-bounded-contexts.md` Principle 4.
+- **Long-Running Process without a tracker.** Does a multi-step
+  cross-context interaction lack a time-out, retry budget, and
+  completion record? Cite `integrating-bounded-contexts.md`
+  Principles 8, 9.
+
 ### External integration and operational failure
 
 - What happens if Postgres, the LLM API, a scraper target, a

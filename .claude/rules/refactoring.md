@@ -109,6 +109,39 @@ implementation. Prioritize:
 - Broad cleanup outside the implementation scope.
 - Modifying tests only to make a refactor fit.
 
+## DDD principles as refactor constraints
+
+The DDD shards under `.claude/rules/ddd/` (hub:
+`principles-hub.md`) define what counts as a domain-layer
+boundary. Several principles act as explicit constraints on what
+"behavior-preserving" means. A change that crosses one of these is
+not a refactor:
+
+- **Aggregate boundaries are not refactor-movable.** Splitting,
+  merging, or relocating an Aggregate, or moving an invariant
+  across Aggregates, is a design change. Cite `aggregates.md`
+  Principles 1, 4.
+- **Repository implementation swaps are refactor-safe only if the
+  public interface is unchanged.** Hibernate → SQLAlchemy, MongoDB
+  → Postgres, in-memory → real store: all fine *iff* the interface
+  in the domain Module stays byte-identical. Renaming a finder
+  method or changing its return shape is a contract change. Cite
+  `repositories.md` Principle 1; `event-sourcing.md` "What this
+  shard does NOT govern" if A+ES is involved.
+- **Open Host Service / Published Language renames are contract
+  changes.** Renaming a field on the wire format or a resource path
+  is never a refactor. Cite `integrating-bounded-contexts.md`
+  Principle 3; `context-maps.md`.
+- **Bounded Context boundary moves are never refactors.** Moving a
+  concept from one context to another, splitting a context, or
+  merging two contexts is a strategic design change. Escalate to
+  spec, not refactor. Cite `bounded-contexts.md`.
+- **Domain Event schema changes are not refactors.** Adding a field
+  is safe under tag-based serialization (Protocol Buffers, Avro);
+  renaming or removing one is a versioned migration, not a
+  refactor. Cite `event-sourcing.md` Principle 10 if A+ES is in
+  use; `domain-events.md` for general Event evolution.
+
 ## Use by other agents
 
 - **Refactorer agent (Phase 6):** reads this file at the start of

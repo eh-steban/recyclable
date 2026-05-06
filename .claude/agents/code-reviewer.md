@@ -28,6 +28,22 @@ refusal, migrations, external input, background jobs, or destructive
 operations, recommend running the `adversarial-reviewer` unless it
 already ran.
 
+## Loading rules on demand
+
+Rule files under `.claude/rules/` are NOT auto-loaded. Load only what
+applies to the diff:
+
+1. List candidate rule files: `.claude/rules/{backend,frontend,llm}/*.md`
+   for the touched services and `.claude/rules/*.md` at the repo level
+   (including `.claude/rules/ddd/*.md` for any diff that touches a
+   domain layer or a context boundary).
+2. Inspect each file's frontmatter -- e.g. `head -10 <file>` -- for a
+   `paths:` glob list.
+3. Read the body of any rule whose `paths:` matches a file in the
+   diff. Skip rules that do not match.
+
+This keeps your context targeted. Do not Read every rule body up front.
+
 ## Review checklist (in priority order)
 
 ### 1. Security (always check)
@@ -71,7 +87,27 @@ already ran.
   justification
 - Zero unparameterized SQL queries (no exceptions)
 
-### 7. Knowledge management
+### 7. DDD principle violations
+
+Apply when the diff touches:
+
+- A domain-layer file (Aggregate, Repository, Domain Service, Domain
+  Event, Value Object, Factory, or anything under
+  `backend/app/domain/`).
+- A Bounded Context boundary (HTTP API surface, ingestion adapter,
+  generated client wrapper, prompt-input boundary).
+- A new long parameter list (≥4 args), or a new noun in code, schema,
+  or prompt.
+
+When a finding cites a DDD principle, name the shard and Principle
+number explicitly -- e.g. "violates `aggregates.md` Principle 1
+(one-Aggregate-per-transaction)" or "violates
+`integrating-bounded-contexts.md` Principle 3 (Published Language,
+not shared classes)". Do not flag vague "this isn't very DDD"
+feedback. The hub is at `.claude/rules/ddd/principles-hub.md`; load
+applicable shards via the `paths:` discovery above.
+
+### 8. Knowledge management
 
 - If code has non-obvious patterns: verify code comments link to relevant
   mental models or docs
