@@ -215,6 +215,19 @@ something the shard governs; otherwise the hub is enough.
   bypassing the Aggregate boundary, use-case-optimal queries as a
   smell, transactions in the Application Service, real-store tests
   for the Repository and in-memory tests for its clients.
+- [`integrating-bounded-contexts.md`](integrating-bounded-contexts.md)
+  -- Vernon Ch. 13. Integrating bounded contexts: cross-context calls
+  are distributed-systems calls (not in-process), choosing messaging
+  vs REST vs RPC by the autonomy you need, crossing through a
+  Published Language (not shared classes), Open Host Services that
+  expose use cases (not Aggregates), Anticorruption Layers as
+  Service + Adapter + Translator, mirror-vs-look-up trade-offs and
+  the bias toward minimizing duplication, designing for out-of-order
+  and at-least-once delivery (per-attribute change trackers,
+  idempotent handlers, `occurredOn` on commands), Long-Running
+  Processes with a tracker / retries / time-out, multi-gate Processes
+  as state machines with `completenessVerified()`, planning for
+  broker and consumer downtime.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -223,7 +236,7 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Integrating Bounded Contexts, Application.
+the book): Application.
 
 ## How this interacts with other rules
 
