@@ -11,7 +11,7 @@ How to apply Domain-Driven Design, distilled from Vaughn Vernon,
 *Implementing Domain-Driven Design*.
 
 This file is a **navigation hub**. The principles themselves live
-in topic-specific shards under `ddd/`. The hub holds the
+in sibling topic-specific shards. The hub holds the
 foundational context, the shard index, and the philosophy of
 partial adoption. The project's own catalog of bounded contexts
 and their classifications belongs in specs and design docs, not
@@ -138,22 +138,27 @@ Each shard distills one chapter (or one cohesive topic) of
 Vernon's book into principles. Follow the link when working on
 something the shard governs; otherwise the hub is enough.
 
-- [`ddd/bounded-contexts.md`](ddd/bounded-contexts.md) --
-  Vernon Ch. 2. Defining a single bounded context: domains vs
-  subdomains, Core/Supporting/Generic, naming, what lives inside
-  the boundary, right-sizing, same-word-different-meaning.
-- [`ddd/context-maps.md`](ddd/context-maps.md) -- Vernon Ch. 3.
-  Relationships between contexts: integration patterns
-  (Open Host Service, Published Language, ACL,
-  Customer-Supplier, Separate Ways, Shared Kernel, Conformist,
-  Big Ball of Mud), upstream/downstream direction, eventual
-  consistency, translation maps, modeling unavailability.
-- [`ddd/architecture.md`](ddd/architecture.md) -- Vernon Ch. 4.
+- [`bounded-contexts.md`](bounded-contexts.md) -- Vernon Ch. 2.
+  Defining a single bounded context: domains vs subdomains,
+  Core/Supporting/Generic, naming, what lives inside the boundary,
+  right-sizing, same-word-different-meaning.
+- [`context-maps.md`](context-maps.md) -- Vernon Ch. 3.
+  Relationships between contexts: integration patterns (Open Host
+  Service, Published Language, ACL, Customer-Supplier, Separate
+  Ways, Shared Kernel, Conformist, Big Ball of Mud),
+  upstream/downstream direction, eventual consistency, translation
+  maps, modeling unavailability.
+- [`architecture.md`](architecture.md) -- Vernon Ch. 4.
   Architectural styles inside a context: risk-driven selection,
-  Layers + DIP as default, Hexagonal (Ports and Adapters), REST
-  as Open Host Service, Smart-UI rejection, eventual consistency
-  between adapters, when (not) to adopt CQRS / EDA / Event
-  Sourcing / Data Fabric.
+  Layers + DIP as default, Hexagonal (Ports and Adapters), REST as
+  Open Host Service, Smart-UI rejection, eventual consistency
+  between adapters, when (not) to adopt CQRS / EDA / Event Sourcing
+  / Data Fabric.
+- [`entities.md`](entities.md) -- Vernon Ch. 5. Entities: when to
+  reach for one, unique-identity strategies, identity stability,
+  surrogate identity, discovering Entities from the Ubiquitous
+  Language, behavior on the type that owns the invariant, roles
+  and object-schizophrenia, validation at three levels.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -162,22 +167,22 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Entities, Value Objects, Services, Domain Events,
-Modules, Aggregates, Factories, Repositories, Integrating
-Bounded Contexts, Application.
+the book): Value Objects, Services, Domain Events, Modules,
+Aggregates, Factories, Repositories, Integrating Bounded
+Contexts, Application.
 
 ## How this interacts with other rules
 
-- **`contracts.md`** governs the *shape* of HTTP-boundary
+- **`../contracts.md`** governs the *shape* of HTTP-boundary
   contracts. The DDD shards govern *why* that boundary exists
   and what counts as crossing it.
-- **`refactoring.md`** forbids changing public contracts without
+- **`../refactoring.md`** forbids changing public contracts without
   authorization. An integration surface between bounded contexts
   is a public contract in this sense when other contexts depend
   on it -- even when both sides live in the same codebase. A
   refactor may not move or rename that surface without updating
   all dependents.
-- **`private/invariants.md`** -- if a DDD principle in any shard
+- **`private/invariants.md`** (repo root) -- if a DDD principle in any shard
   ever conflicts with a numbered invariant, the invariant wins;
   flag the conflict and escalate.
 

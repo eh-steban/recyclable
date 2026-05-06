@@ -15,7 +15,7 @@ Chapter 4 ("Architecture").
 This shard covers **what architectural style a context uses, and
 why**. For *what* a bounded context is, see `bounded-contexts.md`;
 for relationships *between* contexts, see `context-maps.md`; for
-the index of shards, see `../ddd-principles.md`.
+the index of shards, see `principles.md`.
 
 ## Vernon's framing in one paragraph
 
@@ -223,7 +223,7 @@ quality requirement.
 
 ## Cross-references
 
-- `../ddd-principles.md` -- DDD hub: index of shards.
+- `principles.md` -- DDD hub: index of shards.
 - `bounded-contexts.md` -- defining and sizing one context;
   Smart-UI anti-pattern.
 - `context-maps.md` -- integration patterns, ACLs, eventual

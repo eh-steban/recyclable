@@ -15,7 +15,7 @@ Maps").
 
 This shard covers **how contexts interact**. For what a bounded
 context *is* and how to size one, see `bounded-contexts.md`. For
-the index of shards, see `../ddd-principles.md`.
+the index of shards, see `principles.md`.
 
 ## What a context map is
 
@@ -147,7 +147,7 @@ the truth.
 
 ## Cross-references
 
-- `../ddd-principles.md` -- DDD hub: index of shards.
+- `principles.md` -- DDD hub: index of shards.
 - `bounded-contexts.md` -- principles for *defining* a single
   bounded context.
 - `../contracts.md` -- the *shape* discipline for HTTP-boundary
