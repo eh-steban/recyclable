@@ -228,6 +228,21 @@ something the shard governs; otherwise the hub is enough.
   Processes with a tracker / retries / time-out, multi-gate Processes
   as state machines with `completenessVerified()`, planning for
   broker and consumer downtime.
+- [`application.md`](application.md) -- Vernon Ch. 14. The
+  application compartments around the domain model: thin Application
+  Services as one-method-per-use-case task coordinators (not Domain
+  Services), Commands replacing long parameter lists, view shapes
+  driven by use case (not Aggregate shape), choosing among DTO / DPO
+  / Mediator / use-case-optimal query / REST representation by
+  capability not fashion, Mediator/Double-Dispatch to keep Aggregate
+  encapsulation through the rendering surface, Data-Transformer
+  parameters or Hexagonal output Ports for disparate clients,
+  declarative transactions and authorization at the Application
+  Service boundary, Presentation Model as Adapter (not Facade),
+  composing-Application-Layer for multi-context UIs and when to
+  promote it to a new Bounded Context, infrastructure implements
+  interfaces declared with the consuming layer (DIP), one DI / Service
+  Factory / constructor convention per project.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -235,8 +250,12 @@ DDD-Lite trap, three recurring challenges) is folded into the
 the material is context for agentic reasoning, not a
 principles list to apply per task.
 
-Future shards (one per chapter, added as the team works through
-the book): Application.
+Vernon's Appendix A (Aggregates and Event Sourcing: A+ES,
+contributed by Rinat Abdullin) is intentionally not yet folded in;
+its placement -- own shard or split across `architecture.md`,
+`aggregates.md`, and `domain-events.md` -- is an open
+question to revisit once the project's stance on Event Sourcing is
+clearer.
 
 ## How this interacts with other rules
 
