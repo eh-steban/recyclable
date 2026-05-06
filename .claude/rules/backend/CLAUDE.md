@@ -109,6 +109,8 @@ alembic revision --autogenerate -m "description"
 - Domain tests should be pure (no mocking)
 - Application tests mock infrastructure dependencies
 - See `.claude/rules/backend/testing.md` for patterns
+- Test-first discipline (red / green / refactor, captured red-state
+  evidence): `.claude/rules/tdd.md`
 
 ## Database
 

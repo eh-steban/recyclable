@@ -179,6 +179,8 @@ npm run test:e2e
   drifts.
 - Vitest + React Testing Library
 - Playwright for E2E
+- Test-first discipline (red / green / refactor, captured red-state
+  evidence): `.claude/rules/tdd.md`
 - `zod` for the two specific boundaries above (user input on `/api/ask`,
   parsed Sonnet output). Not for DB rows.
 
