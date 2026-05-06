@@ -189,6 +189,15 @@ something the shard governs; otherwise the hub is enough.
   parent/child cohesion), don't strip typed identity for "loose
   coupling," reach for a new Module before a new Bounded Context,
   apply the same discipline outside the domain layer.
+- [`aggregates.md`](aggregates.md) -- Vernon Ch. 10. Aggregates:
+  consistency-boundary as the unit of transactional change,
+  one-Aggregate-per-transaction, modeling true invariants (not
+  compositional convenience), small Aggregates of Root + Values,
+  reference other Aggregates by identity, eventual consistency
+  outside the boundary, the "whose job is it?" tie-breaker,
+  Tell-Don't-Ask + Law of Demeter at the Root, Application
+  Services (not Aggregates) own dependency lookup, optimistic
+  concurrency placed where the invariant lives, named rule-breaks.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -197,8 +206,8 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Aggregates, Factories, Repositories, Integrating
-Bounded Contexts, Application.
+the book): Factories, Repositories, Integrating Bounded Contexts,
+Application.
 
 ## How this interacts with other rules
 
