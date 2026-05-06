@@ -142,6 +142,55 @@ not a refactor:
   refactor. Cite `event-sourcing.md` Principle 10 if A+ES is in
   use; `domain-events.md` for general Event evolution.
 
+## SOLID at refactor scope
+
+The five principles, scoped to what counts as behavior-preserving.
+Where a DDD shard already encodes a principle in depth, this section
+states the refactor-time rule and points there for the deeper
+treatment. Canonical definitions:
+[SOLID](https://en.wikipedia.org/wiki/SOLID).
+
+- **S -- Single Responsibility.** A unit has one reason to change.
+  Trigger: a function or class the implementation just made longer
+  because it now mixes two concerns (parsing + I/O, retrieval +
+  formatting, validation + persistence). Allowed: extract method,
+  class, or component to separate them. Do not split a unit that
+  already has one reason to change "for symmetry."
+
+- **O -- Open/Closed.** Open for extension, closed for modification.
+  At refactor scope this is mostly a *constraint*: do not edit a
+  stable abstraction (a port, a Strategy, a Factory) to shoehorn a
+  new case. A new case is an implementation change -- escalate. A
+  refactor may expose an existing seam more cleanly; it may not
+  rewrite a closed contract.
+
+- **L -- Liskov Substitution.** A subtype must be usable wherever
+  its supertype is, with no caller checking which one it holds.
+  Trigger: an override that strengthens a precondition, weakens a
+  postcondition, throws an exception the base type does not declare,
+  or relies on runtime type discrimination at the callsite. A
+  refactor may not introduce such an override, and may not remove a
+  type-discriminating check unless no caller depended on it. The
+  polymorphic-Aggregate / Repository case is covered in
+  `ddd/repositories.md` Principle 1.
+
+- **I -- Interface Segregation.** Clients should not depend on
+  methods they do not use. Trigger: a port has grown a method only
+  one consumer calls, or a domain Entity exposes methods only the
+  persistence layer needs. Splitting an internal interface is
+  allowed when the externally visible contract is unchanged.
+  Splitting an interface that crosses a Bounded Context, or removing
+  a method from an Open Host Service or Published Language, is a
+  contract change.
+
+- **D -- Dependency Inversion.** High-level code depends on
+  abstractions; abstractions do not depend on details. The domain
+  owns the interface; infrastructure provides the implementation.
+  Trigger: an import of `infra/` (or a framework type) from inside
+  `domain/`, or a port inlined at its callsite. A refactor may not
+  invert this direction. Deeper treatment in `ddd/architecture.md`
+  Principle 2 and `architecture.md` "Layers + DIP".
+
 ## Use by other agents
 
 - **Refactorer agent (Phase 6):** reads this file at the start of
