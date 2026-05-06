@@ -10,8 +10,8 @@ paths:
 How the components that surround a domain model -- user interface,
 Application Services, infrastructure -- are assembled into a working
 application without leaking domain logic outward or technical detail
-inward. Distilled from Vaughn Vernon, *Implementing Domain-Driven
-Design*, Chapter 14 ("Application").
+inward. Distilled from *Implementing Domain-Driven Design*,
+Chapter 14 ("Application").
 
 This shard covers **what lives outside the domain model and how it
 talks to the model**. For Domain vs Application Service distinction at
@@ -27,7 +27,7 @@ shards, see `principles-hub.md`.
 > components that are assembled to interact with and support a Core
 > Domain model. This generally means the domain model itself, a user
 > interface, internally used Application Services, and infrastructural
-> components." -- Vernon Ch. 14
+> components." -- Ch. 14
 
 Four compartments, one assembly:
 
@@ -74,7 +74,7 @@ in a Domain Service.
 > "We should strive to push all business domain logic into the domain
 > model, whether that be in Aggregates, Value Objects, or Domain
 > Services. Keep Application Services thin, using them only to
-> coordinate tasks on the model." -- Vernon Ch. 14
+> coordinate tasks on the model." -- Ch. 14
 
 **Apply when:** writing or reviewing an Application Service. If the
 method has more than transaction-open + authorization + one domain
@@ -126,10 +126,10 @@ mirrors the Aggregate hierarchy. Three failure modes follow:
   domain model, just badly named.
 
 The rule: the shape of what reaches the view is dictated by *what
-the user is trying to do*, not by how the Aggregate is stored. Vernon
-calls this a **View Model** or **Presentation Model**, and treats
-RESTful state representations the same way -- a separate model from
-the domain.
+the user is trying to do*, not by how the Aggregate is stored.
+This is a **View Model** or **Presentation Model**; RESTful state
+representations work the same way -- a separate model from the
+domain.
 
 **Apply when:** designing a view, a DTO, a REST representation, or any
 artefact the UI consumes. Name the use case, then design the shape
@@ -137,9 +137,9 @@ backwards from it. If the shape mirrors the Aggregate, it is wrong.
 
 ### 4. Choose the rendering technique by capability, not by fashion
 
-Vernon catalogues five recurring techniques. Each fits a different
-combination of "how far is the presentation from the domain?" and
-"how strict is the encapsulation?":
+Five recurring techniques. Each fits a different combination of
+"how far is the presentation from the domain?" and "how strict is
+the encapsulation?":
 
 - **DTO + DTO Assembler.** The Application Service uses Repositories
   to load Aggregates, an Assembler reads off them, the DTO travels to
@@ -309,7 +309,7 @@ A view that needs `Product` (one context), `Discussion` (another), and
   fragments and is hard to test.
 - **Single composing Application Layer** -- one Application Service
   pulls from each context's domain layer (or each context's
-  Application Service) and assembles a unified result. Vernon's
+  Application Service) and assembles a unified result. The
   preferred default for a single-page composition.
 
 The composing layer has a tendency to grow until it has its own use
@@ -398,12 +398,13 @@ interface in the layer that needs it; place the implementation in
   hand-rolled constructor wiring -- the choice is operational; the
   invariants this shard names (interface placement, single
   convention per project) hold for all of them.
-- **Event Sourcing as a persistence strategy.** Vernon's Appendix A
-  treats Aggregate state as an event stream rather than a row. That
-  decision changes how Repositories, Application Services, and
-  Aggregates interact; if and when the project adopts A+ES, the
-  relevant changes are described there. This shard assumes the
-  conventional Aggregate-state-in-rows / documents shape.
+- **Event Sourcing as a persistence strategy.** A+ES (see
+  `event-sourcing.md`) treats Aggregate state as an event stream
+  rather than a row. That decision changes how Repositories,
+  Application Services, and Aggregates interact; if and when the
+  project adopts A+ES, the relevant changes are described there.
+  This shard assumes the conventional Aggregate-state-in-rows /
+  documents shape.
 
 ## Cross-references
 

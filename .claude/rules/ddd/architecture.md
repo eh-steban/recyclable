@@ -9,25 +9,25 @@ paths:
 
 Architectural-style principles for **how DDD code is organized and
 how concerns are layered** inside a bounded context. Distilled
-from Vaughn Vernon, *Implementing Domain-Driven Design*,
-Chapter 4 ("Architecture").
+from *Implementing Domain-Driven Design*, Chapter 4
+("Architecture").
 
 This shard covers **what architectural style a context uses, and
 why**. For *what* a bounded context is, see `bounded-contexts.md`;
 for relationships *between* contexts, see `context-maps.md`; for
 the index of shards, see `principles-hub.md`.
 
-## Vernon's framing in one paragraph
+## Framing in one paragraph
 
 DDD does not prescribe an architecture. Pick architectural styles
 the way you pick anything else in DDD: **drive selection by real
 quality demands** (latency, testability, scalability,
 auditability), not by fashion. Every style in use must be
 justifiable against a specific risk it mitigates; if it cannot be
-justified, drop it. Vernon walks Layers → DIP → Hexagonal → SOA /
-REST → CQRS → EDA → Event Sourcing → Data Fabric, in roughly
-ascending complexity, and is emphatic that adding a style you do
-not need is itself a risk.
+justified, drop it. The chapter walks Layers → DIP → Hexagonal →
+SOA / REST → CQRS → EDA → Event Sourcing → Data Fabric, in
+roughly ascending complexity, and is emphatic that adding a style
+you do not need is itself a risk.
 
 ## Principles
 
@@ -65,7 +65,7 @@ In practice:
   clients, messaging adapters. Implements interfaces from the
   domain. The domain never imports it.
 
-Vernon's "anemic-model" warning (see hub Foundations) applies
+The "anemic-model" warning (see hub Foundations) applies
 most sharply here: a thick application layer that mutates many
 fields on a domain object is the symptom. The cure is to push the
 behavior onto the Aggregate.
@@ -88,8 +88,8 @@ A context may have **multiple driving (input) adapters** sharing
 the same domain. Adding a new client surface or output mechanism
 must not require changing the domain.
 
-Vernon's rule: design the inside per **functional requirements**,
-not per the number or shape of adapters.
+The rule: design the inside per **functional requirements**, not
+per the number or shape of adapters.
 
 **Apply when:** adding a new client surface, swapping a backing
 store, or wiring a new external service. The change should land
@@ -99,9 +99,9 @@ in an Adapter, not in the domain.
 
 When publishing a bounded context's capabilities over HTTP (or
 any wire protocol) the wire schema is its **own type**, not the
-domain object. Vernon is explicit that **directly exposing the
-domain model over REST is brittle** -- every change to a domain
-type ripples into every client.
+domain object. **Directly exposing the domain model over REST is
+brittle** -- every change to a domain type ripples into every
+client.
 
 The HTTP layer exposes use-case-shaped resources whose payloads
 are *derived from* domain objects but are not them. Wire schemas
@@ -148,9 +148,9 @@ surface failure modes get domain names.
 
 ### 7. CQRS only when the read shape genuinely diverges from the write shape
 
-Vernon's CQRS guidance: split command and query models only when
-view sophistication or scaling demands it. Otherwise it is
-accidental complexity.
+CQRS guidance: split command and query models only when view
+sophistication or scaling demands it. Otherwise it is accidental
+complexity.
 
 A spec that proposes CQRS must cite the read-vs-write divergence
 (views that cut across multiple Aggregates, scaling asymmetry,
@@ -163,9 +163,9 @@ to name the risk and the failure mode without the split.
 
 ### 8. Event-Driven across contexts where it removes coupling, not as a default
 
-Vernon's EDA, Pipes-and-Filters, and Long-Running Process
-patterns fit when work is naturally distributed and asynchronous
-and when synchronous coupling would create timeouts or fragility.
+EDA, Pipes-and-Filters, and Long-Running Process patterns fit
+when work is naturally distributed and asynchronous and when
+synchronous coupling would create timeouts or fragility.
 
 Default to synchronous calls inside a context and across an Open
 Host Service. Reach for Domain Events between contexts when the
@@ -176,7 +176,7 @@ subscribers.
 
 If a workflow becomes a multi-step process that must outlive a
 single invocation, it becomes a **Long-Running Process** with an
-explicit state-tracker Aggregate (Vernon's "executive + tracker"
+explicit state-tracker Aggregate (the "executive + tracker"
 pattern). The state tracker carries a unique Process identity on
 every related Domain Event so out-of-order completions can be
 correlated.
@@ -188,8 +188,8 @@ when a workflow spans more than one invocation.
 
 ### 9. Event Sourcing has a high cost of entry; justify it explicitly
 
-Vernon's Event Sourcing trades ORM persistence for an event log
-that can be replayed. Its main payoffs are auditability,
+Event Sourcing trades ORM persistence for an event log that can
+be replayed. Its main payoffs are auditability,
 debuggability, and "what-if" replay. Its costs are: a dedicated
 Event Store, snapshotting to bound replay latency, an almost
 mandatory pairing with CQRS for queryability, and a domain model
@@ -208,10 +208,10 @@ simpler shape demonstrably cannot carry the requirement.
 
 ### 10. Data Fabric / Grid is out of scope by default
 
-Vernon covers in-memory data grids for scaling. Adding a
-distributed cache is forbidden by default; if a future spec needs
-it, the spec must justify the operational cost against the
-quality requirement.
+In-memory data grids exist for scaling, but adding a distributed
+cache is forbidden by default; if a future spec needs it, the
+spec must justify the operational cost against the quality
+requirement.
 
 ## What this shard does **not** govern
 

@@ -12,8 +12,8 @@ transactional consistency boundary, how to size it, how to reference
 across boundaries, how to keep separate Aggregates eventually
 consistent without sneaking back into multi-Aggregate transactions,
 and how to implement Aggregate Roots so clients cannot bypass them.
-Distilled from Vaughn Vernon, *Implementing Domain-Driven Design*,
-Chapter 10 ("Aggregates").
+Distilled from *Implementing Domain-Driven Design*, Chapter 10
+("Aggregates").
 
 This shard covers **what an Aggregate is and how to design one**.
 For the Entity at its Root, see `entities.md`. For the Value parts
@@ -35,7 +35,7 @@ state changes and emits Events when commands succeed.
 > Bounded Context modifies only one Aggregate instance per
 > transaction in all cases. ... we cannot correctly reason on
 > Aggregate design without applying transactional analysis."
-> -- Vernon, Ch. 10
+> -- Ch. 10
 
 Three forces motivate Aggregates:
 
@@ -81,7 +81,7 @@ Events.
 ### 2. Model true invariants, not compositional convenience
 
 > "An invariant is a business rule that must always be consistent."
-> -- Vernon, Ch. 10
+> -- Ch. 10
 
 A **true invariant** is a rule the business genuinely requires to
 hold at every commit: "the sum of line-item amounts must not
@@ -91,8 +91,8 @@ reflect the remaining hours on its tasks." Invariants are the
 Aggregate.
 
 A **false invariant** is a developer-imposed constraint that
-sounds protective but isn't a real business rule. Vernon's
-example: "if a backlog item is committed to a sprint, we must
+sounds protective but isn't a real business rule. Example: "if a
+backlog item is committed to a sprint, we must
 not allow it to be removed from the system." Plausible-sounding,
 but not actually a business rule -- the business has other ways
 to prevent inappropriate removal (authorization, soft-delete,
@@ -115,16 +115,15 @@ invariant -- consider splitting.
 ### 3. Design small Aggregates; prefer Root plus Values
 
 > "Limit the Aggregate to just the Root Entity and a minimal
-> number of attributes and/or Value-typed properties." -- Vernon,
-> Ch. 10
+> number of attributes and/or Value-typed properties." -- Ch. 10
 
 Default Aggregate shape: a Root Entity, a handful of attributes,
 and several Value-typed properties (per `value-objects.md`
 Principle 1). Add Entity parts only when an invariant demands
 that the parts have their own identity *and* must change
-together with the Root in a single transaction. Vernon cites
-~70% of real Aggregates fitting Root-plus-Values; ~30% needing
-two or three Entities. Treat that ratio as a sanity check, not a
+together with the Root in a single transaction. Roughly 70% of
+real Aggregates fit Root-plus-Values; ~30% need two or three
+Entities. Treat that ratio as a sanity check, not a
 quota.
 
 Smaller Aggregates win on every dimension: less to load (lazy
@@ -192,7 +191,7 @@ reason -- usually a query-performance trade-off you have measured.
 > up-to-date at all times. Through event processing, batch
 > processing, or other update mechanisms, other dependencies can
 > be resolved within some specific time." -- Evans, quoted in
-> Vernon Ch. 10
+> Ch. 10
 
 Once the boundary is drawn, every cross-boundary rule is
 **eventually consistent by default**. The publishing Aggregate
@@ -228,7 +227,7 @@ consistency?**
 - If it is **another user, the system, or a downstream process**,
   use eventual consistency.
 
-Vernon credits this tie-breaker to Evans. It is more useful than
+This tie-breaker is credited to Evans. It is more useful than
 "transactional feels safer" or "eventual is more modern" because
 it lifts the question into the domain: it forces the team to name
 the responsible actor, which often surfaces an invariant that was
@@ -274,8 +273,8 @@ the API is missing a command.
 ### 8. Look up dependencies in the Application Service, not the Aggregate
 
 Do **not** inject a Repository or a Domain Service into an
-Aggregate as a constructor field. The pattern Vernon names
-"Disconnected Domain Model" -- Aggregates that wake up holding a
+Aggregate as a constructor field. The "Disconnected Domain Model"
+pattern -- Aggregates that wake up holding a
 reference to their persistence layer -- couples the model to
 infrastructure, makes Aggregates hard to test, and bloats every
 in-memory instance with framework references.
@@ -313,9 +312,9 @@ in a Root-level invariant), the operation that mutates the part
 must also mutate something on the Root that the persistence layer
 sees as a state change. The cleanest version of this is to mutate
 a legitimate domain field on the Root as part of the operation
-(Vernon's example: when a `Task`'s zero-hours estimate transitions
-the parent `BacklogItem`'s status to `done`, the `BacklogItem`'s
-status is the legitimate Root field that takes the bump). Avoid
+(e.g. when a `Task`'s zero-hours estimate transitions the parent
+`BacklogItem`'s status to `done`, the `BacklogItem`'s status is
+the legitimate Root field that takes the bump). Avoid
 hooking the persistence layer to silently dirty the Root --
 that pulls infrastructure into the model.
 
@@ -338,8 +337,8 @@ level of the invariant.
 
 ### 10. Break the rules deliberately, naming the reason
 
-The rules above are rules of thumb, not laws. Vernon names four
-concrete situations where an experienced practitioner may modify
+The rules above are rules of thumb, not laws. Four concrete
+situations recur where an experienced practitioner may modify
 multiple Aggregates in one transaction; the discipline is that
 each break is named, not implicit:
 

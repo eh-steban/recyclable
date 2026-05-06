@@ -12,8 +12,7 @@ concept deserves a Value (as opposed to an Entity), what
 characteristics every Value must have, how to keep behavior
 side-effect-free, where Standard Types fit, and how to keep
 persistence concerns from corrupting the model. Distilled from
-Vaughn Vernon, *Implementing Domain-Driven Design*, Chapter 6
-("Value Objects").
+*Implementing Domain-Driven Design*, Chapter 6 ("Value Objects").
 
 This shard covers **what a Value Object is and how to design one**.
 For Entities (the identity-bearing counterpart), see `entities.md`.
@@ -26,9 +25,9 @@ For the index of shards, see `principles-hub.md`.
 > of the attributes it conveys and give it related functionality.
 > Treat the VALUE OBJECT as immutable. Don't give it any identity
 > and avoid the design complexities necessary to maintain ENTITIES."
-> -- Evans, quoted in Vernon Ch. 6
+> -- Evans, quoted in Ch. 6
 
-Vernon's stronger formulation: **bias the model toward Values**.
+The stronger formulation: **bias the model toward Values**.
 Default to Value; reach for Entity only when individuality plus a
 mutable life cycle are both required (see `entities.md` Principle 1).
 Even within an Entity, prefer fields-of-Values over fields-of-Entities
@@ -84,7 +83,7 @@ will combine them differently.
 named together as a type. Promote the cluster to a Value.
 
 > "Each attribute contributes an important part to a whole that
-> collectively the attributes describe." -- Vernon Ch. 6
+> collectively the attributes describe." -- Ch. 6
 
 ### 4. Replaceability
 
@@ -158,9 +157,9 @@ A method either returns a derived value, returns a new replacement
 Value, or both. It never mutates `this` and never has observable
 side effects on anything else.
 
-This is the **Side-Effect-Free Function** characteristic Vernon
-calls out alongside CQS (Command-Query Separation): a query method
-must not change the answer to itself. The benefit is not aesthetic
+This is the **Side-Effect-Free Function** characteristic alongside
+CQS (Command-Query Separation): a query method must not change the
+answer to itself. The benefit is not aesthetic
 -- it makes Values composable, cacheable, and trivially safe to
 share across threads, requests, or contexts.
 
@@ -225,8 +224,8 @@ the domain. The domain still treats the concept as a Value, with
 all five Value characteristics, regardless of how the bytes happen
 to be laid out on disk.
 
-The four diagnostic questions Vernon poses -- when persistence
-tempts you to "promote" a Value to an Entity:
+Four diagnostic questions when persistence tempts you to "promote"
+a Value to an Entity:
 
 1. Does this concept describe / measure / quantify a thing in the
    domain, or is it itself a thing?

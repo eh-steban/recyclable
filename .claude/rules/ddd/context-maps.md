@@ -9,9 +9,8 @@ paths:
 
 Strategic-design principles for **relationships between bounded
 contexts**: integration patterns, upstream/downstream direction,
-translation, and cross-context state. Distilled from Vaughn
-Vernon, *Implementing Domain-Driven Design*, Chapter 3 ("Context
-Maps").
+translation, and cross-context state. Distilled from
+*Implementing Domain-Driven Design*, Chapter 3 ("Context Maps").
 
 This shard covers **how contexts interact**. For what a bounded
 context *is* and how to size one, see `bounded-contexts.md`. For
@@ -38,8 +37,8 @@ is the truth.
 When proposing a boundary or a new integration, first describe
 what is **already there** -- modules, tables, prompts, routes --
 and the relationships among them. Speculative future contexts go
-in a separate "where this is heading" section. Vernon: *a
-Context Map captures the present, not the imagined future.*
+in a separate "where this is heading" section. *A Context Map
+captures the present, not the imagined future.*
 
 **Apply when:** writing a new spec, splitting a module, proposing
 a new service, or adding an integration with an external system.
@@ -57,9 +56,8 @@ its context. The translation step is mandatory.
 
 ### 3. Pick one integration pattern explicitly per relationship
 
-Vernon names several organizational patterns. Whenever two
-contexts integrate, the spec **must** name which pattern is in
-force.
+Several organizational patterns recur. Whenever two contexts
+integrate, the spec **must** name which pattern is in force.
 
 - **Open Host Service + Published Language.** A context publishes
   its capabilities through a stable, documented protocol intended
@@ -118,7 +116,7 @@ When a downstream context depends on an upstream one and the
 upstream might be unavailable, model the unavailability as a
 domain state, not a thrown exception leaking to the user.
 
-Vernon's example: a `DiscussionAvailability` enum with
+Example: a `DiscussionAvailability` enum with
 `ADD_ON_NOT_ENABLED, NOT_REQUESTED, REQUESTED, READY`. The
 "nothing here yet" case is a first-class domain outcome, not a
 500.
@@ -139,7 +137,7 @@ format. The translator is code, not coincidence.
 
 ### 8. Keep the context map cheap
 
-Vernon is emphatic: avoid ceremony. Do not build a separate
+Avoid ceremony. Do not build a separate
 "context map document" with diagrams to maintain. If a discussion
 needs a diagram, draw it in the spec it belongs to. Don't build
 infrastructure to keep diagrams in sync with code; the code is

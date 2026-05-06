@@ -9,7 +9,7 @@ paths:
 
 How to design and use a Repository so that the domain layer talks about
 Aggregates and the persistence mechanism stays underneath. Distilled
-from Vaughn Vernon, *Implementing Domain-Driven Design*, Chapter 12
+from *Implementing Domain-Driven Design*, Chapter 12
 ("Repositories").
 
 This shard covers **what a Repository is, what shapes it can take, and
@@ -32,7 +32,7 @@ or by domain criterion -- exactly as you would a `Set` in memory.
 > methods that select objects based on some criteria and return fully
 > instantiated objects or collections of objects whose attribute
 > values meet the criteria. ... Provide repositories only for
-> aggregates." -- Evans, quoted in Vernon Ch. 12
+> aggregates." -- Evans, quoted in Ch. 12
 
 A Repository is **not** a Data Access Object. A DAO is "expressed in
 terms of database tables, providing CRUD interfaces to them"; a
@@ -248,11 +248,12 @@ the reason in the spec.
 
 A **use-case-optimal query** is a finder that returns a Value Object
 shaped for a specific UI / use case, composing data from one or more
-Aggregates without rehydrating each. Vernon names them legitimate:
+Aggregates without rehydrating each. The chapter names them
+legitimate:
 
 > "It should not seem strange for a Repository to in some cases
 > answer a Value Object rather than an Aggregate instance." --
-> Vernon Ch. 12
+> Ch. 12
 
 But:
 
@@ -262,7 +263,7 @@ But:
 > misjudged Aggregate boundaries and overlooked the opportunity to
 > design one or more Aggregates of different types. The code smell
 > here might be called *Repository masks Aggregate mis-design*." --
-> Vernon Ch. 12
+> Ch. 12
 
 When that smell appears, the response is:
 
@@ -282,7 +283,7 @@ do step 1 before adding the next finder.
 ### 9. Transactions belong in the Application Service
 
 > "The domain model and its encompassing Domain Layer is never the
-> correct place to manage transactions." -- Vernon Ch. 12
+> correct place to manage transactions." -- Ch. 12
 
 The Application Service starts and commits the transaction; the
 Repository participates in whichever Session / Unit of Work the
@@ -303,7 +304,7 @@ by hiding the boundary the Application Service is supposed to own.
 > multiple Aggregates in a single transaction just because it works
 > in a unit test environment. ... what works well in development and
 > test can fail severely in production because of concurrency
-> issues." -- Vernon Ch. 12
+> issues." -- Ch. 12
 
 **Apply when:** writing an Application Service or a Repository
 method. The Application Service owns the `with` / `@transactional`

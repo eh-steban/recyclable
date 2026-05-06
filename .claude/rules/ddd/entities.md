@@ -10,8 +10,8 @@ paths:
 Tactical-design principles for **modeling Entities**: when a concept
 deserves an Entity, how to give it identity, how to keep that identity
 stable, how to discover its intrinsic characteristics from the
-Ubiquitous Language, and how to validate it. Distilled from Vaughn
-Vernon, *Implementing Domain-Driven Design*, Chapter 5 ("Entities").
+Ubiquitous Language, and how to validate it. Distilled from
+*Implementing Domain-Driven Design*, Chapter 5 ("Entities").
 
 This shard covers **what an Entity is and how to design one**. For Value
 Objects (the immutable counterpart) see the value-objects shard when it
@@ -24,7 +24,7 @@ index of shards, see `principles-hub.md`.
 > "When an object is distinguished by its identity, rather than its
 > attributes, make this primary to its definition in the model. Keep the
 > class definition simple and focused on life cycle continuity and
-> identity." -- Evans, quoted in Vernon Ch. 5
+> identity." -- Evans, quoted in Ch. 5
 
 Two characteristics, both required:
 
@@ -63,8 +63,8 @@ identity?" -- not "what columns does it have?".
 
 ### 2. Pick one of four identity-generation strategies, explicitly
 
-Vernon enumerates four origins of unique identity. A spec must name
-which one is in force for each Entity:
+Four origins of unique identity recur. A spec must name which one
+is in force for each Entity:
 
 - **User-provided.** The user types or selects a value the system then
   treats as identity. Cheap, but the system must enforce uniqueness, and
@@ -193,8 +193,8 @@ A class plays a role; an interface is the explicit name of that role.
 A single Entity may legitimately implement multiple role interfaces
 when those roles share identity and lifecycle.
 
-Vernon's caution: a single object that *delegates* to multiple
-sub-objects to implement its roles risks **object schizophrenia** --
+Caution: a single object that *delegates* to multiple sub-objects
+to implement its roles risks **object schizophrenia** --
 the delegates lose track of the originating identity, and behavior
 that depends on identity becomes ambiguous. Symptoms: forwarding
 methods that do not know which "self" to act on, conditional

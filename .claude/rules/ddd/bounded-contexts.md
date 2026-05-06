@@ -8,9 +8,8 @@ paths:
 # DDD shard -- bounded contexts
 
 Strategic-design principles for **defining and sizing bounded
-contexts**. Distilled from Vaughn Vernon, *Implementing
-Domain-Driven Design*, Chapter 2 ("Domains, Subdomains, and
-Bounded Contexts").
+contexts**. Distilled from *Implementing Domain-Driven Design*,
+Chapter 2 ("Domains, Subdomains, and Bounded Contexts").
 
 This shard covers **what a bounded context is and how to draw
 one**. For relationships *between* contexts (integration patterns,
@@ -19,8 +18,7 @@ For the index of shards, see `principles-hub.md`.
 
 ## Domain, Subdomain, Bounded Context
 
-Vernon distinguishes three terms that are easy to conflate.
-Each does a different job:
+Three terms are easy to conflate. Each does a different job:
 
 - **Domain** -- what the business does and the world it operates
   in.
@@ -37,8 +35,7 @@ or merge only when the language and model genuinely demand it.
 
 ### Core, Supporting, Generic
 
-Not all subdomains deserve equal investment. Vernon's
-classification:
+Not all subdomains deserve equal investment. Three classes:
 
 - **Core Domain** -- where the business must excel. Highest
   priority, best people, most attention to model quality.
@@ -88,9 +85,9 @@ the relevant directory or package, the code's type and module
 names, and ordinary conversation. If a context cannot be named in
 one short noun phrase, the boundary is probably wrong.
 
-**Form:** `{Name-of-Model} Context`. The pattern comes straight
-from Vernon (Ch. 2, "Naming a Bounded Context") and exists so the
-boundary's name is the same in conversation, code, and docs.
+**Form:** `{Name-of-Model} Context`. The pattern comes from
+Ch. 2's "Naming a Bounded Context" and exists so the boundary's
+name is the same in conversation, code, and docs.
 
 **Forbidden:** generic names like `core`, `shared`, `common`, or
 `utils` for anything that holds domain meaning. A context named
@@ -110,16 +107,15 @@ A "translation step at the boundary" (e.g., generating a client
 from a published schema) is part of the integration; the
 *resulting client's use* is internal to the consuming context.
 
-Reject the **Smart UI anti-pattern** (Vernon, Ch. 2): do not put
-domain decisions in the user interface. The UI renders and
+Reject the **Smart UI anti-pattern** (Ch. 2): do not put domain
+decisions in the user interface. The UI renders and
 collects -- it does not decide what counts as valid,
 authoritative, or complete.
 
 ### 3. Right-size by language, not by deployment
 
 > "A Bounded Context should be as big as it needs to be in order
-> to fully express its complete Ubiquitous Language."
-> -- Vernon, Ch. 2
+> to fully express its complete Ubiquitous Language." -- Ch. 2
 
 Do not split a context to make deployment easier, to give
 developers smaller tasks, or to fit a framework's project
@@ -152,9 +148,9 @@ service.
 ### 5. Same word, different meaning is allowed -- duplicated meaning is not
 
 Two contexts may legitimately use the same English term for
-different model concepts (Vernon's examples: an `Account` in a
-banking context vs. a literary context; a `Book` at different
-stages of its publishing lifecycle).
+different model concepts (e.g. an `Account` in a banking context
+vs. a literary context; a `Book` at different stages of its
+publishing lifecycle).
 
 This is fine **only** if the two are distinct types in distinct
 modules with an explicit translation between them.

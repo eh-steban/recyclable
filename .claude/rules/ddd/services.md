@@ -11,8 +11,8 @@ Tactical-design principles for **Domain Services**: when an operation
 genuinely does not belong on an Entity or Value Object, how to express
 it without slipping into an Anemic Domain Model, how it differs from
 an Application Service or an SOA "service," and how to keep clients of
-the model thin. Distilled from Vaughn Vernon, *Implementing
-Domain-Driven Design*, Chapter 7 ("Services").
+the model thin. Distilled from *Implementing Domain-Driven Design*,
+Chapter 7 ("Services").
 
 This shard covers **what a Domain Service is and how to design one**.
 For Entities, see `entities.md`. For Values, see `value-objects.md`.
@@ -25,10 +25,10 @@ For the index of shards, see `principles-hub.md`.
 > to the model as a standalone interface declared as a SERVICE. Define
 > the interface in terms of the language of the model and make sure the
 > operation name is part of the UBIQUITOUS LANGUAGE. Make the SERVICE
-> stateless." -- Evans, quoted in Vernon Ch. 7
+> stateless." -- Evans, quoted in Ch. 7
 
 A Domain Service is a **stateless operation that fulfills a
-domain-specific task**. Three legitimate uses, per Vernon:
+domain-specific task**. Three legitimate uses:
 
 - Perform a significant business process.
 - Transform a domain object from one composition to another.
@@ -196,17 +196,17 @@ each one is a return-shape decision, not an `else throw` afterthought.
 ## What this shard does **not** govern
 
 - Application Services -- transaction boundaries, security checks,
-  request-shape translation, calling into the model. Those are the
-  topic of a future application shard (Vernon Ch. 14).
+  request-shape translation, calling into the model. Those are
+  governed by `application.md` (Ch. 14).
 - Domain Events emitted by Services -- a Service may publish Events
   as a final step of its operation; the Event modeling rules belong
-  to the future domain-events shard (Vernon Ch. 8).
+  to `domain-events.md` (Ch. 8).
 - Anticorruption-Layer translators between contexts. Those are
   Services in the technical sense but their design is governed by
   `context-maps.md` Principle 3.
 - Concrete dependency-wiring style (constructor injection,
-  framework DI, manual factory). Vernon is deliberately neutral;
-  service-specific conventions choose the form.
+  framework DI, manual factory). The chapter is deliberately
+  neutral; service-specific conventions choose the form.
 
 ## Cross-references
 

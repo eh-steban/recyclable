@@ -10,9 +10,9 @@ paths:
 How to persist an Aggregate as an ordered, append-only stream of
 Domain Events instead of as a serialized row, and the consequences for
 Application Services, Repositories, concurrency, reads, testing, and
-Aggregate granularity. Distilled from Vaughn Vernon, *Implementing
-Domain-Driven Design*, Appendix A ("Aggregates and Event Sourcing:
-A+ES"), contributed by Rinat Abdullin.
+Aggregate granularity. Distilled from *Implementing Domain-Driven
+Design*, Appendix A ("Aggregates and Event Sourcing: A+ES"),
+contributed by Rinat Abdullin.
 
 This shard covers **what changes when the Event Stream is the
 Aggregate's persistence**. For Domain Event identity, payload, and
@@ -29,7 +29,7 @@ shards, see `principles-hub.md`.
 > Aggregate as a sequence of Events that have occurred since it was
 > created. The Events are used to rebuild the state of the Aggregate
 > by replaying them in the same order in which they occurred." --
-> Vernon, Appendix A
+> Appendix A
 
 Two things together, never apart:
 
@@ -275,7 +275,7 @@ serialization and typing do not. Multiple typed Event Stores can sit
 on top of one append-only store; the same typed Event Store can be
 backed by a swappable append-only implementation.
 
-Two append-only patterns Vernon documents:
+Two append-only patterns recur:
 
 - **Relational.** A `(name, version, data)` table. Append is a
   transaction: read max version for the name, compare to expected,
@@ -431,7 +431,7 @@ for **Focused Aggregates**: each Aggregate is responsible for one
 cohesive set of invariants and one slice of the real-world entity
 it represents.
 
-Vernon's example: a real-world customer becomes
+Example: a real-world customer becomes
 
 - `Customer:505` (billing, invoicing, account)
 - `SecurityAccount:505` (users, permissions)
@@ -527,10 +527,10 @@ Aggregate's *fields* directly, the test is reading the wrong surface.
 - **Specific Event Store products** (EventStoreDB, Kafka with
   compaction, Marten, Axon, custom). Selection is operational; the
   invariants this shard names hold for any of them.
-- **Functional / non-OO implementations.** Vernon notes that Event
-  Sourcing is "inherently functional" -- the Aggregate state becomes
-  a left fold of Events, behaviors become `Func<State, Event,
-  State>` and `Func<Args..., State, Event[]>`. The principles in
+- **Functional / non-OO implementations.** Event Sourcing is
+  "inherently functional" -- the Aggregate state becomes a left
+  fold of Events, behaviors become `Func<State, Event, State>` and
+  `Func<Args..., State, Event[]>`. The principles in
   this shard hold under both shapes; idiomatic translation to F#,
   Clojure, Haskell, or Elixir is a project choice.
 

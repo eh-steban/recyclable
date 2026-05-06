@@ -10,8 +10,7 @@ paths:
 Strategic-design principles for **how to organize a bounded context's
 code into Modules** (packages, namespaces, directories) so that the
 structure tells the domain's story instead of fighting it. Distilled
-from Vaughn Vernon, *Implementing Domain-Driven Design*, Chapter 9
-("Modules").
+from *Implementing Domain-Driven Design*, Chapter 9 ("Modules").
 
 This shard covers **how to draw, name, and refactor Modules inside a
 bounded context**. For the boundary that contains all of these
@@ -28,7 +27,7 @@ themselves part of the Ubiquitous Language.
 
 > "Choose Modules that tell the story of the system and contain a
 > cohesive set of concepts. ... Give Modules names that become part
-> of the Ubiquitous Language." -- Evans, quoted in Vernon Ch. 9
+> of the Ubiquitous Language." -- Evans, quoted in Ch. 9
 
 A Module is a **first-class modeling element**, not bland storage.
 The criteria for designing one are the same as the criteria for
@@ -59,7 +58,7 @@ how the team talks about its contents.
 ### 2. Group by cohesive concept, not by mechanical attribute
 
 A Module collects classes that **mean something together** in the
-language. Vernon's kitchen analogy: place settings (forks, spoons,
+language. The kitchen analogy: place settings (forks, spoons,
 knives, serviettes) belong in one drawer because they participate in
 one activity. They do **not** belong sorted by material (metal vs
 porcelain), shape (pronged vs scooping vs blunt), or fragility
@@ -83,7 +82,7 @@ not "what tactical pattern is this?"
 
 ### 3. Use a domain-driven Module hierarchy; avoid brand names
 
-Vernon's recommended hierarchy, adapted to any language's package
+A recommended hierarchy, adapted to any language's package
 syntax:
 
 ```text
@@ -139,8 +138,8 @@ two Modules that are constantly importing each other are usually one
 Module pretending to be two.
 
 The accepted exception is a **parent / child Module cluster** where
-the parent is a Factory or aggregator for its children. Vernon's
-example: `product` is parent to `product.backlogitem`,
+the parent is a Factory or aggregator for its children. Example:
+`product` is parent to `product.backlogitem`,
 `product.release`, `product.sprint`; `Product` constructs each, and
 each carries a `ProductId`. Strict acyclicity would require either
 collapsing all four into one Module (organisationally noisy) or

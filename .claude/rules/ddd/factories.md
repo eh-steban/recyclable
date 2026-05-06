@@ -9,8 +9,8 @@ paths:
 
 How to use Factories inside a domain model so that constructing a complex
 Aggregate is itself part of the *language*, not a chore the client gets
-right by accident. Distilled from Vaughn Vernon, *Implementing
-Domain-Driven Design*, Chapter 11 ("Factories").
+right by accident. Distilled from *Implementing Domain-Driven
+Design*, Chapter 11 ("Factories").
 
 This shard covers **why and where to use Factory Methods** inside a
 bounded context. For the Aggregate boundary the Factory creates *into*,
@@ -30,7 +30,7 @@ not internal scaffolding.
 > design. Provide an interface that encapsulates all complex assembly
 > and does not require the client to reference the concrete classes of
 > the objects being instantiated. Create entire Aggregates as a piece,
-> enforcing their invariants." -- Evans, quoted in Vernon Ch. 11
+> enforcing their invariants." -- Evans, quoted in Ch. 11
 
 Two shapes recur:
 
@@ -84,10 +84,10 @@ constructor.
 > it the wrong `TenantId`, it could be disastrous. ... Placing a
 > carefully designed Factory Method on specific Aggregate Roots can
 > ensure that tenancy and other association identities are created
-> correctly." -- Vernon Ch. 11
+> correctly." -- Ch. 11
 
-In Vernon's example, the Factory Method on `Calendar` accepts nine
-parameters; the `CalendarEntry` constructor requires eleven. The two
+In the canonical example, the Factory Method on `Calendar` accepts
+nine parameters; the `CalendarEntry` constructor requires eleven. The two
 the client *cannot* supply -- `Tenant` and `CalendarId` -- are the two
 it must not be allowed to.
 
@@ -122,10 +122,10 @@ that:
 > "It is unnecessary to guard the Factory Method itself since the
 > constructors of each of the Value parameters and the [target]
 > constructor, as well as the setter methods that the constructor
-> self-delegates to, provide all the needed guards." -- Vernon Ch. 11
+> self-delegates to, provide all the needed guards." -- Ch. 11
 
 Reserve Factory-level guards for invariants the *parent Aggregate's
-state* implies and the constructor cannot see. Vernon's example:
+state* implies and the constructor cannot see. Example:
 `Forum.startDiscussion()` throws if `forum.isClosed()` -- only the
 parent knows that.
 
@@ -163,7 +163,7 @@ Repository:
 
 > "After a new `CalendarEntry` is successfully created, the client
 > must add it to its Repository. Failing to do so will release the new
-> instance to be swept by the garbage collector." -- Vernon Ch. 11
+> instance to be swept by the garbage collector." -- Ch. 11
 
 The caller -- almost always an Application Service -- is responsible
 for `repository.add(instance)` and for owning the transaction. This
@@ -189,7 +189,7 @@ combines:
 - A **Translator** that maps the upstream Published Language onto
   local Value Objects or Aggregates.
 
-Vernon's example: `CollaboratorService` translates a `User` from the
+Example: `CollaboratorService` translates a `User` from the
 Identity-and-Access Context into `Author`, `Creator`, `Moderator`,
 `Owner`, or `Participant` Value Objects in the Collaboration
 Context. The local context never speaks of "users."
@@ -210,7 +210,7 @@ traffic this is fine; under high traffic it becomes a noticeable
 cost:
 
 > "[A]s the traffic in this Bounded Context increases, the team will
-> have to weigh the consequences carefully." -- Vernon Ch. 11
+> have to weigh the consequences carefully." -- Ch. 11
 
 The trade-off is between **expressiveness** (the Ubiquitous Language
 sentence holds) and **throughput** (one fewer round trip if the child

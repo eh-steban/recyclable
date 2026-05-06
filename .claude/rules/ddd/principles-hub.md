@@ -36,7 +36,7 @@ real risk:
 If a principle in any shard would force ceremony without
 clarity, skip it and note why in the relevant spec.
 
-## Foundations (Vernon Ch. 1)
+## Foundations (Ch. 1)
 
 Distilled context an agent needs before reasoning about DDD.
 Not exhaustive -- the shards carry the detail.
@@ -106,7 +106,7 @@ Partial adoption is not DDD-Lite as long as the strategic step
 
 ### Three recurring challenges
 
-Vernon's list of what makes DDD hard:
+The list of what makes DDD hard:
 
 - **Time to grow the language.** Naming things in domain terms
   takes deliberate work and re-work. Resist the urge to ship
@@ -134,45 +134,45 @@ Cite this section when a spec, plan, or review is about to:
 
 ## Shards
 
-Each shard distills one chapter (or one cohesive topic) of
-Vernon's book into principles. Follow the link when working on
-something the shard governs; otherwise the hub is enough.
+Each shard distills one chapter (or one cohesive topic) of the
+book into principles. Follow the link when working on something
+the shard governs; otherwise the hub is enough.
 
-- [`bounded-contexts.md`](bounded-contexts.md) -- Vernon Ch. 2.
+- [`bounded-contexts.md`](bounded-contexts.md) -- Ch. 2.
   Defining a single bounded context: domains vs subdomains,
   Core/Supporting/Generic, naming, what lives inside the boundary,
   right-sizing, same-word-different-meaning.
-- [`context-maps.md`](context-maps.md) -- Vernon Ch. 3.
+- [`context-maps.md`](context-maps.md) -- Ch. 3.
   Relationships between contexts: integration patterns (Open Host
   Service, Published Language, ACL, Customer-Supplier, Separate
   Ways, Shared Kernel, Conformist, Big Ball of Mud),
   upstream/downstream direction, eventual consistency, translation
   maps, modeling unavailability.
-- [`architecture.md`](architecture.md) -- Vernon Ch. 4.
+- [`architecture.md`](architecture.md) -- Ch. 4.
   Architectural styles inside a context: risk-driven selection,
   Layers + DIP as default, Hexagonal (Ports and Adapters), REST as
   Open Host Service, Smart-UI rejection, eventual consistency
   between adapters, when (not) to adopt CQRS / EDA / Event Sourcing
   / Data Fabric.
-- [`entities.md`](entities.md) -- Vernon Ch. 5. Entities: when to
+- [`entities.md`](entities.md) -- Ch. 5. Entities: when to
   reach for one, unique-identity strategies, identity stability,
   surrogate identity, discovering Entities from the Ubiquitous
   Language, behavior on the type that owns the invariant, roles
   and object-schizophrenia, validation at three levels.
-- [`value-objects.md`](value-objects.md) -- Vernon Ch. 6. Value
+- [`value-objects.md`](value-objects.md) -- Ch. 6. Value
   Objects: the five characteristics (measures/quantifies/describes,
   immutable, conceptual whole, replaceability, value equality),
   side-effect-free behavior, default-to-Value bias, Values for
   Aggregate identity, Standard Types as local Values,
   rejecting data-model leakage, test-from-the-client style.
-- [`services.md`](services.md) -- Vernon Ch. 7. Domain Services:
+- [`services.md`](services.md) -- Ch. 7. Domain Services:
   when an operation does not fit on an Entity or Value, statelessness,
   distinguishing Domain / Application / SOA "service," naming in the
   Ubiquitous Language, pushing multi-step composition off the client,
   Repositories from Services not Aggregates, Separated Interface as
   opt-in, mini-layer drift toward Anemic Model, testing from the
   client and modeling normal failures as values not exceptions.
-- [`domain-events.md`](domain-events.md) -- Vernon Ch. 8. Domain
+- [`domain-events.md`](domain-events.md) -- Ch. 8. Domain
   Events: discovering them in the language and naming them in the
   past tense, immutable Value shape and minimum payload, when an
   Event needs an identity, the one-Aggregate-per-transaction rule,
@@ -181,7 +181,7 @@ something the shard governs; otherwise the hub is enough.
   Event-with-Aggregate persistence (Event Store), choosing REST
   notifications vs messaging, latency as a domain question,
   at-least-once delivery and de-duplication.
-- [`modules.md`](modules.md) -- Vernon Ch. 9. Modules: names as
+- [`modules.md`](modules.md) -- Ch. 9. Modules: names as
   Ubiquitous Language, group by cohesive concept (not by tactical
   pattern type or mechanical attribute), the
   org/context/compartment/concept hierarchy, refactor Modules as
@@ -189,7 +189,7 @@ something the shard governs; otherwise the hub is enough.
   parent/child cohesion), don't strip typed identity for "loose
   coupling," reach for a new Module before a new Bounded Context,
   apply the same discipline outside the domain layer.
-- [`aggregates.md`](aggregates.md) -- Vernon Ch. 10. Aggregates:
+- [`aggregates.md`](aggregates.md) -- Ch. 10. Aggregates:
   consistency-boundary as the unit of transactional change,
   one-Aggregate-per-transaction, modeling true invariants (not
   compositional convenience), small Aggregates of Root + Values,
@@ -198,7 +198,7 @@ something the shard governs; otherwise the hub is enough.
   Tell-Don't-Ask + Law of Demeter at the Root, Application
   Services (not Aggregates) own dependency lookup, optimistic
   concurrency placed where the invariant lives, named rule-breaks.
-- [`factories.md`](factories.md) -- Vernon Ch. 11. Factories:
+- [`factories.md`](factories.md) -- Ch. 11. Factories:
   placing Factory Methods on the parent Aggregate and naming them in
   the language, enforcing identity and tenancy correctness through
   the Factory, hiding the target Aggregate's constructor, guarding
@@ -206,7 +206,7 @@ something the shard governs; otherwise the hub is enough.
   the Factory Method, the create-vs-persist split, Domain Service
   as Factory when crossing Bounded Contexts, accounting for the
   parent-load cost.
-- [`repositories.md`](repositories.md) -- Vernon Ch. 12.
+- [`repositories.md`](repositories.md) -- Ch. 12.
   Repositories: one Repository per Aggregate Root, the Set-mimicking
   contract (no re-save), collection-vs-persistence styles chosen by
   the store's change-tracking, interface in the domain Module and
@@ -216,7 +216,7 @@ something the shard governs; otherwise the hub is enough.
   smell, transactions in the Application Service, real-store tests
   for the Repository and in-memory tests for its clients.
 - [`integrating-bounded-contexts.md`](integrating-bounded-contexts.md)
-  -- Vernon Ch. 13. Integrating bounded contexts: cross-context calls
+  -- Ch. 13. Integrating bounded contexts: cross-context calls
   are distributed-systems calls (not in-process), choosing messaging
   vs REST vs RPC by the autonomy you need, crossing through a
   Published Language (not shared classes), Open Host Services that
@@ -228,7 +228,7 @@ something the shard governs; otherwise the hub is enough.
   Processes with a tracker / retries / time-out, multi-gate Processes
   as state machines with `completenessVerified()`, planning for
   broker and consumer downtime.
-- [`application.md`](application.md) -- Vernon Ch. 14. The
+- [`application.md`](application.md) -- Ch. 14. The
   application compartments around the domain model: thin Application
   Services as one-method-per-use-case task coordinators (not Domain
   Services), Commands replacing long parameter lists, view shapes
@@ -243,7 +243,7 @@ something the shard governs; otherwise the hub is enough.
   promote it to a new Bounded Context, infrastructure implements
   interfaces declared with the consuming layer (DIP), one DI / Service
   Factory / constructor convention per project.
-- [`event-sourcing.md`](event-sourcing.md) -- Vernon Appendix A
+- [`event-sourcing.md`](event-sourcing.md) -- Appendix A
   (contributed by Rinat Abdullin). A+ES as Aggregate persistence:
   adopt when reconstruction and history are first-class business
   concerns (audit, replay, regulated industries) -- not by default,
@@ -262,11 +262,11 @@ something the shard governs; otherwise the hub is enough.
   Aggregates, Given-past-Events / When-command / Then-new-Events
   testing.
 
-Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
-DDD-Lite trap, three recurring challenges) is folded into the
-"Foundations" section above rather than given its own shard --
-the material is context for agentic reasoning, not a
-principles list to apply per task.
+Ch. 1 (introduction, why DDD, anemic-model warning, DDD-Lite
+trap, three recurring challenges) is folded into the "Foundations"
+section above rather than given its own shard -- the material is
+context for agentic reasoning, not a principles list to apply per
+task.
 
 ## How this interacts with other rules
 

@@ -13,8 +13,7 @@ publish them without coupling the model to messaging middleware, how
 to keep one transaction modifying one Aggregate while still
 synchronizing the rest of the system, and how to cross bounded-context
 boundaries reliably under at-least-once delivery. Distilled from
-Vaughn Vernon, *Implementing Domain-Driven Design*, Chapter 8 ("Domain
-Events").
+*Implementing Domain-Driven Design*, Chapter 8 ("Domain Events").
 
 This shard covers **what a Domain Event is, how to model it, and how
 to publish it inside and across bounded contexts**. For the
@@ -28,7 +27,7 @@ of shards, see `principles-hub.md`.
 > "Something happened that domain experts care about. ... A domain
 > event is a full-fledged part of the domain model, a representation
 > of something that happened in the domain." -- Evans, quoted in
-> Vernon Ch. 8
+> Ch. 8
 
 A Domain Event is a **fact about a past occurrence** in one bounded
 context's domain that domain experts care about. It is part of the
@@ -83,8 +82,8 @@ read-only accessors, no setters, no mutators. Any "behavior" on the
 Event is side-effect-free per `value-objects.md` Principle 4 -- a
 derivation of the carried state, never a mutation.
 
-Carry the state Vernon describes as "what would be necessary to
-trigger the Event again": a timestamp (`occurredOn`), the identity of
+Carry the state described as "what would be necessary to trigger
+the Event again": a timestamp (`occurredOn`), the identity of
 the originating Aggregate, the identities of any other Aggregates the
 Event materially mentions, and any command parameters or
 state-transition values a reasonable subscriber needs. In a
@@ -202,7 +201,7 @@ If the Aggregate change commits but the Event delivery does not (or
 vice versa), the system silently drifts. The model and the published
 record disagree, and the disagreement is unrecoverable.
 
-Vernon enumerates three ways to keep the two consistent:
+Three ways to keep the two consistent:
 
 1. **Shared store.** Use a messaging system that persists into the
    same database as the model; both commit in one local transaction.

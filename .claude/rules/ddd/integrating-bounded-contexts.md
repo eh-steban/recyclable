@@ -9,9 +9,8 @@ paths:
 
 How to wire two bounded contexts together at runtime so that the
 relationship from `context-maps.md` shows up in code without smuggling
-one context's model into the other. Distilled from Vaughn Vernon,
-*Implementing Domain-Driven Design*, Chapter 13 ("Integrating Bounded
-Contexts").
+one context's model into the other. Distilled from *Implementing
+Domain-Driven Design*, Chapter 13 ("Integrating Bounded Contexts").
 
 This shard covers **the integration mechanism** -- wire shape,
 translation, autonomy under failure, eventual consistency between
@@ -31,7 +30,7 @@ that crosses the boundary.
 > "Define a protocol that gives access to your subsystem as a set of
 > services. Open the protocol so that all who need to integrate with you
 > can use it. Enhance and expand the protocol to handle new integration
-> requirements." -- Evans, on Open Host Service, quoted in Vernon Ch. 13
+> requirements." -- Evans, on Open Host Service, quoted in Ch. 13
 
 There are three common implementation shapes:
 
@@ -46,9 +45,9 @@ There are three common implementation shapes:
   notifications. Highest autonomy: as long as the broker is up, sender
   and receiver do not have to be online together.
 
-Vernon dismisses file-share and shared-database integration as cures
-worse than the disease ("doing so could make you old before your time")
-and recommends avoiding RPC where autonomy matters.
+File-share and shared-database integration are dismissed as cures
+worse than the disease ("doing so could make you old before your
+time"); RPC is to be avoided where autonomy matters.
 
 The choice between these is not aesthetic; it is a function of how much
 *autonomy* the consuming context needs and how *coupled* the two
@@ -60,9 +59,8 @@ deployments may be (Principle 2).
 
 A call that crosses a bounded-context boundary crosses a
 *distributed-systems* boundary, even if both contexts run on the same
-host today. Treat it that way from the start. Vernon restates the
-classic fallacies of distributed computing as principles to design
-around:
+host today. Treat it that way from the start. Restate the classic
+fallacies of distributed computing as principles to design around:
 
 - The network is not reliable.
 - There is always some latency, sometimes a lot.
@@ -178,8 +176,7 @@ the answer is "they want our Aggregate," redesign.
 
 When the consuming context calls or listens to another context, the
 foreign data must be translated into the consumer's Ubiquitous Language
-*before* it reaches the consumer's domain model. The classic Vernon
-shape:
+*before* it reaches the consumer's domain model. The classic shape:
 
 - A **Service-shaped facade** in the consumer's language, in the domain
   layer as a Separated Interface. The consumer's Application Service
