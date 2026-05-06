@@ -159,6 +159,12 @@ something the shard governs; otherwise the hub is enough.
   surrogate identity, discovering Entities from the Ubiquitous
   Language, behavior on the type that owns the invariant, roles
   and object-schizophrenia, validation at three levels.
+- [`value-objects.md`](value-objects.md) -- Vernon Ch. 6. Value
+  Objects: the five characteristics (measures/quantifies/describes,
+  immutable, conceptual whole, replaceability, value equality),
+  side-effect-free behavior, default-to-Value bias, Values for
+  Aggregate identity, Standard Types as local Values,
+  rejecting data-model leakage, test-from-the-client style.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -167,9 +173,9 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Value Objects, Services, Domain Events, Modules,
-Aggregates, Factories, Repositories, Integrating Bounded
-Contexts, Application.
+the book): Services, Domain Events, Modules, Aggregates,
+Factories, Repositories, Integrating Bounded Contexts,
+Application.
 
 ## How this interacts with other rules
 
