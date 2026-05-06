@@ -165,6 +165,13 @@ something the shard governs; otherwise the hub is enough.
   side-effect-free behavior, default-to-Value bias, Values for
   Aggregate identity, Standard Types as local Values,
   rejecting data-model leakage, test-from-the-client style.
+- [`services.md`](services.md) -- Vernon Ch. 7. Domain Services:
+  when an operation does not fit on an Entity or Value, statelessness,
+  distinguishing Domain / Application / SOA "service," naming in the
+  Ubiquitous Language, pushing multi-step composition off the client,
+  Repositories from Services not Aggregates, Separated Interface as
+  opt-in, mini-layer drift toward Anemic Model, testing from the
+  client and modeling normal failures as values not exceptions.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -173,9 +180,8 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as the team works through
-the book): Services, Domain Events, Modules, Aggregates,
-Factories, Repositories, Integrating Bounded Contexts,
-Application.
+the book): Domain Events, Modules, Aggregates, Factories,
+Repositories, Integrating Bounded Contexts, Application.
 
 ## How this interacts with other rules
 
