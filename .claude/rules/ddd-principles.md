@@ -161,6 +161,12 @@ enough.
   Customer-Supplier, Separate Ways, Shared Kernel, Conformist,
   Big Ball of Mud), upstream/downstream direction, eventual
   consistency, translation maps, modeling unavailability.
+- [`ddd/architecture.md`](ddd/architecture.md) -- Vernon Ch. 4.
+  Architectural styles inside a context: risk-driven selection,
+  Layers + DIP as default, Hexagonal with two driving adapters
+  (HTTP + worker), REST as Open Host Service, Smart-UI rejection,
+  eventual consistency between adapters, when (not) to adopt
+  CQRS / EDA / Event Sourcing / Data Fabric.
 
 Vernon Ch. 1 (introduction, why DDD, anemic-model warning,
 DDD-Lite trap, three recurring challenges) is folded into the
@@ -169,9 +175,9 @@ the material is context for agentic reasoning, not a
 principles list to apply per task.
 
 Future shards (one per chapter, added as we work through the
-book): Architecture, Entities, Value Objects, Services, Domain
-Events, Modules, Aggregates, Factories, Repositories, Integrating
-Bounded Contexts, Application.
+book): Entities, Value Objects, Services, Domain Events, Modules,
+Aggregates, Factories, Repositories, Integrating Bounded Contexts,
+Application.
 
 ## Candidate bounded contexts in this repo
 
