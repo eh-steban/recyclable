@@ -1,6 +1,11 @@
 ---
 paths:
-  - "**"
+  - "backend/**/*.py"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
+  - "frontend/**/*.js"
+  - "frontend/**/*.jsx"
+  - "private/plans/**"
 ---
 
 # Validation evidence

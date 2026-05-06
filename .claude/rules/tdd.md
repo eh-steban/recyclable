@@ -1,6 +1,10 @@
 ---
 paths:
-  - "**"
+  - "backend/**/*.py"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
+  - "frontend/**/*.js"
+  - "frontend/**/*.jsx"
 ---
 
 # Test-Driven Development
