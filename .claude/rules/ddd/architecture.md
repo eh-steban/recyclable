@@ -49,30 +49,31 @@ The classic four DDD layers -- **user-interface / application /
 domain / infrastructure** -- with the Dependency Inversion
 Principle applied: high-level layers depend only on abstractions,
 and infrastructure implements interfaces defined by the domain.
+The domain owes nothing to any layer outside it.
 
 In practice:
 
-- **User-interface / API** -- thin Adapters that translate the
-  external protocol into application calls. No business logic.
-- **Application** -- orchestration only. An application service
-  loads an Aggregate via a Repository interface, calls one
-  command method on it, and returns. If it grows complex, domain
-  logic is leaking out of the model.
-- **Domain** -- pure: no framework imports, no persistence types,
-  no transport types. Owns Aggregates, Value Objects, Domain
-  Services, Repository *interfaces*, and Domain Events.
-- **Infrastructure** -- persistence implementations, external
-  clients, messaging adapters. Implements interfaces from the
-  domain. The domain never imports it.
+- **User-interface** -- thin Adapters that translate the external
+  protocol into application calls. No business logic.
+- **Application** -- orchestration only. Loads a model element
+  through an abstraction defined in the domain, calls one command
+  on it, and returns. Growing application logic is a signal that
+  domain logic is leaking out of the model.
+- **Domain** -- the model itself: Aggregates, Value Objects,
+  Domain Services, Repository *interfaces*, and Domain Events.
+- **Infrastructure** -- implementations of the abstractions the
+  domain defines, plus adapters to external resources.
 
-The "anemic-model" warning (see hub Foundations) applies
-most sharply here: a thick application layer that mutates many
-fields on a domain object is the symptom. The cure is to push the
-behavior onto the Aggregate.
+The "anemic-model" warning (see `principles-hub.md` "Foundations")
+applies most sharply here: a thick application layer that mutates
+many fields on a domain object is the symptom. The cure is to
+push the behavior onto the Aggregate.
 
-**Apply when:** placing a new file. If it imports from the
-domain, it is application or infrastructure. If the domain would
-have to import it, the design is inverted -- fix it.
+**Apply when:** organizing a bounded context. The dependency
+arrow points inward: outer layers depend on inner layers, never
+the reverse. If an inner layer needs something from an outer
+layer, define the abstraction in the inner layer and let the
+outer layer implement it.
 
 ### 3. Hexagonal (Ports and Adapters): one inside, many outsides
 
@@ -135,12 +136,14 @@ Inside a single bounded context a single transaction may enforce
 invariants. **Across two contexts -- or across two driving
 adapters that share a domain but write under different lifecycles
 -- do not span a transaction.** Design the reader to tolerate
-temporary disagreement (per `context-maps.md` Principle 5).
+temporary disagreement (per `context-maps.md` "Eventual
+consistency across contexts").
 
 The domain expression of "the upstream context has nothing to
 report yet" is a named state, not an exception (per
-`context-maps.md` Principle 6). The domain expression of "two
-sources disagree" is a named conflict state, not a thrown error.
+`context-maps.md` "Make unavailability an explicit state"). The
+domain expression of "two sources disagree" is a named conflict
+state, not a thrown error.
 
 **Apply when:** one adapter writes data another adapter will
 read, or a downstream context reads from an upstream one. Cross-
