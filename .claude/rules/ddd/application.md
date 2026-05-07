@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -412,7 +411,7 @@ interface in the layer that needs it; place the implementation in
 - `services.md` -- Domain vs Application Service distinction
   (Principle 1 restates `services.md` Principles 2 and 4); the
   Service-Factory access pattern (Principle 10 here, `services.md`
-  Principle 5).
+  Principle 6).
 - `aggregates.md` -- one-Aggregate-per-transaction rule constrains
   what an Application Service does inside its transaction
   (Principle 7 here, `aggregates.md` Principle 1); Mediator /

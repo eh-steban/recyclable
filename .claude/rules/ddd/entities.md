@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -14,10 +13,10 @@ Ubiquitous Language, and how to validate it. Distilled from
 *Implementing Domain-Driven Design*, Chapter 5 ("Entities").
 
 This shard covers **what an Entity is and how to design one**. For Value
-Objects (the immutable counterpart) see the value-objects shard when it
-lands; for Aggregates (clusters of Entities + Values with a Root and an
-invariant boundary) see the aggregates shard when it lands. For the
-index of shards, see `principles-hub.md`.
+Objects (the immutable counterpart) see `value-objects.md`; for
+Aggregates (clusters of Entities + Values with a Root and an invariant
+boundary) see `aggregates.md`. For the index of shards,
+see `principles-hub.md`.
 
 ## When to model a concept as an Entity
 
@@ -184,7 +183,7 @@ is package-/module-private so nothing else can instantiate it.
 This keeps "you cannot have a `User` without a `Tenant` that
 registered them" expressible in the type system rather than in prose.
 
-(Factory patterns are covered in detail in their own future shard;
+(Factory patterns are covered in detail in `factories.md`;
 this shard only notes when an Entity needs one.)
 
 ### 8. Entities can play roles, but be wary of multi-role objects
@@ -258,11 +257,11 @@ carry the requirement -- see `architecture.md` Principle 9.
 ## What this shard does **not** govern
 
 - Aggregate boundaries, Aggregate Roots, transactional consistency
-  inside a cluster of Entities -- that is the future aggregates shard.
-- Repository design and persistence patterns -- those are the future
-  repositories shard.
+  inside a cluster of Entities -- that is `aggregates.md`.
+- Repository design and persistence patterns -- those are
+  `repositories.md`.
 - Value Objects (immutable, equality-by-value, replace-not-mutate) --
-  that is the future value-objects shard.
+  that is `value-objects.md`.
 - The exact constructor / setter / factory idioms in any one
   language -- this shard governs the *shape*; service-specific
   conventions handle the syntax.

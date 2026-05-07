@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -566,8 +565,8 @@ Aggregate's *fields* directly, the test is reading the wrong surface.
   and the Aggregate's first behavior produces its first Events
   (`factories.md` Principles 1, 6).
 - `services.md` -- Domain Services are passed into A+ES Aggregate
-  methods exactly as in row-oriented systems (`services.md`
-  Principle 6); the Application Service still owns the transaction
+  methods exactly as in row-oriented systems (`aggregates.md`
+  Principle 8); the Application Service still owns the transaction
   surface, now realised as the append step (Principle 4 here).
 - `architecture.md` -- A+ES is an architectural style choice
   alongside Layers / Hexagonal / EDA / CQRS. It pairs naturally

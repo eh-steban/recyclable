@@ -138,6 +138,18 @@ Each shard distills one chapter (or one cohesive topic) of the
 book into principles. Follow the link when working on something
 the shard governs; otherwise the hub is enough.
 
+### Scope by service
+
+- **Strategic shards** (bounded-contexts, context-maps, architecture,
+  integrating-bounded-contexts) apply to **both** services. The
+  frontend agent should load these when relevant.
+- **Tactical shards** (entities, value-objects, services, modules,
+  domain-events, aggregates, factories, repositories, application,
+  event-sourcing) apply to the **backend only** -- per root
+  `CLAUDE.md`: "Tactical patterns (Aggregates, Repositories, etc.)
+  are backend-only by default." Frontend agents should not load
+  tactical shards; they do not govern Next.js code.
+
 - [`bounded-contexts.md`](bounded-contexts.md) -- Ch. 2.
   Defining a single bounded context: domains vs subdomains,
   Core/Supporting/Generic, naming, what lives inside the boundary,

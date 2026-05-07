@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 

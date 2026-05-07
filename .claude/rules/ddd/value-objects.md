@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -265,13 +264,13 @@ characteristics in a few lines.
 
 ## What this shard does **not** govern
 
-- Aggregate boundaries and Aggregate Roots -- that is the future
-  aggregates shard. (A Value lives inside an Aggregate; the
-  Aggregate's transactional boundary is a separate concern.)
+- Aggregate boundaries and Aggregate Roots -- that is `aggregates.md`.
+  (A Value lives inside an Aggregate; the Aggregate's transactional
+  boundary is a separate concern.)
 - Repository design and how Aggregates round-trip to storage --
-  that is the future repositories shard. The persistence
-  *guidance* here is "do not let the data model corrupt the
-  domain model"; the *mechanics* of mapping live elsewhere.
+  that is `repositories.md`. The persistence *guidance* here is
+  "do not let the data model corrupt the domain model"; the
+  *mechanics* of mapping live elsewhere.
 - The exact immutability idiom in any one language (frozen
   dataclasses, readonly records, sealed case classes,
   TypeScript `readonly` + `as const`) -- this shard governs the

@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -245,13 +244,12 @@ Factory.
   `value-objects.md`). Factory ceremony is overkill for a Value Object
   the language already names directly.
 - **Persistence and Repository design** -- the Factory hands off a new
-  Aggregate; what happens next is the future Repositories shard's
-  concern, not this one.
+  Aggregate; what happens next is `repositories.md`'s concern, not
+  this one.
 - **Cross-Bounded-Context integration mechanics** -- this shard names
   the Service-as-Factory shape; the *integration* details (Open Host
   Service, Published Language, Anti-Corruption Layer, message vs HTTP)
-  live in `context-maps.md` and the future Integrating Bounded
-  Contexts shard.
+  live in `context-maps.md` and `integrating-bounded-contexts.md`.
 
 ## Cross-references
 

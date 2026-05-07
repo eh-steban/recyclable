@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -17,10 +16,10 @@ boundaries reliably under at-least-once delivery. Distilled from
 
 This shard covers **what a Domain Event is, how to model it, and how
 to publish it inside and across bounded contexts**. For the
-transactional Aggregate that emits Events, see the future aggregates
-shard. For the Application Services that register subscribers and
-control transactions, see the future application shard. For the index
-of shards, see `principles-hub.md`.
+transactional Aggregate that emits Events, see `aggregates.md`. For
+the Application Services that register subscribers and control
+transactions, see `application.md`. For the index of shards,
+see `principles-hub.md`.
 
 ## What a Domain Event is
 
@@ -314,17 +313,17 @@ message twice and asserts a single observable effect.
 ## What this shard does **not** govern
 
 - Aggregates (when to emit which Events from which command, which
-  invariants the publishing Aggregate enforces) -- that is the
-  future aggregates shard. This shard governs the Event's *shape*
-  and *delivery*, not the Aggregate's design.
+  invariants the publishing Aggregate enforces) -- that is
+  `aggregates.md`. This shard governs the Event's *shape* and
+  *delivery*, not the Aggregate's design.
 - Event Sourcing (reconstituting Aggregate state by replaying Events
   rather than persisting current state). Event Sourcing is one
   consumer of an Event Store, but the durability and propagation
   rules in this shard apply with or without Event Sourcing -- see
   `architecture.md` for when (not) to adopt it.
-- Saga / Process Manager orchestration across Events. The future
-  application shard covers long-running workflows that listen to
-  multiple Events and emit commands.
+- Saga / Process Manager orchestration across Events. `application.md`
+  covers long-running workflows that listen to multiple Events and
+  emit commands.
 - Concrete messaging-library choices (RabbitMQ, Kafka, NATS, SQS,
   application-server timers) -- service conventions handle that.
   This shard governs the *contract*, not the wire.

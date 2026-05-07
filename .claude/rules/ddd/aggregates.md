@@ -1,7 +1,6 @@
 ---
 paths:
   - "backend/**"
-  - "frontend/**"
   - "private/specs/**"
 ---
 
@@ -373,19 +372,19 @@ no longer applies.
 ## What this shard does **not** govern
 
 - Repository design (how Aggregates round-trip to storage,
-  identity generation, query shapes) -- that is the future
-  repositories shard. This shard governs *what* an Aggregate is;
+  identity generation, query shapes) -- that is `repositories.md`.
+  This shard governs *what* an Aggregate is;
   the Repository is *how* it is fetched and stored.
 - Factory design (how Aggregates are constructed, with or
-  without their parents) -- that is the future factories shard.
-  Factory Methods on the Root for child Aggregate creation are
+  without their parents) -- that is `factories.md`. Factory
+  Methods on the Root for child Aggregate creation are
   consistent with this shard but their full design lives there.
 - The detailed Entity / Value implementation idioms that go
   inside an Aggregate. Those live in `entities.md` and
   `value-objects.md`; this shard assumes them.
 - Sagas / Process Managers that orchestrate work across
   Aggregates over time. Those build on `domain-events.md`
-  Principle 4 and the future application shard.
+  Principle 4 and `application.md`.
 
 ## Cross-references
 
