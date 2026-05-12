@@ -158,22 +158,6 @@ Product Kata-driven development.
   cite IDs in plans, reviews, and audits when a change touches one
 - Machine-switch state: `private/CONTEXT.md` (read at session start only)
 
-### Active experiments
-
-- `01-grounded-retrieval` -- Sonnet user path with cited answers (Denver MVP)
-- `02-agentic-ingestion` -- Opus research workflow for autonomous source
-  extraction
-
-### Knowledge management
-
-- Before starting work, check `private/learnings-index.md` for relevant
-  cross-project learnings
-- Full knowledge management rules: `.claude/knowledge-management.md`
-- Service mental models: `.claude/rules/[service]/[service]-mental-model.md`
-- If you discover a cross-project pattern, append to the `## Drafts` section
-  of `private/learnings.md`
-- Run `/consolidate-learnings` weekly to promote drafts (spec-writer agent)
-
 ### Shared file ownership
 
 See `.claude/rules/doc-ownership.md` for the canonical table of which agent
@@ -182,64 +166,25 @@ file.
 
 ### Honesty and stop conditions (all agents)
 
-Applies to every agent in this repo. Service agents add specifics in their
-own files.
-
-- **Verify, don't invent.** If a symbol, file, API, or fact is needed and
-  you cannot find it via Read/Grep or user-provided context, stop and ask --
-  do not fabricate it. This is the single biggest hallucination source.
+- **Verify, don't invent.** If a symbol, file, or API is not found via
+  Read/Grep, stop and ask. Do not fabricate it.
 - **Stop after 3 failed attempts on the same root error.** Surface the
-  failing output, your current hypothesis, and what you tried. Do not keep
-  mutating code hoping it works.
-- **Don't fix unrelated breakage to make CI green.** If something fails for
-  reasons outside your change, pause and report.
-- **Don't soften findings to be agreeable.** If a review/audit/spec turns up
-  a real issue, restate the evidence when pushed back on -- don't downgrade
-  severity to keep the peace. If pushback contains new evidence, update; if
-  it doesn't, hold.
-- **"Type-checks pass" is not "it works."** State what you actually verified
-  (tests run, UI loaded in browser, query executed) versus what you only
-  inferred.
-- **Empty findings are valid output.** If a review/audit has nothing to flag,
-  say so. Do not pad to look thorough.
+  output, your hypothesis, and what you tried.
+- **Don't fix unrelated breakage to make CI green.** Pause and report.
+- **Don't soften findings under pushback.** Hold the evidence unless the
+  pushback contains new evidence.
+- **Type-checks passing is not "it works."** State what you actually
+  ran (tests, UI in browser, query) vs. what you inferred.
+- **Empty findings are valid output.** Don't pad to look thorough.
 
-### Definition of done
+### Review gates (before marking work done)
 
-- Tests written and passing for new/changed code
-- Observability: logging instrumented per service conventions
-- Security: no sensitive data exposed, inputs validated at system boundaries
-- Conventions: follows relevant `.claude/rules/[service]/CLAUDE.md` patterns
-- Grounding (LLM-touching code only): every assistant answer in tests carries
-  a citation; refusal path tested
+1. Run `test-auditor` against changed services.
+2. Run `code-reviewer` against the unstaged diff.
+3. Fix issues before reporting done.
 
-**Review gates:**
-
-1. Run `test-auditor` agent against changed services
-2. Run `code-reviewer` agent against the unstaged diff
-3. Fix issues before marking work complete
-
-For quick-fixes (typos, config changes, one-line edits): self-review is
-sufficient.
-
-**Plan review gate:** after writing/revising a spec or kata, run `spec-writer`
-agent to review.
-
-### Development principles
-
-- NEVER build without a linked experiment defining the outcome we're targeting
-- Specs require task shards -- atomic units a subagent can execute
-  independently
-- Each experiment step must be ≤ 1 week
-- Use `/kata-check` weekly to review experiment progress
-- Use `/quick-fix` for bugs and small changes (skip experiment/spec ceremony)
-
-### Before starting any feature work
-
-1. Check `private/product/experiments/` for the active experiment
-2. Read the current experiment's `kata.md` -- what step are we on?
-3. If building: find the spec in `private/specs/` with task shards
-4. Work from a single task shard -- don't load the full spec into context
-5. After completing a shard: run the "Verify before proceeding" check
+Quick-fixes (typos, config changes, one-line edits) self-review only.
+For specs and katas, run `spec-writer` instead.
 
 ### Context budgets
 
