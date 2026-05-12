@@ -25,7 +25,10 @@ JsonDict = dict[str, object]
 
 
 class AnswerTraceORM(Base):
-    __tablename__: str = "answer_traces"
+    # Class name preserved at the Step 1 shape; Step 2 implementation
+    # rewrites it as `AnswerAuditRecordORM` with the AnswerAuditRecord
+    # column shape per the Step 2 design (D6).
+    __tablename__: str = "answer_audit_records"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

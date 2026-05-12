@@ -213,7 +213,7 @@ def test_orm_models_importable():
     assert SourceDocumentORM.__tablename__ == "source_documents"
     assert RuleORM.__tablename__ == "rules"
     assert RegressionCaseORM.__tablename__ == "regression_cases"
-    assert AnswerTraceORM.__tablename__ == "answer_traces"
+    assert AnswerTraceORM.__tablename__ == "answer_audit_records"
 
 
 # ---- ORM -> Pydantic round-trip (no DB) ----

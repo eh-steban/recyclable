@@ -66,7 +66,8 @@ _ACCEPTANCE_CHECKS: list[tuple[str, str, int, int | None]] = [
         WHERE table_schema = 'public'
           AND table_name IN (
             'jurisdictions', 'materials', 'material_aliases',
-            'source_documents', 'rules', 'regression_cases', 'answer_traces'
+            'source_documents', 'rules', 'regression_cases',
+            'answer_audit_records'
           )
         """,
         7,

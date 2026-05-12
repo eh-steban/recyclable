@@ -26,7 +26,7 @@ IN_SCOPE_TABLES = {
     "source_documents",
     "rules",
     "regression_cases",
-    "answer_traces",
+    "answer_audit_records",
 }
 
 

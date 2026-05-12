@@ -290,9 +290,9 @@ def upgrade() -> None:
         ),
     )
 
-    # ---- answer_traces ----
+    # ---- answer_audit_records ----
     _ = op.create_table(
-        "answer_traces",
+        "answer_audit_records",
         sa.Column(
             "id",
             postgresql.UUID(as_uuid=True),
@@ -359,7 +359,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["jurisdiction_id"],
             ["jurisdictions.id"],
-            name="fk_answer_traces_jurisdiction_id",
+            name="fk_answer_audit_records_jurisdiction_id",
             ondelete="RESTRICT",
         ),
     )
@@ -367,7 +367,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop in reverse FK-safe order.
-    op.drop_table("answer_traces")
+    op.drop_table("answer_audit_records")
     op.drop_table("regression_cases")
     op.drop_index(
         "uq_rules_active_per_jurisdiction_material", table_name="rules"

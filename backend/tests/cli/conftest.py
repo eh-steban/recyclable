@@ -26,7 +26,7 @@ DATABASE_URL = os.environ.get(
 
 # Tables listed in FK-safe truncation order (children before parents).
 _TRUNCATE_TABLES = [
-    "answer_traces",
+    "answer_audit_records",
     "regression_cases",
     "rules",
     "material_aliases",
