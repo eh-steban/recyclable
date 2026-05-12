@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.domain.quote_normalize import normalize
+from src.domain.quote_normalize import normalize
 
 # ---- Curly single quotes ----
 

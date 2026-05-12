@@ -11,10 +11,10 @@ one-off CLI commands:
 
 ```bash
 # Seed a dataset
-python -m app.cli seed --dataset denver-easy
+python -m src.cli seed --dataset denver-easy
 
 # Verify a seeded dataset
-python -m app.cli verify --dataset denver-easy
+python -m src.cli verify --dataset denver-easy
 
 # Run migrations
 alembic upgrade head

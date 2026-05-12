@@ -16,7 +16,7 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from app.cli.seed import run_seed
+from src.cli.seed import run_seed
 
 # Row snapshot: (id_text, updated_at_value)
 _RowSnapshot = tuple[str, object]

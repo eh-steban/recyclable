@@ -21,7 +21,7 @@ import yaml
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from app.cli.verify import run_verify
+from src.cli.verify import run_verify
 
 
 @pytest.mark.integration
@@ -33,7 +33,7 @@ def test_empty_db_exits_nonzero(
 ) -> None:
     """run_verify returns False when the DB has no seed data."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.verify as verify_module  # noqa: PLC0415
+    import src.cli.verify as verify_module  # noqa: PLC0415
 
     monkeypatch.setattr(verify_module, "_SEEDS_ROOT", tmp_path)
 
@@ -65,15 +65,15 @@ def test_seeded_db_partial_pass(
     acceptance queries fail, so run_verify returns False overall."""
     _ = clean_db  # injected for DB truncation side effect
     _ = tmp_path  # unused in this test but kept for fixture symmetry
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.cli.verify as verify_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.verify as verify_module  # noqa: PLC0415
 
     # Point both modules at the real seeds directory.
     real_seeds = pathlib.Path(__file__).parents[2] / "seeds"
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", real_seeds)
     monkeypatch.setattr(verify_module, "_SEEDS_ROOT", real_seeds)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with Session(db_engine) as session, session.begin():
         run_seed("test-fixture", session)
@@ -99,14 +99,14 @@ def test_broken_row_triggers_quote_integrity_failure(
     the quote-integrity check to fail."""
     _ = clean_db  # injected for DB truncation side effect
     _ = tmp_path  # unused in this test but kept for fixture symmetry
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.cli.verify as verify_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.verify as verify_module  # noqa: PLC0415
 
     real_seeds = pathlib.Path(__file__).parents[2] / "seeds"
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", real_seeds)
     monkeypatch.setattr(verify_module, "_SEEDS_ROOT", real_seeds)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     # Seed normally first.
     with Session(db_engine) as session, session.begin():
@@ -142,14 +142,14 @@ def test_verify_fixture_passes_all_checks(
     -- it is not real Denver data (Phase C territory).
     """
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.cli.verify as verify_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.verify as verify_module  # noqa: PLC0415
 
     real_seeds = pathlib.Path(__file__).parents[2] / "seeds"
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", real_seeds)
     monkeypatch.setattr(verify_module, "_SEEDS_ROOT", real_seeds)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with Session(db_engine) as session, session.begin():
         run_seed("verify-fixture", session)
@@ -173,15 +173,15 @@ def test_bad_distribution_fails_verifier(
     """All 8 regression cases in 'accepted' fails the distribution check."""
     _ = clean_db  # injected for DB truncation side effect
     _ = tmp_path  # unused in this test but kept for fixture symmetry
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.cli.verify as verify_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.verify as verify_module  # noqa: PLC0415
 
     # Use the verify-fixture to get a well-formed DB first, then corrupt it.
     real_seeds = pathlib.Path(__file__).parents[2] / "seeds"
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", real_seeds)
     monkeypatch.setattr(verify_module, "_SEEDS_ROOT", real_seeds)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with Session(db_engine) as session, session.begin():
         run_seed("verify-fixture", session)

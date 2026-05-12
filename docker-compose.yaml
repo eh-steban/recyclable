@@ -64,8 +64,8 @@ services:
       app-db:
         condition: service_healthy
     # Worker stays up for CLI invocations + optional admin FastAPI server.
-    # Override with `docker compose run app-backend python -m app.cli ingest --source ...`
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Override with `docker compose run app-backend python -m src.cli ingest --source ...`
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "8000:8000"
     restart: unless-stopped

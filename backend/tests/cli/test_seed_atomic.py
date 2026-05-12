@@ -86,8 +86,8 @@ def test_mid_load_failure_rolls_back_all_rows(
 ) -> None:
     """Injecting a failure during rule upsert leaves no rows in any table."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.infra.db.repositories.rule_repo as rule_repo_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.infra.db.repos.rule_repo as rule_repo_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -105,7 +105,7 @@ def test_mid_load_failure_rolls_back_all_rows(
 
     monkeypatch.setattr(rule_repo_module.SqlRuleRepository, "upsert", boom)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with (
         pytest.raises(RuntimeError, match="injected mid-load failure"),

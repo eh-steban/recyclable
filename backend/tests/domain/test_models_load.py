@@ -4,6 +4,9 @@ These tests are pure (no DB) -- they verify that:
 1. All imports resolve.
 2. Each domain model can be instantiated with valid data.
 3. ORM model can be reflected back to a domain model (round-trip via dict).
+
+Note: AnswerTrace/AnswerTraceORM removed in Phase 2; AnswerAuditRecordORM
+column-shape tests live in tests/infra/test_answer_audit_record_orm.py.
 """
 
 from __future__ import annotations
@@ -14,9 +17,8 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from app.domain.models import (
+from src.domain.models import (
     AcceptedStatus,
-    AnswerTrace,
     Confidence,
     Disposition,
     Jurisdiction,
@@ -29,8 +31,8 @@ from app.domain.models import (
     SourceDocument,
     SupportedStatus,
 )
-from app.infra.db.models import (
-    AnswerTraceORM,
+from src.infra.db.models import (
+    AnswerAuditRecordORM,
     JurisdictionORM,
     MaterialAliasORM,
     MaterialORM,
@@ -46,7 +48,6 @@ MATERIAL_ID = uuid.uuid4()
 SOURCE_DOC_ID = uuid.uuid4()
 RULE_ID = uuid.uuid4()
 REGRESSION_CASE_ID = uuid.uuid4()
-ANSWER_TRACE_ID = uuid.uuid4()
 NOW = datetime.now(tz=UTC)
 
 
@@ -146,18 +147,6 @@ def test_regression_case_model():
     assert rc.refusal_required is False
 
 
-def test_answer_trace_model():
-    at = AnswerTrace(
-        id=ANSWER_TRACE_ID,
-        user_query="Can I recycle aluminum cans?",
-        prompt_name="ask_compose",
-        prompt_version=1,
-        model_id="claude-sonnet-4-6",
-        created_at=NOW,
-    )
-    assert at.cache_hit is False
-
-
 # ---- Enum validation ----
 
 
@@ -213,7 +202,7 @@ def test_orm_models_importable():
     assert SourceDocumentORM.__tablename__ == "source_documents"
     assert RuleORM.__tablename__ == "rules"
     assert RegressionCaseORM.__tablename__ == "regression_cases"
-    assert AnswerTraceORM.__tablename__ == "answer_audit_records"
+    assert AnswerAuditRecordORM.__tablename__ == "answer_audit_records"
 
 
 # ---- ORM -> Pydantic round-trip (no DB) ----
@@ -404,58 +393,3 @@ def test_regression_case_orm_to_domain_roundtrip():
     assert domain.must_cite_source == orm.must_cite_source
     assert domain.refusal_required == orm.refusal_required
     assert domain.notes == orm.notes
-
-
-def test_answer_trace_orm_to_domain_roundtrip():
-    orm = AnswerTraceORM(
-        id=ANSWER_TRACE_ID,
-        user_query="Can I recycle aluminum cans?",
-        jurisdiction_id=None,
-        normalized_materials=[],
-        retrieved_rule_ids=[],
-        retrieved_source_ids=[],
-        prompt_name="ask_compose",
-        prompt_version=1,
-        model_id="claude-sonnet-4-6",
-        raw_model_output={},
-        final_answer={},
-        validator_result={},
-        confidence=None,
-        latency_ms=None,
-        cache_hit=False,
-        created_at=NOW,
-    )
-    domain = AnswerTrace(
-        id=orm.id,
-        user_query=orm.user_query,
-        jurisdiction_id=orm.jurisdiction_id,
-        normalized_materials=list(orm.normalized_materials or []),
-        retrieved_rule_ids=list(orm.retrieved_rule_ids or []),
-        retrieved_source_ids=list(orm.retrieved_source_ids or []),
-        prompt_name=orm.prompt_name,
-        prompt_version=orm.prompt_version,
-        model_id=orm.model_id,
-        raw_model_output=dict(orm.raw_model_output or {}),
-        final_answer=dict(orm.final_answer or {}),
-        validator_result=dict(orm.validator_result or {}),
-        confidence=orm.confidence,
-        latency_ms=orm.latency_ms,
-        cache_hit=orm.cache_hit,
-        created_at=orm.created_at,
-    )
-    assert domain.id == orm.id
-    assert domain.user_query == orm.user_query
-    assert domain.jurisdiction_id == orm.jurisdiction_id
-    assert domain.normalized_materials == list(orm.normalized_materials)
-    assert domain.retrieved_rule_ids == list(orm.retrieved_rule_ids)
-    assert domain.retrieved_source_ids == list(orm.retrieved_source_ids)
-    assert domain.prompt_name == orm.prompt_name
-    assert domain.prompt_version == orm.prompt_version
-    assert domain.model_id == orm.model_id
-    assert domain.raw_model_output == orm.raw_model_output
-    assert domain.final_answer == orm.final_answer
-    assert domain.validator_result == orm.validator_result
-    assert domain.confidence == orm.confidence
-    assert domain.latency_ms == orm.latency_ms
-    assert domain.cache_hit == orm.cache_hit
-    assert domain.created_at == orm.created_at

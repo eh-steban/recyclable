@@ -17,8 +17,8 @@ import pytest
 import yaml
 from sqlalchemy import Engine
 
-from app.domain.exceptions import SeedIntegrityError
-from app.domain.quote_normalize import normalize
+from src.domain.exceptions import SeedIntegrityError
+from src.domain.quote_normalize import normalize
 
 # Unicode curly quote characters as constants to avoid literal embedding.
 _LQUOTE = "“"  # left double quotation mark
@@ -136,7 +136,7 @@ def test_curly_quote_in_fixture_loads_successfully(
 ) -> None:
     """Curly-quoted source_quote loads when normalized text matches."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -150,7 +150,7 @@ def test_curly_quote_in_fixture_loads_successfully(
 
     from sqlalchemy.orm import Session  # noqa: PLC0415
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     # Should not raise.
     with Session(db_engine) as session, session.begin():
@@ -166,7 +166,7 @@ def test_substring_mismatch_raises_seed_integrity_error(
 ) -> None:
     """Mismatched source_quote raises SeedIntegrityError before any DB write."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -178,7 +178,7 @@ def test_substring_mismatch_raises_seed_integrity_error(
     from sqlalchemy import text  # noqa: PLC0415
     from sqlalchemy.orm import Session  # noqa: PLC0415
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with (
         pytest.raises(SeedIntegrityError) as exc_info,
