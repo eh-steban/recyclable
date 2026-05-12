@@ -4,7 +4,7 @@
 # Stages: base (uv + python) -> dev (hot reload) | runner (Railway prod).
 
 # ---------- base ----------
-FROM python:3.13-slim AS base
+FROM python:3.14-slim AS base
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
