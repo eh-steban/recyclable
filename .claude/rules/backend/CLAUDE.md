@@ -17,8 +17,8 @@ Python service with two surfaces sharing one domain layer:
    the agentic research loop. Latency is not load-bearing here;
    correctness, citation fidelity, and auditability are.
 
-Both surfaces import the same `app/domain/`. Both write through the same
-`app/infra/db/` repositories. The HTTP API never touches `app/worker/`
+Both surfaces import the same `src/domain/`. Both write through the same
+`src/infra/db/` repositories. The HTTP API never touches `src/worker/`
 internals; the worker never touches FastAPI request handling. Domain is
 the only shared layer.
 
@@ -37,7 +37,7 @@ applicable shards by `paths:` frontmatter.
 <!-- markdownlint-disable MD013 -->
 ```text
 backend/
-├── app/
+├── src/
 │   ├── api/                          # FastAPI HTTP layer
 │   │   ├── main.py                   # FastAPI() app + middleware + route mounting
 │   │   ├── deps.py                   # Dependency providers (DB session, settings)
@@ -57,7 +57,7 @@ backend/
 │   │   └── pipelines/                # Per-source ingestion pipelines
 │   │
 │   ├── cli/                          # CLI entry points (operator workflows)
-│   │   └── ingest.py                 # `python -m app.cli ingest --source <url>`
+│   │   └── ingest.py                 # `python -m src.cli ingest --source <url>`
 │   │
 │   ├── application/                  # Use Cases / Orchestration (called by api/ AND worker/)
 │   │   ├── mappers/                  # ORM ↔ Domain model mapping
@@ -108,36 +108,36 @@ backend/
 docker compose up backend
 
 # FastAPI dev server only (auto-reload, localhost:8000)
-cd backend && uv run uvicorn app.api.main:app --reload
+cd backend && uv run uvicorn src.api.main:app --reload
 
 # Worker only
-cd backend && uv run python -m app.worker.runner
+cd backend && uv run python -m src.worker.runner
 
 # One-off ingestion (CLI)
-cd backend && python -m app.cli ingest \
+cd backend && python -m src.cli ingest \
   --source https://example-city.gov/recycling
 
 # Apply an approved ingestion report
-cd backend && python -m app.cli apply-report --id <uuid>
+cd backend && python -m src.cli apply-report --id <uuid>
 
 # Emit OpenAPI spec (for frontend codegen)
-cd backend && uv run python -m app.api.export_openapi > openapi.json
+cd backend && uv run python -m src.api.export_openapi > openapi.json
 
 # Run tests
 cd backend && pytest
 
 # Run with coverage
-pytest --cov=app --cov-report=term-missing
+pytest --cov=src --cov-report=term-missing
 
 # Run regression suite (hits the local FastAPI dev server)
 pytest tests/regression -v
 
 # Linting + formatting
-ruff check app/
-ruff format app/
+ruff check src/
+ruff format src/
 
 # Type checking
-basedpyright app/
+basedpyright src/
 
 # Database migrations
 alembic upgrade head
@@ -146,7 +146,7 @@ alembic revision --autogenerate -m "description"
 
 ## Testing notes
 
-- Test files mirror `app/` structure in `tests/`
+- Test files mirror `src/` structure in `tests/`
 - Use `conftest.py` for shared fixtures
 - Domain tests should be pure (no mocking)
 - Application tests mock infrastructure dependencies
@@ -163,9 +163,9 @@ alembic revision --autogenerate -m "description"
 ## HTTP API conventions
 
 - **Routes are thin.** A route handler validates input (Pydantic), calls
-  a use case in `app/application/use_cases/`, maps the result to a
+  a use case in `src/application/use_cases/`, maps the result to a
   response schema, returns. Domain logic does not live in routes.
-- **Pydantic schemas in `app/api/schemas/`.** Request and response shapes
+- **Pydantic schemas in `src/api/schemas/`.** Request and response shapes
   are the contract. Each route declares typed inputs and outputs;
   FastAPI emits these into the OpenAPI spec automatically.
 - **OpenAPI is the contract.** The frontend's TS client is generated

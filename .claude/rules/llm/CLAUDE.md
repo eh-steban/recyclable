@@ -1,8 +1,8 @@
 ---
 paths:
   - "frontend/lib/llm/**/*.ts"
-  - "backend/app/llm/**/*.py"
-  - "backend/app/application/use_cases/**/*.py"
+  - "backend/src/llm/**/*.py"
+  - "backend/src/application/use_cases/**/*.py"
 ---
 
 # LLM Conventions (Claude SDK)
@@ -44,7 +44,7 @@ export function buildAskComposeMessages(input: AskComposeInput): Message[] {
 ```
 
 ```python
-# backend/app/llm/prompts/extract_rules.py
+# backend/src/llm/prompts/extract_rules.py
 EXTRACT_RULES_VERSION = 1
 def build_extract_rules_messages(input: ExtractRulesInput) -> list[Message]:
     ...
@@ -149,6 +149,28 @@ Block or downgrade the answer if any of:
 Validator failures are logged, the answer is rewritten or downgraded,
 and the trace records the original + final state.
 
+## Prompt-injection and tool access
+
+Three durable principles for every LLM boundary in this project.
+Step 2 specifics are in `private/specs/01-sonnet-user-path.md`
+§ Prompt-injection defense (Step 2 baseline).
+
+- **Destructive capability is gated by the tool surface, not by prompt
+  instruction.** If a capability should not be reachable from the LLM,
+  it must not appear in the tool registry. Prompt instructions saying
+  "do not use this" are not a security boundary. On the user path,
+  Sonnet's registered tools are read-only; no write path is
+  registered.
+- **Untrusted text is always delimited as data.** User-supplied input
+  is wrapped in explicit delimiters (e.g. XML tags) and placed in the
+  user turn, never concatenated into the system prompt or into
+  instruction blocks. This operationalises INV-LLM-004.
+- **Length caps on user input are required at every LLM boundary.**
+  Long payloads are the primary prompt-bombing vector. Each endpoint
+  that feeds user text to a model must enforce a character limit at
+  the HTTP layer, before the text reaches the prompt builder. The
+  limit for `POST /ask` is 500 characters.
+
 ## Error handling and retries
 
 - Timeout: 20s per Anthropic call (user path). 120s per call (research
@@ -162,7 +184,7 @@ and the trace records the original + final state.
 
 ## Trace persistence
 
-Every model call writes an `AnswerTrace` (user path) or `IngestionReport`
+Every model call writes an `AnswerAuditRecord` (user path) or `IngestionReport`
 (research path) row, with at minimum:
 
 - `prompt_name`, `prompt_version`, `model_id`.

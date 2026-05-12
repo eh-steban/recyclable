@@ -1,6 +1,6 @@
 ---
 paths:
-  - "backend/app/domain/**"
+  - "backend/src/domain/**"
   - "frontend/lib/domain/**"
   - "private/specs/contracts/**"
 ---
@@ -37,11 +37,14 @@ are filled in.
 
 ### `answer.md`
 
-- **Boundary:** Postgres / DB layer -> Next.js `/api/ask` -> client.
-- **Owner:** `frontend-react` (the route handler that produces the
+- **Boundary:** backend FastAPI `POST /ask` -> Next.js `/ask` UI ->
+  client. The OpenAPI spec the backend emits is the Published
+  Language between the two contexts.
+- **Owner:** `backend-python` (the route handler that produces the
   shape).
-- **Consumers:** client `<AnswerCard />`; regression suite
-  (`backend-python`).
+- **Consumers:** backend regression suite
+  (`backend/tests/regression/`); frontend `<AnswerCard />` through
+  the consumer-side ACL at `frontend/lib/api/translate.ts`.
 
 ### `ingestion-report.md`
 

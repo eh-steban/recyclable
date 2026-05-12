@@ -119,10 +119,10 @@ LLM calls.
   status codes; do not swallow them.
 - **Set `runtime = 'nodejs'`** (default). The Edge runtime is fine for
   pure proxies but not required.
-- **No `AnswerTrace` writes here.** Trace persistence is the backend's
-  responsibility (the backend writes one row per `POST /ask`). The
-  frontend route handler should pass the backend's `trace_id` back to
-  the browser so feedback can correlate.
+- **No `AnswerAuditRecord` writes here.** Audit persistence is the
+  backend's responsibility (the backend writes one row per `POST /ask`).
+  The frontend route handler should pass the backend's `audit_record_id`
+  back to the browser so feedback can correlate.
 - **No retries here.** The backend handles upstream LLM retries. A
   failed backend call should propagate to the browser as-is.
 

@@ -1,7 +1,7 @@
 ---
 paths:
-  - "backend/app/domain/models/**/*.py"
-  - "backend/app/infra/db/models/**/*.py"
+  - "backend/src/domain/models/**/*.py"
+  - "backend/src/infra/db/models/**/*.py"
   - "backend/migrations/**"
   - "frontend/lib/domain/**/*.ts"
   - "frontend/lib/db/**/*.ts"
@@ -13,7 +13,7 @@ Postgres is the product asset. Both the SEO pages and the assistant read
 from these tables. The research worker writes to them through ingestion
 reports + human approval. Schema changes are coordinated -- bump migration,
 update both `frontend/lib/domain/` types and
-`backend/app/domain/models/`, run regression suite.
+`backend/src/domain/models/`, run regression suite.
 
 ## Entities
 
@@ -98,7 +98,13 @@ unique. Only one active rule per (jurisdiction, material).
 | `restrictions` | text[] | "Residents only", "Photo ID required" |
 | `source_document_id` | uuid FK | |
 
-### `answer_traces`
+### `answer_audit_records`
+
+> Renamed from `answer_traces` in migration 0001 (in place) to align with
+> the `AnswerAuditRecord` Ubiquitous Language per `architecture.md` and
+> the Step 2 design (D6). Column shape below is the Step 1 shape; the
+> Step 2 implementation reshapes the columns to the AnswerAuditRecord
+> schema.
 
 | Column | Type | Notes |
 | --- | --- | --- |

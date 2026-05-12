@@ -1,14 +1,27 @@
 # Recyclable
 
 Recycling Law Assistant -- a grounded, source-cited recycling Q&A product.
-Two cooperating systems share one Postgres knowledge base:
+Two services, one Postgres knowledge base owned by the backend:
 
-- **`frontend/`** -- Next.js App Router app. SEO-crawlable
-  jurisdiction/material pages and an interactive assistant. Calls Claude
-  **Sonnet** synchronously for retrieval-backed user responses.
-- **`backend/`** -- Python research worker. Asynchronous source ingestion,
-  extraction, conflict detection, and eval runs. Calls Claude **Opus** for
-  the agentic research loop. Not on the user request path.
+- **`backend/`** -- Python service with two surfaces:
+  - **FastAPI HTTP API** powering the frontend. Synchronous. Owns the
+    Sonnet user path: retrieval, prompt composition, validator, response.
+  - **Async ingestion worker.** Source fetch, extraction, conflict
+    detection, eval runs. Uses Claude **Opus** for the agentic research
+    loop.
+
+  Owns the Postgres schema via SQLAlchemy + Alembic. Schema knowledge
+  lives only here.
+
+- **`frontend/`** -- Next.js App Router presentation layer. SEO-crawlable
+  jurisdiction/material pages (SSG) and the interactive `/ask` UI. Calls
+  the backend HTTP API for all data and LLM operations. Holds no schema
+  knowledge and makes no direct database connections. Consumes a TypeScript
+  client generated from the backend's OpenAPI spec.
+
+The service boundary is the HTTP API. Schema changes happen on the
+backend; the frontend re-generates its TS client and picks up new types.
+This is the only way schema knowledge flows between services.
 
 ## Writing style
 
@@ -23,14 +36,20 @@ Two cooperating systems share one Postgres knowledge base:
 ## Quick reference
 
 ```bash
-# Full local stack (web + worker + Postgres)
+# Full local stack (api + worker + frontend + Postgres)
 docker compose up
 
-# Frontend only (dev mode, local Node)
+# Backend FastAPI dev server (localhost:8000)
+cd backend && uv run uvicorn src.main:app --reload
+
+# Backend ingestion worker (one-off CLI job)
+cd backend && python -m src.cli ingest --source <url>
+
+# Frontend dev (localhost:3000; expects backend at BACKEND_URL)
 cd frontend && npm run dev
 
-# Worker only (one-off ingestion job)
-cd backend && python -m app.cli ingest --source <url>
+# Regenerate the frontend's TS API client from the backend's OpenAPI
+cd frontend && npm run codegen:api
 
 # Eval suite
 cd backend && pytest tests/evals
@@ -40,9 +59,16 @@ cd backend && pytest tests/evals
 
 ```text
 recyclable/
-├── frontend/              # Next.js App Router -- SEO pages, /ask, /api/ask
-├── backend/               # Python research worker -- ingestion, extraction, evals
-├── docker-compose.yaml    # Local prod-shape: web + worker + Postgres
+├── backend/               # Python -- FastAPI HTTP API + ingestion worker
+│   ├── src/api/           # FastAPI routes (user path: /ask, /jurisdictions, /materials, /rules)
+│   ├── src/worker/        # Async ingestion (Opus agentic loop)
+│   ├── src/domain/        # DDD domain layer (pure)
+│   ├── src/infra/db/      # SQLAlchemy + repositories
+│   └── migrations/        # Alembic
+├── frontend/              # Next.js App Router -- SSG pages, /ask UI, BFF proxies
+│   ├── app/               # Routes (server components fetch via lib/api)
+│   └── lib/api/           # Generated TS client + thin wrappers
+├── docker-compose.yaml    # Local prod-shape: api + worker + frontend + Postgres
 ├── .devcontainer/         # Devcontainer spec (editor-agnostic; enter via ./bin/dev)
 └── private/               # Strategy, experiments, specs (gitignored)
 ```
@@ -51,11 +77,16 @@ recyclable/
 
 - **Frontend:** Vercel (Next.js native; SSG + edge caching, event-driven
   revalidation on ingestion-apply).
-- **Worker:** Railway (Python, Dockerfile build).
-- **Database:** Neon Postgres (serverless, branching for evals).
+- **Backend:** Railway (Python, Dockerfile build). Deploys two processes
+  from one image: FastAPI HTTP service (uvicorn) and the async ingestion
+  worker. The HTTP service is reachable from Vercel via private network
+  or authenticated public URL; the worker is internal-only.
+- **Database:** Neon Postgres (serverless, branching for evals). Only the
+  backend connects.
 
-Local Docker Compose is a dev-parity shape, not the deployment topology. The
-`frontend/Dockerfile` exists for parity testing; Vercel builds Next.js itself.
+Local Docker Compose is a dev-parity shape, not the deployment topology.
+The `frontend/Dockerfile` exists for parity testing; Vercel builds Next.js
+itself.
 
 ## Key principles
 
@@ -63,13 +94,24 @@ Local Docker Compose is a dev-parity shape, not the deployment topology. The
   assistant says "I cannot verify this" rather than guess.
 - **Postgres is the product asset:** structured rules drive both SEO pages
   and assistant answers. No separate hand-written content layer.
+- **Backend owns the data:** the schema lives in SQLAlchemy and Alembic.
+  The frontend reaches the schema only through the FastAPI HTTP contract.
+  No second copy of schema knowledge in TypeScript -- TS types are
+  generated from the OpenAPI spec.
 - **Sonnet on the user path, Opus on the research path:** keep the
   user-facing loop low-latency and deterministic; reserve agentic reasoning
-  for offline ingestion where mistakes can be reviewed.
-- **DDD inside the worker:** domain layer is pure business logic, no
-  framework dependencies.
-- **Fail fast:** detect errors at boundaries, refuse to answer on missing
-  evidence.
+  for offline ingestion where mistakes can be reviewed. Sonnet runs in
+  the FastAPI HTTP service; Opus runs in the worker.
+- **DDD for the backend; strategic DDD across both services:** the
+  backend uses full DDD layering (domain / application / infra / api),
+  with a pure domain layer that has no framework dependencies. The HTTP
+  API and the ingestion worker both depend inward on the same domain.
+  The frontend applies strategic DDD -- bounded contexts, Ubiquitous
+  Language, translation at boundaries -- per
+  `.claude/rules/ddd/principles-hub.md`. Tactical patterns (Aggregates,
+  Repositories, etc.) are backend-only by default.
+- **Fail fast:** detect errors at boundaries (HTTP request, ingestion
+  source, LLM response), refuse to answer on missing evidence.
 
 ## Service details
 

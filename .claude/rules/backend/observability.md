@@ -1,6 +1,6 @@
 ---
 paths:
-  - "backend/app/**/*.py"
+  - "backend/src/**/*.py"
 ---
 # Backend Observability
 

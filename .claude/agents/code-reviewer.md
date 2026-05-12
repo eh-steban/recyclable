@@ -93,7 +93,7 @@ Apply when the diff touches:
 
 - A domain-layer file (Aggregate, Repository, Domain Service, Domain
   Event, Value Object, Factory, or anything under
-  `backend/app/domain/`).
+  `backend/src/domain/`).
 - A Bounded Context boundary (HTTP API surface, ingestion adapter,
   generated client wrapper, prompt-input boundary).
 - A new long parameter list (≥4 args), or a new noun in code, schema,
