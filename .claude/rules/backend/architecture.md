@@ -56,7 +56,7 @@ Repositories return ORM models. Mapping to domain models happens in
 
 ```python
 # ✅ Repository returns ORM model
-class UserRepository:
+class UserRepo:
     def get_by_id(self, user_id: int) -> UserModel | None:
         ...
 

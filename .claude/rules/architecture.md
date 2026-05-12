@@ -214,7 +214,7 @@ AnswerQuery (Application Service in application/answer_query.py)
 RetrievalService (Domain Service in domain/retrieval/)
   resolve location (LocationResolver)
   normalize material (MaterialNormalizer)
-  retrieve rules (RuleRetriever, uses RuleRepository port)
+  retrieve rules (RuleRetriever, uses RuleRepo port)
   compose prompt (PromptComposer)
   call LLM (RetrievalLLM port)
   validate grounding (GroundingValidator Specification)
@@ -465,7 +465,7 @@ Service hands modified Entities back to the repo explicitly.
 
 ```python
 # domain/knowledge_base/rule_repo.py
-class RuleRepository(Protocol):
+class RuleRepo(Protocol):
     def next_identity(self) -> RuleId: ...
     def save(self, rule: Rule) -> None: ...
     def find_by_id(self, rule_id: RuleId) -> Rule | None: ...

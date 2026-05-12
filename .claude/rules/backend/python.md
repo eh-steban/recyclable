@@ -17,8 +17,8 @@ paths:
 
 | Type | Convention | Example |
 | ------ | ------------ | --------- |
-| Files | snake_case | `create_order.py`, `user_repository.py` |
-| Classes | PascalCase | `UserRepository`, `OrderService` |
+| Files | snake_case | `create_order.py`, `user_repo.py` |
+| Classes | PascalCase | `UserRepo`, `OrderService` |
 | Functions | snake_case | `calculate_total_price` |
 | Constants | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
 
@@ -70,7 +70,7 @@ class OrderItem:
 Use constructor injection for infrastructure concerns:
 
 ```python
-class OrderRepository:
+class OrderRepo:
     def __init__(self, db: Database):
         self.db = db
 ```

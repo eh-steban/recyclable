@@ -76,7 +76,7 @@ boundary:
 from sqlalchemy.exc import SQLAlchemyError
 from app.domain.exceptions import DataIntegrityException
 
-class UserRepository:
+class UserRepo:
     def get_by_id(self, user_id: int) -> UserModel | None:
         try:
             return self.session.query(UserModel).filter_by(id=user_id).first()
