@@ -73,21 +73,6 @@ recyclable/
 └── private/               # Strategy, experiments, specs (gitignored)
 ```
 
-## Hosting target
-
-- **Frontend:** Vercel (Next.js native; SSG + edge caching, event-driven
-  revalidation on ingestion-apply).
-- **Backend:** Railway (Python, Dockerfile build). Deploys two processes
-  from one image: FastAPI HTTP service (uvicorn) and the async ingestion
-  worker. The HTTP service is reachable from Vercel via private network
-  or authenticated public URL; the worker is internal-only.
-- **Database:** Neon Postgres (serverless, branching for evals). Only the
-  backend connects.
-
-Local Docker Compose is a dev-parity shape, not the deployment topology.
-The `frontend/Dockerfile` exists for parity testing; Vercel builds Next.js
-itself.
-
 ## Key principles
 
 - **Grounded answers only:** every definitive claim cites a source. The
@@ -123,26 +108,6 @@ edits a matching file; see any agent file's "Loading rules on demand"
 section for the mechanism.
 
 Git standards live separately at `.claude/docs/infra/git.md`.
-
-## Agents
-
-Specialized subagents for autonomous work:
-
-- `backend-python` -- Python worker: ingestion, extraction, domain services,
-  eval harness, tests
-- `frontend-react` -- Next.js App Router: pages, server components, route
-  handlers, client components, tests
-- `spec-writer` -- Specs, experiment katas, strategy docs, learnings
-  consolidation
-- `refactorer` -- Behavior-preserving cleanup of recently changed code
-  (reads `.claude/rules/refactoring.md`)
-- `code-reviewer` -- Security, convention, logic, and test coverage review
-  (read-only)
-- `adversarial-reviewer` -- Red-team review for invariant violations,
-  auth/data boundaries, LLM grounding/injection, ingestion-time
-  hostile input, and operational failure modes (read-only, opus)
-- `test-auditor` -- Periodic test suite audit across all services (read-only)
-- `e2e-testing` -- End-to-end tests spanning Next.js UI + worker + DB
 
 ## Workflow
 
