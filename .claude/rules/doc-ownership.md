@@ -1,3 +1,10 @@
+---
+paths:
+  - ".claude/**/*.md"
+  - "private/**/*.md"
+  - "**/CLAUDE.md"
+---
+
 # Documentation Ownership
 
 Single source of truth for **who can write to which markdown / config

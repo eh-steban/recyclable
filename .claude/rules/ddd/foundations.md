@@ -1,5 +1,6 @@
 ---
-# No auto-load. Reference explicitly when DDD foundations are relevant.
+paths:
+  - "private/specs/**"
 ---
 
 # DDD foundations (Ch. 1)
