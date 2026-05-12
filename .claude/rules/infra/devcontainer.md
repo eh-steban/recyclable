@@ -5,7 +5,7 @@ paths:
 
 # Development Container (Devcontainer)
 
-Unified development environment with Node.js (24) and Python (3.13).
+Unified development environment with Node.js (24) and Python (3.14).
 One container, full monorepo. Follows the open
 [Devcontainer spec][devcontainer-spec] -- editor-agnostic. The user enters
 the container via `./bin/dev` from a tmux/nvim setup; other editors that
@@ -45,7 +45,7 @@ container.
 ```text
 ubuntu:22.04
 ├── Node.js 24       # Frontend (Next.js)
-├── Python 3.13      # Worker
+├── Python 3.14      # Worker
 ├── PostgreSQL client
 ├── Claude Code CLI  # Persistent auth + history
 └── Build tools

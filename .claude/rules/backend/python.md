@@ -6,7 +6,7 @@ paths:
 
 ## General
 
-- Python 3.11+
+- Python 3.14+
 - Use type hints everywhere
 - Prefer `dataclass(frozen=True)` for immutable domain models
 - Use Pydantic models for API validation and DTOs
