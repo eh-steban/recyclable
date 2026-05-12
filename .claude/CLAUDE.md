@@ -113,52 +113,16 @@ itself.
 - **Fail fast:** detect errors at boundaries (HTTP request, ingestion
   source, LLM response), refuse to answer on missing evidence.
 
-## Service details
+## Standards and rules
 
-See `.claude/rules/` for detailed standards:
+Detailed standards live under `.claude/rules/` -- one file or shard per
+topic (backend, frontend, llm, infra, ddd, error-handling, observability,
+contracts, refactoring, validation, doc-ownership, etc.). Most shards
+declare a `paths:` frontmatter glob and load on demand when an agent
+edits a matching file; see any agent file's "Loading rules on demand"
+section for the mechanism.
 
-- `frontend/CLAUDE.md` -- Next.js App Router, route shape, SSG +
-  revalidation, components
-- `backend/CLAUDE.md` -- Python DDD layers, ingestion worker structure
-- `llm/CLAUDE.md` -- Claude SDK usage: model selection, prompt caching,
-  tool design, evals
-- `data-model.md` -- Recycling knowledge base schema (jurisdictions,
-  materials, rules, sources, facilities, traces)
-
-## Coding standards
-
-See `.claude/rules/` for detailed standards:
-
-- `backend/` -- Python, DDD architecture, testing
-- `frontend/` -- Next.js, TypeScript, testing
-- `llm/` -- Claude API conventions, prompt versioning, tool schemas,
-  eval harness
-- `contracts.md` -- Interservice contract ownership and contract-first rule
-- `doc-ownership.md` -- Which agent owns which docs/dirs (canonical)
-- `refactoring.md` -- What counts as a refactor; allowed transformations
-  and forbidden-by-default categories; loaded by the refactorer agent
-- `validation.md` -- Evidence shape for plan validation (command, exit
-  code, output excerpt, why this validates); plans link here, do not
-  duplicate the discipline
-
-Git standards live in `.claude/docs/infra/git.md`.
-
-## Infrastructure
-
-See `.claude/rules/infra/` for infrastructure and deployment:
-
-- `containers.md` -- Docker images, multi-stage builds, optimization
-- `docker-compose.md` -- Local development, networking, volumes
-- `devcontainer.md` -- Unified development environment setup
-
-## Error handling & observability
-
-- `error-handling.md` -- Cross-service error philosophy, sensitive data rules
-- `observability.md` -- Logging standards, log levels
-- `backend/error-handling.md` -- Python exception hierarchy
-- `backend/observability.md` -- Python logging setup
-- `frontend/error-handling.md` -- Error types, Error Boundaries
-- `llm/CLAUDE.md` -- LLM call failures, retry policy, trace logging
+Git standards live separately at `.claude/docs/infra/git.md`.
 
 ## Agents
 
