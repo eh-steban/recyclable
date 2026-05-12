@@ -1,4 +1,4 @@
-"""Repository for regression cases."""
+"""Repo for regression cases."""
 
 import logging
 from typing import Protocol
@@ -12,11 +12,11 @@ from src.infra.db.models.regression_case import RegressionCaseORM
 logger = logging.getLogger(__name__)
 
 
-class RegressionCaseRepository(Protocol):
+class RegressionCaseRepo(Protocol):
     def upsert(self, case: RegressionCase) -> None: ...
 
 
-class SqlRegressionCaseRepository:
+class SqlRegressionCaseRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

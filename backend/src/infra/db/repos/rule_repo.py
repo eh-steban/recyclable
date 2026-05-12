@@ -1,4 +1,4 @@
-"""Repository for rules."""
+"""Repo for rules."""
 
 import logging
 from typing import Protocol
@@ -12,11 +12,11 @@ from src.infra.db.models.rule import RuleORM
 logger = logging.getLogger(__name__)
 
 
-class RuleRepository(Protocol):
+class RuleRepo(Protocol):
     def upsert(self, rule: Rule) -> None: ...
 
 
-class SqlRuleRepository:
+class SqlRuleRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

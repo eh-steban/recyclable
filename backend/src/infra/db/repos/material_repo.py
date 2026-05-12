@@ -1,4 +1,4 @@
-"""Repository for materials and aliases."""
+"""Repo for materials and aliases."""
 
 import logging
 from typing import Protocol
@@ -15,13 +15,13 @@ from src.infra.db.models.material_alias import MaterialAliasORM
 logger = logging.getLogger(__name__)
 
 
-class MaterialRepository(Protocol):
+class MaterialRepo(Protocol):
     def upsert(self, material: Material) -> None: ...
     def upsert_alias(self, alias: MaterialAlias) -> None: ...
     def get_by_slug(self, slug: str) -> MaterialORM | None: ...
 
 
-class SqlMaterialRepository:
+class SqlMaterialRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

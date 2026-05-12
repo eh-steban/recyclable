@@ -1,4 +1,4 @@
-"""Repository for jurisdictions."""
+"""Repo for jurisdictions."""
 
 import logging
 from typing import Protocol
@@ -13,12 +13,12 @@ from src.infra.db.models.jurisdiction import JurisdictionORM
 logger = logging.getLogger(__name__)
 
 
-class JurisdictionRepository(Protocol):
+class JurisdictionRepo(Protocol):
     def upsert(self, jurisdiction: Jurisdiction) -> None: ...
     def get_by_slug(self, slug: str) -> JurisdictionORM | None: ...
 
 
-class SqlJurisdictionRepository:
+class SqlJurisdictionRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

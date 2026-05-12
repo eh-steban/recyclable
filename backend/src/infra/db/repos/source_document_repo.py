@@ -1,4 +1,4 @@
-"""Repository for source documents."""
+"""Repo for source documents."""
 
 import logging
 import uuid
@@ -14,12 +14,12 @@ from src.infra.db.models.source_document import SourceDocumentORM
 logger = logging.getLogger(__name__)
 
 
-class SourceDocumentRepository(Protocol):
+class SourceDocumentRepo(Protocol):
     def upsert(self, doc: SourceDocument) -> None: ...
     def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None: ...
 
 
-class SqlSourceDocumentRepository:
+class SqlSourceDocumentRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:
