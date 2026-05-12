@@ -5,8 +5,6 @@ functions.  We also include integration tests that confirm zero rows
 are written when the parse raises.
 """
 
-from __future__ import annotations
-
 import pathlib
 from typing import cast
 

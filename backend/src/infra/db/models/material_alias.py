@@ -1,7 +1,5 @@
 """SQLAlchemy ORM model for material aliases."""
 
-from __future__ import annotations
-
 import uuid
 
 from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, text

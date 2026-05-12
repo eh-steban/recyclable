@@ -11,8 +11,6 @@ change so that it fails on the pre-rename tree and passes only after:
  - Imports rewritten to src.*
 """
 
-from __future__ import annotations
-
 import pytest
 
 

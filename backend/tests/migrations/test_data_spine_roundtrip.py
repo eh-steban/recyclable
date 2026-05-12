@@ -6,8 +6,6 @@ Requires a live Postgres. Uses DATABASE_URL from the environment
 Skipped if the DB is unreachable.
 """
 
-from __future__ import annotations
-
 import contextlib
 import os
 from collections.abc import Generator

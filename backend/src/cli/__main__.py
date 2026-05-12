@@ -6,8 +6,6 @@ Supported subcommands:
 - ``verify`` -- re-parse fixtures and run acceptance queries (read-only)
 """
 
-from __future__ import annotations
-
 import sys
 
 

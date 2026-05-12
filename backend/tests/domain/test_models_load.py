@@ -9,8 +9,6 @@ Note: AnswerTrace/AnswerTraceORM removed in Phase 2; AnswerAuditRecordORM
 column-shape tests live in tests/infra/test_answer_audit_record_orm.py.
 """
 
-from __future__ import annotations
-
 import uuid
 from datetime import UTC, datetime
 

@@ -22,8 +22,6 @@ Exits 0 iff all checks pass; exits 1 otherwise with a per-check summary.
 No writes are performed.
 """
 
-from __future__ import annotations
-
 import argparse
 import contextlib
 import logging

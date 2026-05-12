@@ -1,7 +1,5 @@
 """SQLAlchemy ORM model for regression / eval cases."""
 
-from __future__ import annotations
-
 import uuid
 
 from sqlalchemy import Boolean, ForeignKey, String, Text, text

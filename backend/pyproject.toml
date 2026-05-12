@@ -2,7 +2,7 @@
 name = "recyclable-backend"
 version = "0.1.0"
 description = "Recycling Law Assistant -- research worker"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
@@ -41,13 +41,13 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 ignore_missing_imports = true
 

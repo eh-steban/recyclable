@@ -9,8 +9,6 @@ truncates the relevant tables inside a savepoint-protected block.  This
 avoids the cost of a full migration round-trip per test.
 """
 
-from __future__ import annotations
-
 import os
 from collections.abc import Generator
 

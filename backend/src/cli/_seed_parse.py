@@ -6,8 +6,6 @@ here rather than reaching into ``seed.py``'s private namespace, which keeps
 pyright strict-mode happy.
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import pathlib

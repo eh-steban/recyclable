@@ -5,8 +5,6 @@ fixture, which probes connectivity and skips the test (rather than failing)
 when the database is unreachable.
 """
 
-from __future__ import annotations
-
 import os
 
 import pytest

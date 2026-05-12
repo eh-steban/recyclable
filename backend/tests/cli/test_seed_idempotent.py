@@ -8,8 +8,6 @@ We test both conditions:
 2. Every ``updated_at`` value is byte-identical before and after the second run.
 """
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest

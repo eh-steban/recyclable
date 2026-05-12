@@ -1,7 +1,5 @@
 """SQLAlchemy ORM model for recycling rules."""
 
-from __future__ import annotations
-
 import uuid
 from datetime import date
 

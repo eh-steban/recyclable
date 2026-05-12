@@ -5,8 +5,6 @@ do not catch: the partial unique index on rules, ON DELETE RESTRICT on FKs,
 and CHECK constraints on enum-shaped columns.
 """
 
-from __future__ import annotations
-
 import os
 import uuid
 from collections.abc import Generator

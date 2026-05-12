@@ -5,8 +5,6 @@ to raise after jurisdictions and materials have been written.  The
 transaction must roll back, leaving all tables empty.
 """
 
-from __future__ import annotations
-
 import pathlib
 from typing import cast
 

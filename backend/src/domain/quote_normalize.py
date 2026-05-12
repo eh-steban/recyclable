@@ -16,8 +16,6 @@ The five mandatory steps come from the spec
 5. Trim leading and trailing whitespace.
 """
 
-from __future__ import annotations
-
 import re
 
 # Pre-compiled pattern for whitespace collapse (step 4).

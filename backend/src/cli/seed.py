@@ -25,8 +25,6 @@ cross-reference sites. Titles are display-only and must not be used as
 lookup keys.
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 import pathlib

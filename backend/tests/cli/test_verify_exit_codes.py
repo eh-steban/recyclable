@@ -12,8 +12,6 @@ Covers:
    distribution check to fail.
 """
 
-from __future__ import annotations
-
 import pathlib
 
 import pytest

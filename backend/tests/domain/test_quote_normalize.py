@@ -1,7 +1,5 @@
 """Tests for the quote normalizer (pure domain, no DB)."""
 
-from __future__ import annotations
-
 from src.domain.quote_normalize import normalize
 
 # ---- Curly single quotes ----

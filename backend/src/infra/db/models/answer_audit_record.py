@@ -4,8 +4,6 @@ Column shape per design D6 (01-sonnet-user-path.design.md).  Migration
 0002 reshapes the Step 1 answer_audit_records table to this schema.
 """
 
-from __future__ import annotations
-
 import uuid
 from datetime import datetime
 
