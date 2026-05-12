@@ -4,7 +4,7 @@ Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-05-04
+**Last reconciled:** 2026-05-06
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a
@@ -41,6 +41,7 @@ with normal review gates.
 | `private/product/experiments/*/kata.md` | Product Kata experiment files |
 | `private/product/experiments/*/learnings.md` | Experiment outcome writeups |
 | `private/specs/*.md` | Feature specs and task shards |
+| `private/templates/katas/*.md` | Kata template scaffolded by `/new-experiment` |
 | `private/learnings.md` (above `## Drafts`) | Promoted, vetted learnings only |
 | `private/learnings-index.md` | Updated only during `/consolidate-learnings` |
 | `private/CONTEXT.md` | Written by `/switch-machine`, read by owner at session start |

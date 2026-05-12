@@ -66,6 +66,11 @@ referenced file -- do not duplicate it here.
 - Steps must be time-boxed to ≤ 1 week
 - Experiment-level Definition of Done = outcome achieved, not feature shipped
 - Feature-level Success Criteria = specific to each spec, outcome-tied
+- Kata steps are **outcome-shaped, not implementation-shaped.** Apply
+  `.claude/rules/experiment-style.md` when writing or revising any
+  `kata.md`. Frameworks, file paths, library choices, and code patterns
+  do not appear in a kata -- they live in the design doc. Use the
+  template at `private/templates/katas/kata.md` for new katas.
 
 ## Stop conditions and honesty
 

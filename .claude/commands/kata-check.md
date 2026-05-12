@@ -18,5 +18,10 @@ Then assess:
 - Are we still within our one-week time-box?
 - Is the current step still the right next action?
 - Should we update the experiment file based on what we've learned?
+- **Has the kata drifted from outcome-shape?** Per
+  `.claude/rules/experiment-style.md`, steps should describe what's
+  true at end of week, not what we built (no framework names, no
+  source-tree paths, no `Implement X` verbs without an outcome). If
+  drift has appeared, propose rewriting the affected steps.
 
 If updates are needed, propose specific edits to the kata.md file.
