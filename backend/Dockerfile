@@ -1,46 +1,34 @@
 # Multi-stage Dockerfile for the Python research worker.
-# Stages: builder (compile deps) -> dev (hot reload) | runner (Railway prod).
+# Single source of truth for deps: pyproject.toml + uv.lock.
 #
-# Railway uses the `runner` stage by default. For local hot-reload dev,
-# docker-compose targets `dev`.
+# Stages: base (uv + python) -> dev (hot reload) | runner (Railway prod).
 
-# ---------- builder ----------
-FROM python:3.13-slim AS builder
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+# ---------- base ----------
+FROM python:3.13-slim AS base
+COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-WORKDIR /app
-
-# System build deps (psycopg2 / lxml / etc.)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python deps into a venv we can copy across stages
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-
-# ---------- dev ----------
-FROM python:3.13-slim AS dev
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH" \
-    LOG_LEVEL=DEBUG
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /opt/venv /opt/venv
+# ---------- dev ----------
+FROM base AS dev
+ENV LOG_LEVEL=DEBUG
+
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --extra dev
+
 # Source is bind-mounted by docker-compose; this COPY is a parity fallback.
 COPY . .
 
@@ -48,26 +36,18 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # ---------- runner (prod / Railway) ----------
-FROM python:3.13-slim AS runner
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PATH="/opt/venv/bin:$PATH"
+FROM base AS runner
 
-WORKDIR /app
+RUN useradd -m -u 1000 appuser
 
-# Runtime-only deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpq5 \
-        curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 1000 appuser
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
-COPY --from=builder /opt/venv /opt/venv
 COPY --chown=appuser:appuser . .
 
 USER appuser
 
-# Railway sets $PORT; default for local prod parity
 ENV PORT=8000
 EXPOSE 8000
 

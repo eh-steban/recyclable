@@ -1,0 +1,81 @@
+# Synthetic regression cases for verifier happy-path test.
+# Exact distribution (per spec):
+#   accepted (expected_status=accepted, refusal_required=false):       3
+#   rejected (expected_status=rejected, refusal_required=false):       2
+#   conditional (expected_status=conditional, refusal_required=false): 1
+#   refusal_required (refusal_required=true):                          2
+# Total: 8
+
+# --- Accepted cases (3) ---
+- id: 00000000-0005-0000-0000-000000000091
+  query: Can I recycle aluminum cans?
+  jurisdiction: denver
+  material: syn-aluminum-cans
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- id: 00000000-0005-0000-0000-000000000092
+  query: Are plastic bottles recyclable?
+  jurisdiction: denver
+  material: syn-plastic-bottles
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- id: 00000000-0005-0000-0000-000000000093
+  query: Can I recycle glass bottles?
+  jurisdiction: denver
+  material: syn-glass-bottles
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+# --- Rejected cases (2) ---
+- id: 00000000-0005-0000-0000-000000000094
+  query: Can I put plastic bags in the recycling bin?
+  jurisdiction: denver
+  material: syn-plastic-bags
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: true
+  refusal_required: false
+
+- id: 00000000-0005-0000-0000-000000000095
+  query: Can I recycle motor oil at the curb?
+  jurisdiction: denver
+  material: syn-motor-oil
+  expected_status: rejected
+  expected_disposition: hazardous_waste
+  must_cite_source: true
+  refusal_required: false
+
+# --- Conditional case (1) ---
+- id: 00000000-0005-0000-0000-000000000096
+  query: How do I dispose of old electronics?
+  jurisdiction: denver
+  material: syn-electronics
+  expected_status: conditional
+  expected_disposition: dropoff
+  must_cite_source: true
+  refusal_required: false
+
+# --- Refusal-required cases (2) ---
+- id: 00000000-0005-0000-0000-000000000097
+  query: Can I recycle items from another city here?
+  jurisdiction: denver
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: false
+  refusal_required: true
+
+- id: 00000000-0005-0000-0000-000000000098
+  query: What are the recycling rules for an unsupported jurisdiction?
+  jurisdiction: denver
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: false
+  refusal_required: true

@@ -1,9 +1,11 @@
 ---
 paths:
-  - "frontend/src/**/*.ts"
-  - "frontend/src/**/*.tsx"
-  - "frontend/src/**/**/*.ts"
-  - "frontend/src/**/**/*.tsx"
+  - "frontend/**/*.test.ts"
+  - "frontend/**/*.test.tsx"
+  - "frontend/**/*.spec.ts"
+  - "frontend/**/*.spec.tsx"
+  - "frontend/**/__tests__/**"
+  - "frontend/tests/**"
 ---
 # Frontend Testing Standards
 
@@ -107,7 +109,8 @@ vi.stubEnv('VITE_API_URL', 'http://localhost:8000');
 
 ## Error State Testing
 
-Every component with error state must test error display, retry functionality, and recovery.
+Every component with error state must test error display, retry
+functionality, and recovery.
 
 ```tsx
 describe('UserProfile error handling', () => {
@@ -137,7 +140,7 @@ describe('UserProfile error handling', () => {
 ### Required Error Scenarios
 
 | Scenario | Test Pattern |
-|----------|--------------|
+| ---------- | -------------- |
 | Network failure | Mock fetch rejection |
 | 404 response | Mock 404 status |
 | 500 response | Mock 500 status |
@@ -153,6 +156,7 @@ Focus on critical user paths rather than arbitrary coverage numbers:
 - Accessibility
 
 ## Component Testing Hierarchy
+
 1. Critical User Paths → Always test these
 2. Error Handling      → Test failure scenarios
 3. Edge Cases          → Empty data, extreme values

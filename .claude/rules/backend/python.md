@@ -1,8 +1,6 @@
 ---
 paths:
   - "backend/**/*.py"
-  - "backend/**/**/*.py"
-  - "backend/**/**/**/*.py"
 ---
 # Python Coding Standards
 
@@ -12,11 +10,13 @@ paths:
 - Use type hints everywhere
 - Prefer `dataclass(frozen=True)` for immutable domain models
 - Use Pydantic models for API validation and DTOs
+- Formatting: 80-col line limit, enforced by `ruff format`. See
+  `.claude/rules/formatting.md`.
 
 ## Naming Conventions
 
 | Type | Convention | Example |
-|------|------------|---------|
+| ------ | ------------ | --------- |
 | Files | snake_case | `create_order.py`, `user_repository.py` |
 | Classes | PascalCase | `UserRepository`, `OrderService` |
 | Functions | snake_case | `calculate_total_price` |
@@ -45,9 +45,11 @@ class OrderTotalCalculator:
 ```
 
 **Guidelines:**
+
 - Class name = noun (what data you're working with)
 - Method name = verb (what action you're performing)
-- Use plural form to distinguish services that work with multiple models (`UsersService` vs `UserService`)
+- Use plural form to distinguish services that work with multiple models
+  (`UsersService` vs `UserService`)
 - Suffix with `Service` to indicate it's a service class
 
 ## Domain Models

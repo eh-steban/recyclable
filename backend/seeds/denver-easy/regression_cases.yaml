@@ -1,0 +1,83 @@
+# Denver-easy eval cases -- 8 cases covering the required distribution.
+# Distribution: 3 accepted, 2 rejected, 1 conditional, 2 out-of-jurisdiction.
+# Out-of-jurisdiction cases use jurisdiction=denver (the system under test)
+# with refusal_required=true; the query text names the non-Denver location.
+
+# --- Accepted (3 cases) ---
+
+- query: Can I recycle aluminum cans in Denver?
+  jurisdiction: denver
+  material: aluminum-cans
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- query: Are corrugated boxes recyclable in Denver?
+  jurisdiction: denver
+  material: corrugated-cardboard
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- query: Can I put glass bottles in my Denver curbside recycling?
+  jurisdiction: denver
+  material: glass-bottles
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+# --- Rejected (2 cases) ---
+
+- query: Can I put plastic bags in my recycling in Denver?
+  jurisdiction: denver
+  material: plastic-bags
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: true
+  refusal_required: false
+
+- query: Is styrofoam recyclable in Denver?
+  jurisdiction: denver
+  material: styrofoam
+  expected_status: rejected
+  expected_disposition: landfill
+  must_cite_source: true
+  refusal_required: false
+
+# --- Conditional (1 case) ---
+
+- query: Can I recycle milk jugs in Denver?
+  jurisdiction: denver
+  material: hdpe-bottles
+  expected_status: conditional
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+  notes: >-
+    Accepted but requires rinsing if residue remains; conditional on
+    container being empty and free of food residue.
+
+# --- Out-of-jurisdiction (2 cases) ---
+# jurisdiction=denver because that is the system under test.
+# The query explicitly names a non-Denver location; refusal is required.
+
+- query: Can I recycle aluminum cans in Aurora?
+  jurisdiction: denver
+  expected_status: unknown
+  expected_disposition: unknown
+  must_cite_source: false
+  refusal_required: true
+  notes: Aurora is not a supported jurisdiction; system must refuse.
+
+- query: Where do I take electronics for recycling in Boulder?
+  jurisdiction: denver
+  expected_status: unknown
+  expected_disposition: unknown
+  must_cite_source: false
+  refusal_required: true
+  notes: >-
+    Boulder is not a supported jurisdiction; system must refuse rather
+    than guess.

@@ -1,0 +1,8 @@
+# Synthetic jurisdiction using 'denver' slug to satisfy verifier acceptance
+# queries. This is test-only data -- not real Denver content.
+- id: 00000000-0001-0000-0000-000000000099
+  slug: denver
+  name: Synthetic Verifier City
+  type: city
+  country: US
+  supported_status: supported

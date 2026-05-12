@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Validate the current git branch name against conventional-branch +
+# project rules in .claude/docs/infra/git.md.
+#
+# Invoked by pre-commit at the pre-push stage. The conventional-branch
+# format is `<type>/<description>` where:
+#
+#   type        feature | fix | hotfix | release | chore
+#   description lowercase a-z, 0-9, hyphens; no consecutive hyphens;
+#               no leading or trailing hyphens
+#   release/    additionally permits dots, for version numbers
+#
+# Skips main / master / HEAD so the hook does not fire on protected
+# branches or detached-HEAD checkouts.
+
+set -euo pipefail
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+
+case "${branch}" in
+    main|master|HEAD|"")
+        exit 0
+        ;;
+esac
+
+# release/v1.2.0 form: type=release, description allows [a-z0-9.-].
+if [[ "${branch}" =~ ^release/[a-z0-9]+([.-][a-z0-9]+)*$ ]]; then
+    exit 0
+fi
+
+# All other types: description must be [a-z0-9-] only, no leading /
+# trailing / consecutive hyphens.
+if [[ "${branch}" =~ ^(feature|fix|hotfix|chore)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+    exit 0
+fi
+
+echo "branch-name validation failed: '${branch}'" >&2
+echo "" >&2
+echo "branch must match <type>/<description> where:" >&2
+echo "  type        feature | fix | hotfix | release | chore" >&2
+echo "  description lowercase a-z, 0-9, hyphens; no consecutive," >&2
+echo "              leading, or trailing hyphens" >&2
+echo "  release/    additionally permits dots (for version numbers)" >&2
+echo "" >&2
+echo "examples:" >&2
+echo "  feature/cited-answer-refusal-path" >&2
+echo "  fix/parse-timing" >&2
+echo "  release/v1.2.0" >&2
+echo "" >&2
+echo "see .claude/docs/infra/git.md for branch name rules" >&2
+echo "" >&2
+echo "to rename the current branch:" >&2
+echo "  git branch -m <new-name>" >&2
+exit 1

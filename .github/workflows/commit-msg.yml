@@ -1,0 +1,38 @@
+name: commit-msg
+
+on:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Validate every commit message on the PR branch
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          fail=0
+          for sha in $(git rev-list "${BASE_SHA}..HEAD"); do
+              git log -1 --format=%B "${sha}" > /tmp/msg
+              echo "::group::commit ${sha}"
+              git log -1 --format='%h %s' "${sha}"
+              if ! pre-commit run \
+                      --hook-stage commit-msg \
+                      --commit-msg-filename /tmp/msg; then
+                  fail=1
+              fi
+              echo "::endgroup::"
+          done
+          exit "${fail}"

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Pytest / coverage / type checkers
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.basedpyright/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+.cache/
+*.tsbuildinfo
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets / local config
+.env
+.env.*
+!.env.example
+.mcp.json
+.claude/settings.local.json
+
+# Logs
+*.log
+logs/
+
+# Note: private/ is a git submodule, not gitignored content.

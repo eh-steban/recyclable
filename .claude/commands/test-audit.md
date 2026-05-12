@@ -1,6 +1,7 @@
 Run a comprehensive test suite audit using the test-auditor subagent.
 
 Scan all test files across all services and report:
+
 1. Coverage gaps (components/endpoints/functions with no tests)
 2. Missing error path tests
 3. Stale or skipped tests

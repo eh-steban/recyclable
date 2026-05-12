@@ -2,8 +2,6 @@
 paths:
   - "frontend/src/**/*.ts"
   - "frontend/src/**/*.tsx"
-  - "frontend/src/**/**/*.ts"
-  - "frontend/src/**/**/*.tsx"
 ---
 # TypeScript Standards
 
@@ -13,12 +11,15 @@ paths:
 - Avoid `any` -- use `unknown` with type guards
 - Type all props, state, and API responses
 - Infer types from API schemas where possible
+- Formatting: 80-col line limit, enforced by Prettier. See
+  `.claude/rules/formatting.md`.
 
 ## Interface vs Type
 
 **Prefer `interface` over `type`** unless using an interface is overkill.
 
 Reasons:
+
 - Better error messages
 - More flexible when extending
 - Declaration merging when needed
@@ -55,7 +56,7 @@ type PriceCalculator = (quantity: number, unitPrice: number) => number;
 ## Naming Conventions
 
 | Type | Convention | Example |
-|------|------------|---------|
+| ------ | ------------ | --------- |
 | Files (general) | camelCase | `userService.ts`, `useUserData.ts` |
 | Files (components) | PascalCase | `UserCard.tsx`, `OrderList.tsx` |
 | Interfaces | PascalCase | `User`, `OrderItem` |

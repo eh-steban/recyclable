@@ -1,0 +1,115 @@
+# Denver-easy seed -- recycling rules.
+# source_document references source documents by URL (the stable unique key).
+# source_quote MUST be a literal substring of the referenced source_text.
+# Quotes verified against fetched page text on 2026-05-02.
+
+# Accepted-for-Recycling URL (authority_level 1) -- primary disposition source.
+# Recycling-Service URL (authority_level 1) -- rinse/prep guidance.
+
+- slug: denver-aluminum-cans
+  jurisdiction: denver
+  material: aluminum-cans
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Aluminum beverage cans
+  preparation_steps:
+    - Empty and rinse the can
+  confidence: high
+
+- slug: denver-corrugated-cardboard
+  jurisdiction: denver
+  material: corrugated-cardboard
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: All cardboard and paperboard boxes should be flattened
+  preparation_steps:
+    - Flatten box before placing in cart
+    - Cut to no larger than 2 ft x 2 ft for shipping boxes
+  confidence: high
+
+- slug: denver-glass-bottles
+  jurisdiction: denver
+  material: glass-bottles
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Beverage bottles Glass jars
+  preparation_steps:
+    - Empty and rinse before recycling
+  warnings:
+    - Window or automotive glass is not accepted
+    - Ceramics, mirrors, and wine glasses are not accepted
+  confidence: high
+
+- slug: denver-pet-bottles
+  jurisdiction: denver
+  material: pet-bottles
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: >-
+    Solid Waste accepts plastic containers, like bottles, tubs, jugs, jars,
+    and cups. All containers should be empty before recycling.
+  preparation_steps:
+    - Empty before placing in cart
+    - Do not crush before recycling
+  confidence: high
+
+- slug: denver-hdpe-bottles
+  jurisdiction: denver
+  material: hdpe-bottles
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Recycling-Service
+  disposition: curbside_recycle
+  accepted_status: conditional
+  source_quote: >-
+    Thicker residue like peanut butter may need a quick rinse before recycling
+  preparation_steps:
+    - Empty container before recycling
+    - Rinse if residue remains inside
+  confidence: high
+
+- slug: denver-paper
+  jurisdiction: denver
+  material: paper
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: >-
+    Mail : greeting cards, postcards, letters, envelopes, stationery,
+    brochures, direct mail Office supplies : index cards, file folders,
+    office paper
+  warnings:
+    - Paper towels, napkins, and tissue paper are not accepted
+    - Wet or greasy paper is not accepted
+    - Shredded paper is not accepted
+  confidence: high
+
+- slug: denver-plastic-bags
+  jurisdiction: denver
+  material: plastic-bags
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: landfill
+  accepted_status: rejected
+  source_quote: >-
+    NO PLASTIC BAGS of any kind allowed in the recycling. If you bag your
+    recycling, empty out all items and throw the bag away.
+  confidence: high
+
+- slug: denver-styrofoam
+  jurisdiction: denver
+  material: styrofoam
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: landfill
+  accepted_status: rejected
+  source_quote: Styrofoam and packing peanuts
+  confidence: high

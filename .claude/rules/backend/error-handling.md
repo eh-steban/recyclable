@@ -1,16 +1,14 @@
 ---
 paths:
-  - "backend/**/*.py"
-  - "backend/**/**/*.py"
-  - "backend/**/**/**/*.py"
+  - "backend/src/**/*.py"
 ---
 # Backend Error Handling
 
 Python/FastAPI error handling patterns and standards.
 
-## Exception Hierarchy
+## Exception hierarchy
 
-```
+```text
 Exception
 ├── DomainException (base for domain errors)
 │   ├── EntityNotFoundException
@@ -21,10 +19,10 @@ Exception
 └── ValidationException (base for input validation)
 ```
 
-## HTTP Status Code Mapping
+## HTTP status code mapping
 
 | Exception | Status | Client Message |
-|-----------|--------|----------------|
+| ----------- | -------- | ---------------- |
 | ValidationException | 400 | Describe the validation error |
 | EntityNotFoundException | 404 | "Resource not found" |
 | ExternalAPIError | 502 | "Upstream service unavailable" |
@@ -32,7 +30,7 @@ Exception
 | SQLAlchemyError | 500 | "Database error" |
 | Unhandled Exception | 500 | "Internal server error" |
 
-## API Route Error Handling Pattern
+## API route error handling pattern
 
 ```python
 from fastapi import HTTPException
@@ -54,7 +52,9 @@ async def get_resource(resource_id: int, ...):
 
     except ExternalServiceException as e:
         # External failures - log with context
-        logger.error("External service error for resource_id=%s: %s", resource_id, e)
+        logger.error(
+            "External service error for resource_id=%s: %s", resource_id, e
+        )
         raise HTTPException(status_code=502, detail="Upstream service error")
 
     except HTTPException:
@@ -67,9 +67,10 @@ async def get_resource(resource_id: int, ...):
         raise HTTPException(status_code=500, detail="Internal server error")
 ```
 
-## Repository Error Handling
+## Repository error handling
 
-Convert infrastructure exceptions to domain exceptions at the repository boundary:
+Convert infrastructure exceptions to domain exceptions at the repository
+boundary:
 
 ```python
 from sqlalchemy.exc import SQLAlchemyError
@@ -84,7 +85,7 @@ class UserRepository:
             raise DataIntegrityException(f"Failed to fetch user {user_id}")
 ```
 
-## External Service Error Handling
+## External service error handling
 
 ```python
 import httpx
@@ -100,11 +101,17 @@ async def call_external_service(url: str, payload: dict) -> dict:
         logger.error("Timeout calling external service: %s", url)
         raise ExternalAPIError("External service timeout")
     except httpx.HTTPStatusError as e:
-        logger.error("External service error: %s - %s", e.response.status_code, e.response.text[:200])
-        raise ExternalAPIError(f"External service returned {e.response.status_code}")
+        logger.error(
+            "External service error: %s - %s",
+            e.response.status_code,
+            e.response.text[:200],
+        )
+        raise ExternalAPIError(
+            f"External service returned {e.response.status_code}"
+        )
 ```
 
-## Error Response Format
+## Error response format
 
 ```python
 # All error responses follow this structure
@@ -124,10 +131,12 @@ async def call_external_service(url: str, payload: dict) -> dict:
 }
 ```
 
-## Exception Best Practices
+## Exception best practices
 
-1. **Define exceptions in domain layer** -- Keep `app/domain/exceptions.py` as the source of truth
-2. **Include context in exception messages** -- `f"User {user_id} not found"` not just `"Not found"`
+1. **Define exceptions in domain layer** -- Keep `app/domain/exceptions.py` as
+   the source of truth
+2. **Include context in exception messages** -- `f"User {user_id} not found"`
+   not just `"Not found"`
 3. **Don't catch too broadly** -- Avoid bare `except:` clauses
 4. **Re-raise HTTPException** -- Don't wrap FastAPI exceptions in your handlers
 5. **Log before raising** -- Ensure errors are logged even if response fails

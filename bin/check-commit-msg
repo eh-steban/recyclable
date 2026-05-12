@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Validate commit message against project rules in
+# .claude/docs/infra/git.md. Conventional-commit type/format is checked
+# separately by conventional-pre-commit; this script covers the
+# project-specific rules that tool does not.
+#
+# Invoked by pre-commit at the commit-msg stage. Argument is the path
+# to the commit message file (.git/COMMIT_EDITMSG).
+
+set -euo pipefail
+
+msg_file="${1:?missing commit message file path}"
+
+# Strip git comment lines so they do not count toward checks.
+mapfile -t lines < <(grep -v '^#' "$msg_file")
+
+if [[ ${#lines[@]} -eq 0 ]]; then
+    echo "commit-msg: empty commit message" >&2
+    exit 1
+fi
+
+subject="${lines[0]}"
+errors=()
+
+# Rule: subject line MUST NOT exceed 72 characters.
+if (( ${#subject} > 72 )); then
+    errors+=("subject line is ${#subject} chars; max is 72")
+    errors+=("  subject: ${subject}")
+fi
+
+# Rule: MUST NOT append Co-Authored-By or any attribution lines.
+if grep -qiE '^(co-authored-by|signed-off-by|reviewed-by|acked-by):' \
+        "$msg_file"; then
+    errors+=("attribution footer is forbidden (Co-Authored-By,")
+    errors+=("  Signed-off-by, Reviewed-by, Acked-by)")
+fi
+
+# Project writing style: em-dashes are banned -- use double hyphens.
+# Match the raw UTF-8 byte sequence (0xE2 0x80 0x94) under the C locale
+# so grep is byte-oriented and does not depend on the user locale.
+if LC_ALL=C grep -q $'\xe2\x80\x94' "$msg_file"; then
+    errors+=("em-dash found; use -- (double hyphen) instead")
+fi
+
+if (( ${#errors[@]} > 0 )); then
+    echo "commit-msg validation failed:" >&2
+    printf '  - %s\n' "${errors[@]}" >&2
+    echo "" >&2
+    echo "see .claude/docs/infra/git.md for commit message rules" >&2
+    exit 1
+fi

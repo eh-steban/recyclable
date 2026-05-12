@@ -14,6 +14,26 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Ensure git pre-commit + commit-msg + pre-push hooks are installed on
+# the host. Idempotent. Skips silently if `pre-commit` is not installed
+# on the host (it is a documented prerequisite -- see README).
+ensure_git_hooks() {
+    command -v pre-commit >/dev/null 2>&1 || return 0
+    [ -d .git ] || return 0
+    local hook_dir=".git/hooks"
+    local needed=(pre-commit commit-msg pre-push)
+    for h in "${needed[@]}"; do
+        if [ ! -f "${hook_dir}/${h}" ] || \
+                ! grep -q 'pre-commit' "${hook_dir}/${h}" 2>/dev/null; then
+            pre-commit install --hook-type pre-commit \
+                               --hook-type commit-msg \
+                               --hook-type pre-push >/dev/null
+            return 0
+        fi
+    done
+}
+ensure_git_hooks
+
 COMPOSE=(docker compose -f docker-compose.yaml -f .devcontainer/docker-compose.yml)
 SERVICE=devcontainer
 

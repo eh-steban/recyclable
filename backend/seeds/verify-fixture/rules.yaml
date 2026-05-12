@@ -1,0 +1,74 @@
+# Synthetic rules for verifier happy-path test.
+# 8 rules: 4+ accepted, 1+ rejected, all with source_quote.
+# All rules reference source documents by URL (stable unique key).
+- slug: syn-denver-aluminum-cans
+  jurisdiction: denver
+  material: syn-aluminum-cans
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Aluminum cans are accepted for curbside recycling.
+  confidence: high
+
+- slug: syn-denver-plastic-bottles
+  jurisdiction: denver
+  material: syn-plastic-bottles
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Plastic bottles are accepted for curbside recycling.
+  confidence: high
+
+- slug: syn-denver-glass-bottles
+  jurisdiction: denver
+  material: syn-glass-bottles
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Glass bottles are accepted for recycling.
+  confidence: high
+
+- slug: syn-denver-cardboard
+  jurisdiction: denver
+  material: syn-cardboard
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Cardboard is accepted for curbside recycling.
+  confidence: high
+
+- slug: syn-denver-plastic-bags
+  jurisdiction: denver
+  material: syn-plastic-bags
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: landfill
+  accepted_status: rejected
+  source_quote: Plastic bags are not accepted in the curbside program.
+  confidence: high
+
+- slug: syn-denver-paper
+  jurisdiction: denver
+  material: syn-paper
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: Paper is accepted for curbside recycling.
+  confidence: high
+
+- slug: syn-denver-electronics
+  jurisdiction: denver
+  material: syn-electronics
+  source_document: https://synthetic.example.com/materials-policy
+  disposition: dropoff
+  accepted_status: conditional
+  source_quote: Electronics must be dropped off at a certified facility.
+  confidence: medium
+
+- slug: syn-denver-motor-oil
+  jurisdiction: denver
+  material: syn-motor-oil
+  source_document: https://synthetic.example.com/recycling-guide
+  disposition: hazardous_waste
+  accepted_status: rejected
+  source_quote: Motor oil is not accepted in curbside.
+  confidence: high
