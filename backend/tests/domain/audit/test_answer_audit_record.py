@@ -1,7 +1,4 @@
-"""Tests for AnswerAuditRecord aggregate root.
-
-TDD red step: written before implementation exists.
-"""
+"""Tests for AnswerAuditRecord aggregate root."""
 
 import uuid
 from datetime import UTC, datetime
@@ -34,7 +31,7 @@ def _make_citation(url: str = _SOURCE_URL) -> Citation:
 
 def _make_record(
     verdict: ItemVerdict,
-    citations: list[Citation],
+    citations: tuple[Citation, ...],
     retrieved_source_urls: frozenset[str],
     *,
     rec_id: AnswerAuditRecordId | None = None,
@@ -60,8 +57,8 @@ class TestAnswerAuditRecordConstruction:
 
     def test_accepted_with_citation_succeeds(self) -> None:
         rec = _make_record(
-            Accepted(conditions=[]),
-            [_make_citation()],
+            Accepted(),
+            (_make_citation(),),
             frozenset([_SOURCE_URL]),
         )
         assert rec.query_text == "Can I recycle cardboard?"
@@ -69,7 +66,7 @@ class TestAnswerAuditRecordConstruction:
     def test_refused_definitive_with_citation_succeeds(self) -> None:
         rec = _make_record(
             Refused(),
-            [_make_citation()],
+            (_make_citation(),),
             frozenset([_SOURCE_URL]),
         )
         assert isinstance(rec.verdict, Refused)
@@ -77,15 +74,15 @@ class TestAnswerAuditRecordConstruction:
     def test_not_covered_empty_citations_succeeds(self) -> None:
         rec = _make_record(
             NotCovered(),
-            [],
+            (),
             frozenset(),
         )
-        assert rec.citations == []
+        assert rec.citations == ()
 
     def test_conflicted_with_citation_succeeds(self) -> None:
         rec = _make_record(
             Conflicted(),
-            [_make_citation()],
+            (_make_citation(),),
             frozenset([_SOURCE_URL]),
         )
         assert isinstance(rec.verdict, Conflicted)
@@ -96,15 +93,15 @@ class TestINVPROD001EnforcedAtConstruction:
 
     def test_accepted_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _ = _make_record(Accepted(conditions=[]), [], frozenset())
+            _ = _make_record(Accepted(), (), frozenset())
 
     def test_refused_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _ = _make_record(Refused(), [], frozenset())
+            _ = _make_record(Refused(), (), frozenset())
 
     def test_conflicted_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _ = _make_record(Conflicted(), [], frozenset())
+            _ = _make_record(Conflicted(), (), frozenset())
 
 
 class TestINVLLM002EnforcedAtConstruction:
@@ -114,18 +111,59 @@ class TestINVLLM002EnforcedAtConstruction:
         bad_url = "https://hallucinated.example.com/page"
         with pytest.raises(AnswerAuditRecordValidationError):
             _ = _make_record(
-                Accepted(conditions=[]),
-                [_make_citation(url=bad_url)],
+                Accepted(),
+                (_make_citation(url=bad_url),),
                 frozenset([_SOURCE_URL]),  # does not contain bad_url
             )
 
     def test_citation_url_in_retrieved_set_passes(self) -> None:
         rec = _make_record(
-            Accepted(conditions=[]),
-            [_make_citation(url=_SOURCE_URL)],
+            Accepted(),
+            (_make_citation(url=_SOURCE_URL),),
             frozenset([_SOURCE_URL]),
         )
         assert len(rec.citations) == 1
+
+
+class TestCitationsCoercion:
+    """AnswerAuditRecord.citations is `tuple[Citation, ...]`; lists passed
+    at construction must be coerced to tuple so the aggregate's
+    immutability guarantee holds at runtime."""
+
+    def test_list_citations_stored_as_tuple(self) -> None:
+        rec = AnswerAuditRecord(
+            id=AnswerAuditRecordId(uuid.uuid4()),
+            query_text="Q",
+            query_location_input="Denver",
+            jurisdiction_id=_J_ID,
+            verdict=NotCovered(),
+            citations=[_make_citation()],  # pyright: ignore[reportArgumentType]
+            retrieved_source_urls=frozenset([_SOURCE_URL]),
+            recommended_action="",
+            prompt_version="ask_compose_v1",
+            model_id="claude-sonnet-4-6",
+            latency_ms=1,
+            created_at=_NOW,
+        )
+        assert isinstance(rec.citations, tuple)
+
+    def test_empty_list_citations_stored_as_empty_tuple(self) -> None:
+        rec = AnswerAuditRecord(
+            id=AnswerAuditRecordId(uuid.uuid4()),
+            query_text="Q",
+            query_location_input="Denver",
+            jurisdiction_id=_J_ID,
+            verdict=NotCovered(),
+            citations=[],  # pyright: ignore[reportArgumentType]
+            retrieved_source_urls=frozenset(),
+            recommended_action="",
+            prompt_version="ask_compose_v1",
+            model_id="claude-sonnet-4-6",
+            latency_ms=1,
+            created_at=_NOW,
+        )
+        assert isinstance(rec.citations, tuple)
+        assert rec.citations == ()
 
 
 class TestAnswerAuditRecordId:

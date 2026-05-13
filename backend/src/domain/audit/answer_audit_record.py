@@ -91,6 +91,9 @@ class AnswerAuditRecord:
     created_at: datetime
 
     def __post_init__(self) -> None:
+        # Coerce mutable inputs (lists) to tuple to preserve immutability.
+        if not isinstance(self.citations, tuple):
+            object.__setattr__(self, "citations", tuple(self.citations))
         # Level-2 whole-object validation (architecture.md § Three-level
         # validation). Runs AnswerAuditRecordValidator inline; violation
         # raises AnswerAuditRecordValidationError.

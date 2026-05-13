@@ -25,6 +25,11 @@ class Accepted:
 
     conditions: tuple[str, ...] = field(default_factory=tuple)
 
+    def __post_init__(self) -> None:
+        # Coerce mutable inputs (lists) to tuple to preserve immutability.
+        if not isinstance(self.conditions, tuple):
+            object.__setattr__(self, "conditions", tuple(self.conditions))
+
 
 @dataclass(frozen=True, slots=True)
 class Refused:
