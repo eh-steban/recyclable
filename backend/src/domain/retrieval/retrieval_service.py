@@ -53,12 +53,12 @@ class RetrievalService:
     def __init__(
         self,
         material_normalizer: MaterialNormalizer,
-        rule_repository: RuleRepo,
+        rule_repo: RuleRepo,
         source_repo: SourceRepo,
         retrieval_llm: RetrievalLLM,
     ) -> None:
         self._material_normalizer = material_normalizer
-        self._rule_repository = rule_repository
+        self._rule_repo = rule_repo
         self._source_repo = source_repo
         self._retrieval_llm = retrieval_llm
         self._grounding_validator = GroundingValidator()
@@ -124,7 +124,7 @@ class RetrievalService:
         material_id = normalization.material.id
 
         # Step 3: retrieve rules
-        rules = self._rule_repository.find_for(jurisdiction_id, material_id)
+        rules = self._rule_repo.find_for(jurisdiction_id, material_id)
         if not rules:
             logger.info(
                 "no rules for jurisdiction=%s material=%s",

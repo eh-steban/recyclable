@@ -176,7 +176,7 @@ class TestAmbiguousMaterialPath:
             material_normalizer=_FakeNormalizer(
                 Ambiguous(candidates=candidates)
             ),
-            rule_repository=_FakeRuleRepo(),
+            rule_repo=_FakeRuleRepo(),
             source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
@@ -196,7 +196,7 @@ class TestUncertainMaterialPath:
         llm = _RecordingLLM()
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Uncertain()),
-            rule_repository=_FakeRuleRepo(),
+            rule_repo=_FakeRuleRepo(),
             source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
@@ -219,7 +219,7 @@ class TestResolvedMaterialReachesRetrievalStep:
         llm = _RecordingLLM()
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repository=_FakeRuleRepo(),
+            rule_repo=_FakeRuleRepo(),
             source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
@@ -252,7 +252,7 @@ class TestRetrievedSourceUrlsFromRules:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repository=_FakeRuleRepo(rules=[rule]),
+            rule_repo=_FakeRuleRepo(rules=[rule]),
             source_repo=_FakeSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
@@ -279,7 +279,7 @@ class TestRetrievedSourceUrlsFromRules:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repository=_FakeRuleRepo(rules=[rule]),
+            rule_repo=_FakeRuleRepo(rules=[rule]),
             source_repo=_FakeSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
@@ -309,7 +309,7 @@ class TestRetrievedSourceUrlsFromRules:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repository=_FakeRuleRepo(rules=[rule]),
+            rule_repo=_FakeRuleRepo(rules=[rule]),
             source_repo=_FakeSourceRepo(docs={}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
