@@ -1,10 +1,7 @@
 """Repo for source documents."""
 
 import logging
-import uuid
-from typing import Protocol
 
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -12,11 +9,6 @@ from src.cli.seed_schemas.source_document import SourceDocument
 from src.infra.db.models.source_document import SourceDocumentORM
 
 logger = logging.getLogger(__name__)
-
-
-class SourceDocumentRepo(Protocol):
-    def upsert(self, doc: SourceDocument) -> None: ...
-    def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None: ...
 
 
 class SqlSourceDocumentRepo:
@@ -60,8 +52,3 @@ class SqlSourceDocumentRepo:
             )
         )
         _ = self._session.execute(stmt)
-
-    def get_by_id(self, doc_id: uuid.UUID) -> SourceDocumentORM | None:
-        return self._session.scalar(
-            select(SourceDocumentORM).where(SourceDocumentORM.id == doc_id)
-        )
