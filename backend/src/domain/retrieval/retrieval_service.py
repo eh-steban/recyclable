@@ -19,9 +19,10 @@ import logging
 from typing import final
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
-from src.domain.knowledge_base.material_normalizer import (
-    MaterialNormalizer,
-    NormalizationResult,
+from src.domain.knowledge_base.material_normalizer import MaterialNormalizer
+from src.domain.knowledge_base.normalization_result import (
+    Ambiguous,
+    Uncertain,
 )
 from src.domain.knowledge_base.rule_repo import RuleRepo
 from src.domain.retrieval.evaluated_answer import (
@@ -82,32 +83,39 @@ class RetrievalService:
             )
 
         # Step 2: normalize material
-        normalization: NormalizationResult | None = (
-            self._material_normalizer.normalize(query.text)
-        )
-        if normalization is None:
-            logger.info("material normalization miss: query=%r", query.text)
-            return NoEvaluation(
-                reason=NoEvaluationReason.NO_EVIDENCE,
-                recommended_action=(
-                    "Could not identify the material from your query. "
-                    "Please try rephrasing."
-                ),
+        normalization = self._material_normalizer.normalize(query.text)
+
+        if isinstance(normalization, Uncertain):
+            logger.info(
+                "material normalization uncertain: query=%r", query.text
             )
-
-        if normalization.ambiguous:
-            # Return ambiguous Refused -- prompt the user to clarify
-            from src.domain.retrieval.item_verdict import Refused
-
-            return EvaluatedAnswer(
-                verdict=Refused(),
-                citations=(),
-                recommended_action="Please clarify which material you mean.",
-                confidence="low",
+            return NoEvaluation(
+                reason=NoEvaluationReason.UNCERTAIN_MATERIAL,
+                recommended_action=(
+                    "We couldn't identify a material in your query. "
+                    "Try rephrasing with the item's name."
+                ),
                 clarifying_question=(
                     "Which material are you asking about? "
                     "Please be more specific."
                 ),
+            )
+
+        if isinstance(normalization, Ambiguous):
+            logger.info(
+                "material normalization ambiguous: query=%r, candidates=%d",
+                query.text,
+                len(normalization.candidates),
+            )
+            candidate_names = ", ".join(
+                c.canonical_name for c in normalization.candidates
+            )
+            return NoEvaluation(
+                reason=NoEvaluationReason.CONFLICTED,
+                recommended_action=(
+                    f"Several materials match your query: {candidate_names}."
+                ),
+                clarifying_question=f"Did you mean one of: {candidate_names}?",
             )
 
         material_id = normalization.material.id

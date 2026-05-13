@@ -46,6 +46,8 @@ class NoEvaluationReason(StrEnum):
     OUT_OF_JURISDICTION = "out_of_jurisdiction"
     NO_EVIDENCE = "no_evidence"
     VALIDATOR_REJECTED = "validator_rejected"
+    UNCERTAIN_MATERIAL = "uncertain_material"
+    CONFLICTED = "conflicted"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,10 +55,17 @@ class NoEvaluation:
     """The retrieval service refused to evaluate this query.
 
     reason explains why:
-    - OutOfJurisdiction: location not in the supported alias set.
-    - NoEvidence: no rule found for (jurisdiction, material).
-    - ValidatorRejected: GroundingValidator hard-blocked the LLM response.
+    - OUT_OF_JURISDICTION: location not in the supported alias set.
+    - NO_EVIDENCE: no rule found for (jurisdiction, material).
+    - VALIDATOR_REJECTED: GroundingValidator hard-blocked the LLM response.
+    - UNCERTAIN_MATERIAL: normalizer could not classify the material.
+    - CONFLICTED: normalizer matched multiple candidate materials.
+
+    `clarifying_question` is set on the material-level paths
+    (UNCERTAIN_MATERIAL, CONFLICTED) so the UI can ask the user to
+    pick or rephrase. Other reasons leave it None.
     """
 
     reason: NoEvaluationReason
     recommended_action: str = ""
+    clarifying_question: str | None = None
