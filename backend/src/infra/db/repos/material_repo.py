@@ -1,9 +1,7 @@
 """Repo for materials and aliases."""
 
 import logging
-from typing import Protocol
 
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -13,12 +11,6 @@ from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
 
 logger = logging.getLogger(__name__)
-
-
-class MaterialRepo(Protocol):
-    def upsert(self, material: Material) -> None: ...
-    def upsert_alias(self, alias: MaterialAlias) -> None: ...
-    def get_by_slug(self, slug: str) -> MaterialORM | None: ...
 
 
 class SqlMaterialRepo:
@@ -79,8 +71,3 @@ class SqlMaterialRepo:
             )
         )
         _ = self._session.execute(stmt)
-
-    def get_by_slug(self, slug: str) -> MaterialORM | None:
-        return self._session.scalar(
-            select(MaterialORM).where(MaterialORM.slug == slug)
-        )

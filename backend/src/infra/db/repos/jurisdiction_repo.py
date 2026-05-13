@@ -1,9 +1,8 @@
 """Repo for jurisdictions."""
 
 import logging
-from typing import Protocol
 
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -11,11 +10,6 @@ from src.cli.seed_schemas.jurisdiction import Jurisdiction
 from src.infra.db.models.jurisdiction import JurisdictionORM
 
 logger = logging.getLogger(__name__)
-
-
-class JurisdictionRepo(Protocol):
-    def upsert(self, jurisdiction: Jurisdiction) -> None: ...
-    def get_by_slug(self, slug: str) -> JurisdictionORM | None: ...
 
 
 class SqlJurisdictionRepo:
@@ -60,8 +54,3 @@ class SqlJurisdictionRepo:
             )
         )
         _ = self._session.execute(stmt)
-
-    def get_by_slug(self, slug: str) -> JurisdictionORM | None:
-        return self._session.scalar(
-            select(JurisdictionORM).where(JurisdictionORM.slug == slug)
-        )
