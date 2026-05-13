@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.domain.models.jurisdiction import Jurisdiction
+from src.cli.seed_schemas.jurisdiction import Jurisdiction
 from src.infra.db.models.jurisdiction import JurisdictionORM
 
 logger = logging.getLogger(__name__)

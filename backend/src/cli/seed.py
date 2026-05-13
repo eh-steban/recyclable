@@ -42,13 +42,13 @@ from src.cli._seed_parse import (
     parse_source_documents,
     validate_dataset_path,
 )
+from src.cli.seed_schemas.material_alias import MaterialAlias
+from src.cli.seed_schemas.regression_case import RegressionCase
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
     SeedSchemaError,
 )
-from src.domain.models.material_alias import MaterialAlias
-from src.domain.models.regression_case import RegressionCase
 from src.infra.db.repos.jurisdiction_repo import (
     SqlJurisdictionRepo,
 )

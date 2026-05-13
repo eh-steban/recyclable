@@ -6,7 +6,7 @@ from typing import Protocol
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.domain.models.rule import Rule
+from src.cli.seed_schemas.rule import Rule
 from src.infra.db.models.rule import RuleORM
 
 logger = logging.getLogger(__name__)

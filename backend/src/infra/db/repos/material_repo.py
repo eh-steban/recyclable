@@ -7,8 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.domain.models.material import Material
-from src.domain.models.material_alias import MaterialAlias
+from src.cli.seed_schemas.material import Material
+from src.cli.seed_schemas.material_alias import MaterialAlias
 from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
 

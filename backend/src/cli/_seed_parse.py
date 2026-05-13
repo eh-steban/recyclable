@@ -15,16 +15,16 @@ from typing import NotRequired, TypedDict, cast
 
 import yaml
 
+from src.cli.seed_schemas.jurisdiction import Jurisdiction
+from src.cli.seed_schemas.material import Material
+from src.cli.seed_schemas.regression_case import RegressionCase
+from src.cli.seed_schemas.rule import Rule
+from src.cli.seed_schemas.source_document import SourceDocument
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
     SeedSchemaError,
 )
-from src.domain.models.jurisdiction import Jurisdiction
-from src.domain.models.material import Material
-from src.domain.models.regression_case import RegressionCase
-from src.domain.models.rule import Rule
-from src.domain.models.source_document import SourceDocument
 from src.domain.quote_normalize import normalize
 
 logger = logging.getLogger(__name__)

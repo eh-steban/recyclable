@@ -1,6 +1,9 @@
-"""Domain model for recycling rules."""
+"""Pydantic schemas for seed-parsing rules.
 
-from __future__ import annotations
+These are CLI/parse-layer types, not domain types. They hold the
+Pydantic-based shape used to parse and validate YAML seed data before
+it is written to the database.
+"""
 
 import uuid
 from datetime import date

@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from src.domain.models import (
+from src.cli.seed_schemas import (
     AcceptedStatus,
     Confidence,
     Disposition,

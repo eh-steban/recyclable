@@ -1,13 +1,16 @@
-"""Domain model for regression / eval cases."""
+"""Pydantic schemas for seed-parsing regression cases.
 
-from __future__ import annotations
+These are CLI/parse-layer types, not domain types. They hold the
+Pydantic-based shape used to parse and validate YAML seed data before
+it is written to the database.
+"""
 
 import uuid
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.domain.models.rule import AcceptedStatus, Disposition
+from src.cli.seed_schemas.rule import AcceptedStatus, Disposition
 
 
 class RegressionCase(BaseModel):

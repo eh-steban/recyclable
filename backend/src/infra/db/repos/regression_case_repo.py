@@ -6,7 +6,7 @@ from typing import Protocol
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.domain.models.regression_case import RegressionCase
+from src.cli.seed_schemas.regression_case import RegressionCase
 from src.infra.db.models.regression_case import RegressionCaseORM
 
 logger = logging.getLogger(__name__)

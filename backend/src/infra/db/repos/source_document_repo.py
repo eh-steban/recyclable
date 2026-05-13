@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.domain.models.source_document import SourceDocument
+from src.cli.seed_schemas.source_document import SourceDocument
 from src.infra.db.models.source_document import SourceDocumentORM
 
 logger = logging.getLogger(__name__)

@@ -80,16 +80,16 @@ def test_rule_missing_jurisdiction_raises() -> None:
 def test_rule_invalid_disposition_raises() -> None:
     """A rule with an invalid ``disposition`` raises ``SeedSchemaError``."""
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.domain.models.jurisdiction import (  # noqa: PLC0415
+    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionType,
         SupportedStatus,
     )
-    from src.domain.models.material import (  # noqa: PLC0415
+    from src.cli.seed_schemas.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
     )
-    from src.domain.models.source_document import (  # noqa: PLC0415
+    from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
         SourceDocument,
     )
 
@@ -135,16 +135,16 @@ def test_rule_invalid_disposition_raises() -> None:
 def test_rules_invalid_enum_raises_seed_schema_error() -> None:
     """A rule with a bad ``accepted_status`` enum raises SeedSchemaError."""
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.domain.models.jurisdiction import (  # noqa: PLC0415
+    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionType,
         SupportedStatus,
     )
-    from src.domain.models.material import (  # noqa: PLC0415
+    from src.cli.seed_schemas.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
     )
-    from src.domain.models.source_document import (  # noqa: PLC0415
+    from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
         SourceDocument,
     )
 
@@ -209,7 +209,7 @@ def test_rule_unknown_jurisdiction_slug_raises_entity_not_found() -> None:
 def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
     """Unknown material slug in a rule raises EntityNotFoundError."""
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.domain.models.jurisdiction import (  # noqa: PLC0415
+    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionType,
         SupportedStatus,
@@ -240,12 +240,12 @@ def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
 def test_rule_unknown_source_document_raises_entity_not_found() -> None:
     """Unknown source_document URL in a rule raises EntityNotFoundError."""
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.domain.models.jurisdiction import (  # noqa: PLC0415
+    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionType,
         SupportedStatus,
     )
-    from src.domain.models.material import (  # noqa: PLC0415
+    from src.cli.seed_schemas.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
     )
@@ -319,7 +319,7 @@ def test_regression_cases_unknown_jurisdiction_raises_entity_not_found() -> (
 def test_regression_cases_unknown_material_raises_entity_not_found() -> None:
     """Unknown material slug in a regression case raises EntityNotFoundError."""
     from src.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
-    from src.domain.models.jurisdiction import (  # noqa: PLC0415
+    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionType,
         SupportedStatus,

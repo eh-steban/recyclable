@@ -1,6 +1,9 @@
-"""Domain model for material aliases."""
+"""Pydantic schemas for seed-parsing material aliases.
 
-from __future__ import annotations
+These are CLI/parse-layer types, not domain types. They hold the
+Pydantic-based shape used to parse and validate YAML seed data before
+it is written to the database.
+"""
 
 import uuid
 from typing import ClassVar
