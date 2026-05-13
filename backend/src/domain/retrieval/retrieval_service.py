@@ -25,6 +25,7 @@ from src.domain.knowledge_base.normalization_result import (
     Uncertain,
 )
 from src.domain.knowledge_base.rule_repo import RuleRepo
+from src.domain.knowledge_base.source_repo import SourceRepo
 from src.domain.retrieval.evaluated_answer import (
     EvaluatedAnswer,
     NoEvaluation,
@@ -44,19 +45,21 @@ class RetrievalService:
     """Domain Service: composes the Sonnet user-path choreography.
 
     Takes ports as constructor parameters (MaterialNormalizer,
-    RuleRepo, RetrievalLLM) so that the Application Service can
-    inject concrete implementations via FastAPI Depends without the
-    domain importing infrastructure.
+    RuleRepo, SourceRepo, RetrievalLLM) so that the Application
+    Service can inject concrete implementations via FastAPI Depends
+    without the domain importing infrastructure.
     """
 
     def __init__(
         self,
         material_normalizer: MaterialNormalizer,
         rule_repository: RuleRepo,
+        source_repo: SourceRepo,
         retrieval_llm: RetrievalLLM,
     ) -> None:
         self._material_normalizer = material_normalizer
         self._rule_repository = rule_repository
+        self._source_repo = source_repo
         self._retrieval_llm = retrieval_llm
         self._grounding_validator = GroundingValidator()
 
@@ -137,14 +140,13 @@ class RetrievalService:
             )
 
         # Collect retrieved source URLs for grounding validation
-
+        # (INV-LLM-002). Sources are deduplicated by id; misses (a Rule
+        # whose source_document_id has no matching SourceDocument)
+        # contribute no URL to the set.
+        source_ids = {rule.source_document_id for rule in rules}
+        source_docs = [self._source_repo.find_by_id(sid) for sid in source_ids]
         retrieved_source_urls: frozenset[str] = frozenset(
-            # Note: RetrievalService has no SourceRepo -- source URLs
-            # are carried on the Rule's source_document_id. Phase 4 infra
-            # will load SourceDocuments and extract URLs. For now, this is
-            # a stub that Phase 4 will replace with repo calls.
-            # The GroundingValidator still validates against whatever set
-            # is passed in -- this ensures the seam is in place.
+            doc.url for doc in source_docs if doc is not None
         )
 
         # Step 4 + 5: compose prompt and call LLM

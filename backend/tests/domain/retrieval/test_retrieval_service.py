@@ -3,6 +3,7 @@ variants.
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import final
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
@@ -17,11 +18,20 @@ from src.domain.knowledge_base.normalization_result import (
     Resolved,
     Uncertain,
 )
-from src.domain.knowledge_base.rule import Rule, RuleId
+from src.domain.knowledge_base.rule import (
+    AcceptedStatus,
+    Disposition,
+    Rule,
+    RuleId,
+)
+from src.domain.knowledge_base.source import SourceDocument, SourceId
+from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import (
+    EvaluatedAnswer,
     NoEvaluation,
     NoEvaluationReason,
 )
+from src.domain.retrieval.item_verdict import Accepted
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
@@ -33,6 +43,31 @@ def _make_material(slug: str) -> Material:
         canonical_name=slug.replace("-", " ").title(),
         slug=slug,
         category=MaterialCategory.PLASTIC,
+    )
+
+
+def _make_rule(material_id: MaterialId, source_id: SourceId) -> Rule:
+    return Rule(
+        id=RuleId(uuid.uuid4()),
+        jurisdiction_id=JurisdictionId(uuid.uuid4()),
+        material_id=material_id,
+        disposition=Disposition.CURBSIDE_RECYCLE,
+        accepted_status=AcceptedStatus.ACCEPTED,
+        source_document_id=source_id,
+        source_quote="Corrugated cardboard is accepted in purple recycle carts",
+    )
+
+
+def _make_source(source_id: SourceId, url: str) -> SourceDocument:
+    return SourceDocument(
+        id=source_id,
+        jurisdiction_id=JurisdictionId(uuid.uuid4()),
+        url=url,
+        title="Denver Recycling Guidelines",
+        authority_level=1,
+        fetched_at=datetime.now(tz=UTC),
+        source_text="...",
+        source_text_hash="hash",
     )
 
 
@@ -48,34 +83,54 @@ class _FakeNormalizer:
 
 
 class _FakeRuleRepo:
-    """No-rule repo -- forces the NO_EVIDENCE path on Resolved tests.
+    """Configurable rule repo -- returns a pre-set rule list from find_for.
 
-    Implements the full RuleRepo Protocol; methods other than find_for
-    raise NotImplementedError because the pre-LLM short-circuit tests
-    never reach them.
+    Default is empty (forces the NO_EVIDENCE path). Other Protocol
+    methods raise NotImplementedError because no test path needs them.
     """
 
+    def __init__(self, rules: list[Rule] | None = None) -> None:
+        self._rules: list[Rule] = rules or []
+
     def next_identity(self) -> RuleId:
-        raise NotImplementedError(
-            "not exercised in pre-LLM short-circuit tests"
-        )
+        raise NotImplementedError("not exercised by these tests")
 
     def save(self, rule: Rule) -> None:  # pyright: ignore[reportUnusedParameter]
-        raise NotImplementedError(
-            "not exercised in pre-LLM short-circuit tests"
-        )
+        raise NotImplementedError("not exercised by these tests")
 
     def find_by_id(self, rule_id: RuleId) -> Rule | None:  # pyright: ignore[reportUnusedParameter]
-        raise NotImplementedError(
-            "not exercised in pre-LLM short-circuit tests"
-        )
+        raise NotImplementedError("not exercised by these tests")
 
     def find_for(
         self,
         jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
         material_id: MaterialId,  # pyright: ignore[reportUnusedParameter]
     ) -> list[Rule]:
-        return []
+        return list(self._rules)
+
+
+class _FakeSourceRepo:
+    """Dict-backed source repo. Unknown SourceIds return None."""
+
+    def __init__(
+        self, docs: dict[SourceId, SourceDocument] | None = None
+    ) -> None:
+        self._docs: dict[SourceId, SourceDocument] = docs or {}
+
+    def next_identity(self) -> SourceId:
+        raise NotImplementedError("not exercised by these tests")
+
+    def save(self, source: SourceDocument) -> None:  # pyright: ignore[reportUnusedParameter]
+        raise NotImplementedError("not exercised by these tests")
+
+    def find_by_id(self, source_id: SourceId) -> SourceDocument | None:
+        return self._docs.get(source_id)
+
+    def find_for_jurisdiction(
+        self,
+        jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
+    ) -> list[SourceDocument]:
+        raise NotImplementedError("not exercised by these tests")
 
 
 @final
@@ -96,6 +151,21 @@ class _RecordingLLM:
         )
 
 
+@final
+class _ConfigurableLLM:
+    """Returns a pre-set EvaluatedAnswer or NoEvaluation."""
+
+    def __init__(self, response: EvaluatedAnswer | NoEvaluation) -> None:
+        self._response = response
+
+    def ask(
+        self,
+        messages: list[LLMMessage],  # pyright: ignore[reportUnusedParameter]
+        system_prompt: str,  # pyright: ignore[reportUnusedParameter]
+    ) -> EvaluatedAnswer | NoEvaluation:
+        return self._response
+
+
 class TestAmbiguousMaterialPath:
     """`Ambiguous(candidates)` -> `NoEvaluation(reason=CONFLICTED)`."""
 
@@ -107,6 +177,7 @@ class TestAmbiguousMaterialPath:
                 Ambiguous(candidates=candidates)
             ),
             rule_repository=_FakeRuleRepo(),
+            source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -126,6 +197,7 @@ class TestUncertainMaterialPath:
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Uncertain()),
             rule_repository=_FakeRuleRepo(),
+            source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -148,6 +220,7 @@ class TestResolvedMaterialReachesRetrievalStep:
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
             rule_repository=_FakeRuleRepo(),
+            source_repo=_FakeSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -158,3 +231,92 @@ class TestResolvedMaterialReachesRetrievalStep:
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.NO_EVIDENCE
         assert llm.call_count == 0
+
+
+class TestRetrievedSourceUrlsFromRules:
+    """retrieved_source_urls is built from each Rule's source_document_id
+    via SourceRepo.find_by_id, then passed to the GroundingValidator."""
+
+    def test_grounded_citation_url_returns_evaluated_answer(self) -> None:
+        material = _make_material("cardboard")
+        source_id = SourceId(uuid.uuid4())
+        rule_url = "https://denvergov.org/recycling"
+        rule = _make_rule(material.id, source_id)
+        source = _make_source(source_id, rule_url)
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(Citation(title="Denver", url=rule_url),),
+            recommended_action="Yes, recycle it.",
+            confidence="high",
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            rule_repository=_FakeRuleRepo(rules=[rule]),
+            source_repo=_FakeSourceRepo(docs={source_id: source}),
+            retrieval_llm=_ConfigurableLLM(llm_answer),
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver")
+        )
+
+        assert result is llm_answer
+
+    def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
+        material = _make_material("cardboard")
+        source_id = SourceId(uuid.uuid4())
+        rule = _make_rule(material.id, source_id)
+        source = _make_source(source_id, "https://denvergov.org/recycling")
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(
+                Citation(title="Hallucination", url="https://made-up.example"),
+            ),
+            recommended_action="Yes.",
+            confidence="high",
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            rule_repository=_FakeRuleRepo(rules=[rule]),
+            source_repo=_FakeSourceRepo(docs={source_id: source}),
+            retrieval_llm=_ConfigurableLLM(llm_answer),
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver")
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+    def test_source_repo_miss_excludes_url_from_set(self) -> None:
+        """A Rule whose source_document_id has no SourceDocument in the
+        repo contributes no URL to retrieved_source_urls. The LLM that
+        cites a URL not in the set should be rejected."""
+        material = _make_material("cardboard")
+        source_id = SourceId(uuid.uuid4())
+        rule = _make_rule(material.id, source_id)
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(
+                Citation(title="X", url="https://denvergov.org/recycling"),
+            ),
+            recommended_action="Yes.",
+            confidence="high",
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            rule_repository=_FakeRuleRepo(rules=[rule]),
+            source_repo=_FakeSourceRepo(docs={}),
+            retrieval_llm=_ConfigurableLLM(llm_answer),
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver")
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
