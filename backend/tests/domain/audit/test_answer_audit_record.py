@@ -96,15 +96,15 @@ class TestINVPROD001EnforcedAtConstruction:
 
     def test_accepted_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _make_record(Accepted(conditions=[]), [], frozenset())
+            _ = _make_record(Accepted(conditions=[]), [], frozenset())
 
     def test_refused_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _make_record(Refused(), [], frozenset())
+            _ = _make_record(Refused(), [], frozenset())
 
     def test_conflicted_empty_citations_raises(self) -> None:
         with pytest.raises(AnswerAuditRecordValidationError):
-            _make_record(Conflicted(), [], frozenset())
+            _ = _make_record(Conflicted(), [], frozenset())
 
 
 class TestINVLLM002EnforcedAtConstruction:
@@ -113,7 +113,7 @@ class TestINVLLM002EnforcedAtConstruction:
     def test_citation_url_not_in_retrieved_set_raises(self) -> None:
         bad_url = "https://hallucinated.example.com/page"
         with pytest.raises(AnswerAuditRecordValidationError):
-            _make_record(
+            _ = _make_record(
                 Accepted(conditions=[]),
                 [_make_citation(url=bad_url)],
                 frozenset([_SOURCE_URL]),  # does not contain bad_url

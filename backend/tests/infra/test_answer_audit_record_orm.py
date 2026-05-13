@@ -18,8 +18,11 @@ def _get_column_names(orm_cls: type) -> set[str]:
     """Return the set of column attribute names on an ORM class."""
     from sqlalchemy import inspect as sa_inspect
 
-    mapper = sa_inspect(orm_cls)
-    return {col.key for col in mapper.columns}
+    mapper = sa_inspect(orm_cls)  # pyright: ignore[reportUnknownVariableType]
+    return {
+        col.key  # pyright: ignore[reportUnknownMemberType]
+        for col in mapper.columns  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+    }
 
 
 def test_answer_audit_record_orm_importable() -> None:
