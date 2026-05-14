@@ -12,12 +12,14 @@ change so that it fails on the pre-rename tree and passes only after:
 """
 
 import pytest
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.dialects.postgresql import JSONB
+
+from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
 
 
 def _get_column_names(orm_cls: type) -> set[str]:
     """Return the set of column attribute names on an ORM class."""
-    from sqlalchemy import inspect as sa_inspect
-
     mapper = sa_inspect(orm_cls)  # pyright: ignore[reportUnknownVariableType]
     return {
         col.key  # pyright: ignore[reportUnknownMemberType]
@@ -27,10 +29,6 @@ def _get_column_names(orm_cls: type) -> set[str]:
 
 def test_answer_audit_record_orm_importable() -> None:
     """AnswerAuditRecordORM must be importable from src.infra.db.models."""
-    from src.infra.db.models.answer_audit_record import (
-        AnswerAuditRecordORM,  # noqa: PLC0415
-    )
-
     assert AnswerAuditRecordORM.__tablename__ == "answer_audit_records"
 
 
@@ -47,10 +45,6 @@ def test_answer_audit_record_orm_d6_columns() -> None:
     Touches INV-PROD-003 (Postgres is the single source of truth):
     the ORM must reflect the canonical audit schema.
     """
-    from src.infra.db.models.answer_audit_record import (
-        AnswerAuditRecordORM,  # noqa: PLC0415
-    )
-
     expected = {
         "id",
         "query_text",
@@ -84,10 +78,6 @@ def test_answer_audit_record_orm_d6_columns() -> None:
 )
 def test_answer_audit_record_orm_enum_columns_exist(col_name: str) -> None:
     """Each enum column must exist on the ORM (type checked separately)."""
-    from src.infra.db.models.answer_audit_record import (
-        AnswerAuditRecordORM,  # noqa: PLC0415
-    )
-
     cols = _get_column_names(AnswerAuditRecordORM)
     assert col_name in cols, (
         f"Expected enum column {col_name!r} not found on AnswerAuditRecordORM"
@@ -96,13 +86,6 @@ def test_answer_audit_record_orm_enum_columns_exist(col_name: str) -> None:
 
 def test_answer_audit_record_orm_jsonb_columns() -> None:
     """citations and validator_findings must be JSONB columns."""
-    from sqlalchemy import inspect as sa_inspect  # noqa: PLC0415
-    from sqlalchemy.dialects.postgresql import JSONB  # noqa: PLC0415
-
-    from src.infra.db.models.answer_audit_record import (
-        AnswerAuditRecordORM,  # noqa: PLC0415
-    )
-
     mapper = sa_inspect(AnswerAuditRecordORM)
     col_map = {col.key: col for col in mapper.columns}
 
@@ -117,12 +100,6 @@ def test_answer_audit_record_orm_jsonb_columns() -> None:
 
 def test_answer_audit_record_orm_no_evaluation_reason_nullable() -> None:
     """no_evaluation_reason is nullable (absent for evaluated paths)."""
-    from sqlalchemy import inspect as sa_inspect  # noqa: PLC0415
-
-    from src.infra.db.models.answer_audit_record import (
-        AnswerAuditRecordORM,  # noqa: PLC0415
-    )
-
     mapper = sa_inspect(AnswerAuditRecordORM)
     col_map = {col.key: col for col in mapper.columns}
 
