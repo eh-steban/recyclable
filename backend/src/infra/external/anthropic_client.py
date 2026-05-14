@@ -5,13 +5,20 @@ MaterialNormalizerLLM (Haiku, normalizer fallback).
 
 INV-LLM-005: model IDs are pinned as module-level constants.
 No caller passes a model parameter.
+
+reportAny / reportExplicitAny are disabled for this file: LLM JSON
+responses are genuinely untyped at the SDK boundary. Phase 5 will
+add schema validation; until then, `Any` is the honest type.
 """
+
+# pyright: reportAny=false, reportExplicitAny=false
 
 import json
 import logging
 import re
 import time
-from typing import Any
+from collections.abc import Callable
+from typing import Any, Final, final
 
 import anthropic
 from anthropic.types import Message, MessageParam
@@ -49,25 +56,28 @@ _DESTRUCTIVE_RE = re.compile(
 )
 
 
-def _assert_no_destructive_tools(tools: list[dict[str, Any]]) -> None:
+def _assert_no_destructive_tools(tools: list[dict[str, object]]) -> None:
     """Raise ValueError if any tool name matches the destructive-op pattern."""
     for tool in tools:
-        name = tool.get("name", "")
+        name = str(tool.get("name", ""))
         if _DESTRUCTIVE_RE.search(name):
-            raise ValueError(
-                f"Tool name {name!r} matches destructive-operation pattern; "
-                "only read-only tools are permitted in the retrieval client."
+            msg = (
+                f"Tool name {name!r} matches destructive-op pattern; only "
+                + "read-only tools are permitted in the retrieval client."
             )
+            raise ValueError(msg)
 
 
 # ---------------------------------------------------------------------------
 # Retry helper
 # ---------------------------------------------------------------------------
 
-_RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+_RETRYABLE_STATUS: Final = frozenset({429, 500, 502, 503, 504})
 
 
-def _call_with_retry(fn: Any, max_retries: int = 1) -> Any:
+def _call_with_retry(
+    fn: Callable[[], Message], max_retries: int = 1
+) -> Message:
     """Call fn(); retry once on retryable Anthropic status errors."""
     for attempt in range(max_retries + 1):
         try:
@@ -82,6 +92,7 @@ def _call_with_retry(fn: Any, max_retries: int = 1) -> Any:
                 time.sleep(0.5 * (attempt + 1))
                 continue
             raise
+    raise RuntimeError("unreachable: _call_with_retry exhausted loop")
 
 
 # ---------------------------------------------------------------------------
@@ -91,10 +102,10 @@ def _call_with_retry(fn: Any, max_retries: int = 1) -> Any:
 
 def _first_text_block(response: Message) -> str | None:
     """Return the text content of the first text block in response, or None."""
-    block = next((b for b in response.content if b.type == "text"), None)
-    if block is None:
-        return None
-    return block.text  # type: ignore[union-attr]
+    for block in response.content:
+        if block.type == "text":
+            return block.text
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +113,7 @@ def _first_text_block(response: Message) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+@final
 class AnthropicClient:
     """Anthropic SDK adapter implementing RetrievalLLM + MaterialNormalizerLLM.
 
@@ -112,12 +124,16 @@ class AnthropicClient:
                        names at construction time.
     """
 
+    _client: anthropic.Anthropic
+    _timeout_s: float
+    _tool_registry: list[dict[str, object]]
+
     def __init__(
         self,
         api_key: str,
         *,
         timeout_s: float = 20.0,
-        tool_registry: list[dict[str, Any]] | None = None,
+        tool_registry: list[dict[str, object]] | None = None,
     ) -> None:
         if tool_registry:
             _assert_no_destructive_tools(tool_registry)

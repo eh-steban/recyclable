@@ -9,7 +9,13 @@ Verdict mapping (per private/specs/contracts/answer.md):
 For Phase 4, only the evaluated save path is implemented.
 outcome_kind is always 'evaluated'; no_evaluation_reason is NULL.
 The NoEvaluation save path is deferred to Phase 5 mappers.
+
+reportAny / reportExplicitAny are disabled for this file: the JSONB
+citations and validator_findings columns are runtime `Any` at the
+ORM boundary. Phase 5 will replace the casts with a typed parser.
 """
+
+# pyright: reportAny=false, reportExplicitAny=false
 
 import datetime as dt
 import logging
@@ -159,9 +165,6 @@ class SqlAnswerAuditRecordRepo:
 
     @staticmethod
     def _to_domain(row: AnswerAuditRecordORM) -> AnswerAuditRecord:
-        # citations is stored as list[dict[str, Any]] in JSONB; the ORM
-        # column is declared dict[str, object] for the generic JSON case,
-        # so we cast the actual runtime list shape here.
         raw_citations = cast(list[dict[str, Any]], row.citations or [])
         citations = tuple(
             Citation(
