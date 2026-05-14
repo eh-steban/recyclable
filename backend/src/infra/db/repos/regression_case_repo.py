@@ -5,7 +5,7 @@ import logging
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.cli.seed_schemas.regression_case import RegressionCase
+from src.domain.audit.regression_case import RegressionCase
 from src.infra.db.models.regression_case import RegressionCaseORM
 
 logger = logging.getLogger(__name__)
@@ -17,17 +17,22 @@ class SqlRegressionCaseRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def upsert(self, case: RegressionCase) -> None:
+    def save(self, case: RegressionCase) -> None:
         logger.debug(
-            "upserting regression_case id=%s query=%.40s", case.id, case.query
+            "saving regression_case id=%s query=%.40s", case.id, case.query
+        )
+        expected_material_uuid = (
+            case.expected_material_id.value
+            if case.expected_material_id is not None
+            else None
         )
         stmt = (
             insert(RegressionCaseORM)
             .values(
-                id=case.id,
+                id=case.id.value,
                 query=case.query,
-                jurisdiction_id=case.jurisdiction_id,
-                expected_material_id=case.expected_material_id,
+                jurisdiction_id=case.jurisdiction_id.value,
+                expected_material_id=expected_material_uuid,
                 expected_status=case.expected_status.value,
                 expected_disposition=case.expected_disposition.value,
                 must_cite_source=case.must_cite_source,
@@ -38,8 +43,8 @@ class SqlRegressionCaseRepo:
                 index_elements=["id"],
                 set_={
                     "query": case.query,
-                    "jurisdiction_id": case.jurisdiction_id,
-                    "expected_material_id": case.expected_material_id,
+                    "jurisdiction_id": case.jurisdiction_id.value,
+                    "expected_material_id": expected_material_uuid,
                     "expected_status": case.expected_status.value,
                     "expected_disposition": case.expected_disposition.value,
                     "must_cite_source": case.must_cite_source,

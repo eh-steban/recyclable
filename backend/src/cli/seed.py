@@ -42,7 +42,7 @@ from src.cli._seed_parse import (
     parse_source_documents,
     validate_dataset_path,
 )
-from src.cli.seed_schemas.regression_case import RegressionCase
+from src.domain.audit.regression_case import RegressionCase
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
@@ -204,7 +204,7 @@ def run_seed(dataset: str, session: Session) -> None:
             "seed: writing %d regression case(s)", len(regression_cases)
         )
         for case in regression_cases:
-            rc_repo.upsert(case)
+            rc_repo.save(case)
 
     _fmt = (
         "seed: dataset=%s complete -- %d jurisdictions,"

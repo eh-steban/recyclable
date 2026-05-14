@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from src.cli.seed_schemas import RegressionCase
+from src.domain.audit.regression_case import RegressionCase, RegressionCaseId
 from src.domain.knowledge_base.jurisdiction import (
     Jurisdiction,
     JurisdictionId,
@@ -142,21 +142,12 @@ def test_rule_model():
 
 
 def test_regression_case_model():
-    # RegressionCase is still seed-schema (Phase 3 retires it) and types its
-    # enum fields with the seed-schema enums, distinct from the domain enums.
-    from src.cli.seed_schemas.rule import (  # noqa: PLC0415
-        AcceptedStatus as SeedAcceptedStatus,
-    )
-    from src.cli.seed_schemas.rule import (  # noqa: PLC0415
-        Disposition as SeedDisposition,
-    )
-
     rc = RegressionCase(
-        id=REGRESSION_CASE_ID,
+        id=RegressionCaseId(REGRESSION_CASE_ID),
         query="Can I recycle aluminum cans in Denver?",
-        jurisdiction_id=JURISDICTION_ID,
-        expected_status=SeedAcceptedStatus.ACCEPTED,
-        expected_disposition=SeedDisposition.CURBSIDE_RECYCLE,
+        jurisdiction_id=JurisdictionId(JURISDICTION_ID),
+        expected_status=AcceptedStatus.ACCEPTED,
+        expected_disposition=Disposition.CURBSIDE_RECYCLE,
         must_cite_source=True,
         refusal_required=False,
     )
@@ -334,14 +325,6 @@ def test_material_alias_orm_to_domain_roundtrip():
 
 
 def test_regression_case_orm_to_domain_roundtrip():
-    # RegressionCase is still seed-schema (Phase 3 retires it).
-    from src.cli.seed_schemas.rule import (  # noqa: PLC0415
-        AcceptedStatus as SeedAcceptedStatus,
-    )
-    from src.cli.seed_schemas.rule import (  # noqa: PLC0415
-        Disposition as SeedDisposition,
-    )
-
     orm = RegressionCaseORM(
         id=REGRESSION_CASE_ID,
         query="Can I recycle aluminum cans in Denver?",
@@ -354,20 +337,20 @@ def test_regression_case_orm_to_domain_roundtrip():
         notes=None,
     )
     domain = RegressionCase(
-        id=orm.id,
+        id=RegressionCaseId(orm.id),
         query=orm.query,
-        jurisdiction_id=orm.jurisdiction_id,
-        expected_material_id=orm.expected_material_id,
-        expected_status=SeedAcceptedStatus(orm.expected_status),
-        expected_disposition=SeedDisposition(orm.expected_disposition),
+        jurisdiction_id=JurisdictionId(orm.jurisdiction_id),
+        expected_material_id=None,
+        expected_status=AcceptedStatus(orm.expected_status),
+        expected_disposition=Disposition(orm.expected_disposition),
         must_cite_source=orm.must_cite_source,
         refusal_required=orm.refusal_required,
         notes=orm.notes,
     )
-    assert domain.id == orm.id
+    assert domain.id.value == orm.id
     assert domain.query == orm.query
-    assert domain.jurisdiction_id == orm.jurisdiction_id
-    assert domain.expected_material_id == orm.expected_material_id
+    assert domain.jurisdiction_id.value == orm.jurisdiction_id
+    assert domain.expected_material_id is None
     assert domain.expected_status.value == orm.expected_status
     assert domain.expected_disposition.value == orm.expected_disposition
     assert domain.must_cite_source == orm.must_cite_source

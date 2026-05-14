@@ -16,7 +16,10 @@ from typing import NotRequired, TypedDict, cast
 
 import yaml
 
-from src.cli.seed_schemas.regression_case import RegressionCase
+from src.domain.audit.regression_case import (
+    RegressionCase,
+    RegressionCaseId,
+)
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
@@ -612,31 +615,37 @@ def parse_regression_cases(
         if jur_slug not in jurisdiction_map:
             raise EntityNotFoundError("Jurisdiction", jur_slug)
 
-        resolved: dict[str, object] = {
-            "query": row["query"],
-            "expected_status": row["expected_status"],
-            "expected_disposition": row["expected_disposition"],
-            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
-        }
-        if "id" in row:
-            resolved["id"] = row["id"]
-        if "must_cite_source" in row:
-            resolved["must_cite_source"] = row["must_cite_source"]
-        if "refusal_required" in row:
-            resolved["refusal_required"] = row["refusal_required"]
-        if "notes" in row:
-            resolved["notes"] = row["notes"]
-
         # Optionally resolve material slug.
         mat_slug: str | None = row.get("material")
+        expected_material_id: MaterialId | None = None
         if mat_slug is not None:
             if mat_slug not in material_map:
                 raise EntityNotFoundError("Material", mat_slug)
-            resolved["expected_material_id"] = material_map[mat_slug].id.value
+            expected_material_id = material_map[mat_slug].id
 
         try:
-            cases.append(RegressionCase.model_validate(resolved))
-        except Exception as exc:
+            raw_id: object = row.get("id")
+            rcid = (
+                RegressionCaseId(_coerce_uuid(raw_id))
+                if raw_id is not None
+                else RegressionCaseId(uuid.uuid4())
+            )
+            cases.append(
+                RegressionCase(
+                    id=rcid,
+                    query=row["query"],
+                    jurisdiction_id=jurisdiction_map[jur_slug].id,
+                    expected_status=AcceptedStatus(row["expected_status"]),
+                    expected_disposition=Disposition(
+                        row["expected_disposition"]
+                    ),
+                    expected_material_id=expected_material_id,
+                    must_cite_source=row.get("must_cite_source", True),
+                    refusal_required=row.get("refusal_required", False),
+                    notes=row.get("notes"),
+                )
+            )
+        except (KeyError, ValueError) as exc:
             qry = str(row.get("query", "?"))[:40]
             raise SeedSchemaError(
                 f"{dataset}/regression_cases.yaml[{i}]"
