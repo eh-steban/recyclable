@@ -46,6 +46,7 @@ class NoEvaluationReason(StrEnum):
     OUT_OF_JURISDICTION = "out_of_jurisdiction"
     NO_EVIDENCE = "no_evidence"
     VALIDATOR_REJECTED = "validator_rejected"
+    LLM_REJECTED = "llm_rejected"
     UNCERTAIN_MATERIAL = "uncertain_material"
     CONFLICTED = "conflicted"
 
@@ -57,7 +58,13 @@ class NoEvaluation:
     reason explains why:
     - OUT_OF_JURISDICTION: location not in the supported alias set.
     - NO_EVIDENCE: no rule found for (jurisdiction, material).
-    - VALIDATOR_REJECTED: GroundingValidator hard-blocked the LLM response.
+    - VALIDATOR_REJECTED: model answered, but GroundingValidator
+      hard-blocked the response (parse failure, schema mismatch, or
+      grounding-citation violation). The model produced output.
+    - LLM_REJECTED: the Sonnet call itself failed -- timeout, network
+      error, 4xx/5xx after retry exhaustion. No model output to validate.
+      Per INV-PROD-004, this reason -- not VALIDATOR_REJECTED -- is the
+      correct domain shape for Anthropic unavailability.
     - UNCERTAIN_MATERIAL: normalizer could not classify the material.
     - CONFLICTED: normalizer matched multiple candidate materials.
 

@@ -50,6 +50,22 @@ class SeedSchemaError(DomainError):
         super().__init__(f"Seed schema error: {message}")
 
 
+class RepositoryConcurrencyError(DomainError):
+    """An OperationalError-class persistence failure surfaced from a repo."""
+
+
+class DuplicateAggregateError(DomainError):
+    """An IntegrityError-class duplicate-id / unique-violation from a repo."""
+
+    aggregate: str
+    identifier: str
+
+    def __init__(self, aggregate: str, identifier: str) -> None:
+        self.aggregate = aggregate
+        self.identifier = identifier
+        super().__init__(f"{aggregate} already exists: {identifier}")
+
+
 class AnswerAuditRecordValidationError(DomainError):
     """AnswerAuditRecord construction violated INV-PROD-001 or INV-LLM-002.
 

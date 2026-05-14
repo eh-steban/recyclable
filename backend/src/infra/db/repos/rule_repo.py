@@ -1,11 +1,27 @@
-"""Repo for rules."""
+"""SQL implementation of the RuleRepo port."""
 
 import logging
+import uuid
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from src.domain.knowledge_base.rule import Rule
+from src.domain.exceptions import (
+    DuplicateAggregateError,
+    RepositoryConcurrencyError,
+)
+from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.material import MaterialId
+from src.domain.knowledge_base.rule import (
+    AcceptedStatus,
+    Confidence,
+    Disposition,
+    Rule,
+    RuleId,
+)
+from src.domain.knowledge_base.source import SourceId
 from src.infra.db.models.rule import RuleORM
 
 logger = logging.getLogger(__name__)
@@ -16,6 +32,14 @@ class SqlRuleRepo:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+
+    # ------------------------------------------------------------------
+    # Port surface
+    # ------------------------------------------------------------------
+
+    def next_identity(self) -> RuleId:
+        """Mint a fresh RuleId (application-generated UUID)."""
+        return RuleId(uuid.uuid4())
 
     def save(self, rule: Rule) -> None:
         logger.debug(
@@ -72,4 +96,74 @@ class SqlRuleRepo:
                 ),
             )
         )
-        _ = self._session.execute(stmt)
+        try:
+            _ = self._session.execute(stmt)
+        except IntegrityError as exc:
+            raise DuplicateAggregateError("Rule", str(rule.id)) from exc
+        except OperationalError as exc:
+            raise RepositoryConcurrencyError(str(exc)) from exc
+
+    def find_by_id(self, rule_id: RuleId) -> Rule | None:
+        logger.debug("find_by_id rule_id=%s", rule_id)
+        row = self._session.get(RuleORM, rule_id.value)
+        if row is None:
+            return None
+        return self._to_domain(row)
+
+    def find_for(
+        self,
+        jurisdiction_id: JurisdictionId,
+        material_id: MaterialId,
+    ) -> list[Rule]:
+        """Return the active rule for an exact (jurisdiction, material) tuple.
+
+        Filters: exact tuple match + superseded_by IS NULL (INV-AUTH-002).
+        Orders by effective_from DESC NULLS LAST, LIMIT 1.
+        Returns an empty list when no active rule exists.
+        No cross-jurisdiction or cross-material fallback (INV-PROD-002).
+        """
+        logger.debug(
+            "find_for jurisdiction_id=%s material_id=%s",
+            jurisdiction_id,
+            material_id,
+        )
+        stmt = (
+            select(RuleORM)
+            .where(
+                RuleORM.jurisdiction_id == jurisdiction_id.value,
+                RuleORM.material_id == material_id.value,
+                RuleORM.superseded_by.is_(None),
+            )
+            .order_by(RuleORM.effective_from.desc().nullslast())
+            .limit(1)
+        )
+        row = self._session.execute(stmt).scalar_one_or_none()
+        if row is None:
+            return []
+        return [self._to_domain(row)]
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _to_domain(row: RuleORM) -> Rule:
+        return Rule(
+            id=RuleId(row.id),
+            jurisdiction_id=JurisdictionId(row.jurisdiction_id),
+            material_id=MaterialId(row.material_id),
+            disposition=Disposition(row.disposition),
+            accepted_status=AcceptedStatus(row.accepted_status),
+            source_document_id=SourceId(row.source_document_id),
+            source_quote=row.source_quote,
+            preparation_steps=tuple(row.preparation_steps),
+            exceptions=tuple(row.exceptions),
+            warnings=tuple(row.warnings),
+            confidence=Confidence(row.confidence),
+            effective_from=row.effective_from,
+            superseded_by=(
+                RuleId(row.superseded_by)
+                if row.superseded_by is not None
+                else None
+            ),
+        )

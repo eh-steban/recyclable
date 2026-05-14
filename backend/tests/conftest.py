@@ -3,6 +3,9 @@
 Integration tests that need a real Postgres connection consume the `db_url`
 fixture, which probes connectivity and skips the test (rather than failing)
 when the database is unreachable.
+
+In-memory fake-repo fixtures are exposed here for application and domain
+tests that should never touch the database.
 """
 
 import os
@@ -10,6 +13,12 @@ import os
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
+
+from tests._fakes.answer_audit_record_repo import InMemoryAnswerAuditRecordRepo
+from tests._fakes.jurisdiction_repo import InMemoryJurisdictionRepo
+from tests._fakes.material_repo import InMemoryMaterialRepo
+from tests._fakes.rule_repo import InMemoryRuleRepo
+from tests._fakes.source_repo import InMemorySourceRepo
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -30,3 +39,38 @@ def db_url() -> str:
             allow_module_level=True,
         )
     return DATABASE_URL
+
+
+# ---------------------------------------------------------------------------
+# In-memory fake-repo fixtures (function-scoped -- fresh per test)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def in_memory_jurisdiction_repo() -> InMemoryJurisdictionRepo:
+    """Return a fresh InMemoryJurisdictionRepo instance."""
+    return InMemoryJurisdictionRepo()
+
+
+@pytest.fixture()
+def in_memory_material_repo() -> InMemoryMaterialRepo:
+    """Return a fresh InMemoryMaterialRepo instance."""
+    return InMemoryMaterialRepo()
+
+
+@pytest.fixture()
+def in_memory_rule_repo() -> InMemoryRuleRepo:
+    """Return a fresh InMemoryRuleRepo instance."""
+    return InMemoryRuleRepo()
+
+
+@pytest.fixture()
+def in_memory_source_repo() -> InMemorySourceRepo:
+    """Return a fresh InMemorySourceRepo instance."""
+    return InMemorySourceRepo()
+
+
+@pytest.fixture()
+def in_memory_answer_audit_record_repo() -> InMemoryAnswerAuditRecordRepo:
+    """Return a fresh InMemoryAnswerAuditRecordRepo instance."""
+    return InMemoryAnswerAuditRecordRepo()

@@ -1,12 +1,23 @@
-"""Repo for materials and aliases."""
+"""SQL implementation of the MaterialRepo port."""
 
 import logging
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from src.domain.knowledge_base.material import Material, MaterialAlias
+from src.domain.exceptions import (
+    DuplicateAggregateError,
+    RepositoryConcurrencyError,
+)
+from src.domain.knowledge_base.material import (
+    Material,
+    MaterialAlias,
+    MaterialCategory,
+    MaterialId,
+)
 from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
 
@@ -18,6 +29,14 @@ class SqlMaterialRepo:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+
+    # ------------------------------------------------------------------
+    # Port surface
+    # ------------------------------------------------------------------
+
+    def next_identity(self) -> MaterialId:
+        """Mint a fresh MaterialId (application-generated UUID)."""
+        return MaterialId(uuid.uuid4())
 
     def save(self, material: Material) -> None:
         logger.debug("saving material slug=%s", material.slug)
@@ -53,7 +72,12 @@ class SqlMaterialRepo:
                 ),
             )
         )
-        _ = self._session.execute(stmt)
+        try:
+            _ = self._session.execute(stmt)
+        except IntegrityError as exc:
+            raise DuplicateAggregateError("Material", str(material.id)) from exc
+        except OperationalError as exc:
+            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def save_alias(self, alias: MaterialAlias) -> None:
         logger.debug(
@@ -73,4 +97,58 @@ class SqlMaterialRepo:
                 constraint="uq_material_aliases_material_id_alias",
             )
         )
-        _ = self._session.execute(stmt)
+        try:
+            _ = self._session.execute(stmt)
+        except IntegrityError as exc:
+            raise DuplicateAggregateError(
+                "MaterialAlias",
+                f"{alias.material_id}:{alias.alias}",
+            ) from exc
+        except OperationalError as exc:
+            raise RepositoryConcurrencyError(str(exc)) from exc
+
+    def find_by_id(self, material_id: MaterialId) -> Material | None:
+        logger.debug("find_by_id material_id=%s", material_id)
+        row = self._session.get(MaterialORM, material_id.value)
+        if row is None:
+            return None
+        return self._to_domain(row)
+
+    def find_by_slug(self, slug: str) -> Material | None:
+        logger.debug("find_by_slug slug=%s", slug)
+        stmt = select(MaterialORM).where(MaterialORM.slug == slug)
+        row = self._session.execute(stmt).scalar_one_or_none()
+        if row is None:
+            return None
+        return self._to_domain(row)
+
+    def find_aliases_for(self, material_id: MaterialId) -> list[MaterialAlias]:
+        logger.debug("find_aliases_for material_id=%s", material_id)
+        stmt = select(MaterialAliasORM).where(
+            MaterialAliasORM.material_id == material_id.value
+        )
+        rows = self._session.execute(stmt).scalars().all()
+        return [
+            MaterialAlias(
+                material_id=MaterialId(row.material_id),
+                alias=row.alias,
+                weight=row.weight,
+            )
+            for row in rows
+        ]
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _to_domain(row: MaterialORM) -> Material:
+        return Material(
+            id=MaterialId(row.id),
+            canonical_name=row.canonical_name,
+            slug=row.slug,
+            category=MaterialCategory(row.category),
+            parent_id=(
+                MaterialId(row.parent_id) if row.parent_id is not None else None
+            ),
+        )
