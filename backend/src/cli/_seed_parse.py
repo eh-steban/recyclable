@@ -11,14 +11,12 @@ import logging
 import pathlib
 import sys
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import NotRequired, TypedDict, cast
 
 import yaml
 
 from src.cli.seed_schemas.regression_case import RegressionCase
-from src.cli.seed_schemas.rule import Rule
-from src.cli.seed_schemas.source_document import SourceDocument
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
@@ -34,6 +32,17 @@ from src.domain.knowledge_base.material import (
     Material,
     MaterialCategory,
     MaterialId,
+)
+from src.domain.knowledge_base.rule import (
+    AcceptedStatus,
+    Confidence,
+    Disposition,
+    Rule,
+    RuleId,
+)
+from src.domain.knowledge_base.source import (
+    SourceDocument,
+    SourceId,
 )
 from src.domain.quote_normalize import normalize
 
@@ -277,6 +286,17 @@ def _coerce_datetime(value: object) -> datetime:
     raise ValueError(f"expected datetime or str, got {type(value).__name__}")
 
 
+def _coerce_date(value: object) -> date:
+    """Coerce a YAML scalar to date. Raises ValueError on failure."""
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        return date.fromisoformat(value)
+    raise ValueError(f"expected date or str, got {type(value).__name__}")
+
+
 def parse_jurisdictions(data: object, dataset: str) -> list[Jurisdiction]:
     """Parse the jurisdictions YAML document into domain entities.
 
@@ -332,7 +352,7 @@ def parse_source_documents(
     dataset: str,
     jurisdiction_map: dict[str, Jurisdiction],
 ) -> list[SourceDocument]:
-    """Parse source_documents YAML into domain models.
+    """Parse source_documents YAML into domain entities.
 
     Slug references in ``jurisdiction`` are resolved from *jurisdiction_map*.
     ``source_text_hash`` is computed automatically from the source_text.
@@ -353,35 +373,53 @@ def parse_source_documents(
         if jur_slug not in jurisdiction_map:
             raise EntityNotFoundError("Jurisdiction", jur_slug)
 
-        # Build the resolved dict.  We copy only known fields so that
-        # unexpected YAML keys do not silently pass through to Pydantic.
         source_text: str = row.get("source_text", "")
         source_text_hash: str = (
             row["source_text_hash"]
             if "source_text_hash" in row and row.get("source_text_hash")
             else _sha256(source_text)
         )
-        resolved: dict[str, object] = {
-            "url": row["url"],
-            "title": row["title"],
-            "authority_level": row["authority_level"],
-            "source_text": source_text,
-            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
-            "source_text_hash": source_text_hash,
-            "fetched_at": (
-                row["fetched_at"] if "fetched_at" in row else datetime.now(UTC)
-            ),
-        }
-        if "id" in row:
-            resolved["id"] = row["id"]
-        if "effective_date" in row:
-            resolved["effective_date"] = row["effective_date"]
-        if "last_reviewed_at" in row:
-            resolved["last_reviewed_at"] = row["last_reviewed_at"]
 
         try:
-            docs.append(SourceDocument.model_validate(resolved))
-        except Exception as exc:
+            raw_id: object = row.get("id")
+            sid = (
+                SourceId(_coerce_uuid(raw_id))
+                if raw_id is not None
+                else SourceId(uuid.uuid4())
+            )
+            raw_fetched: object = row.get("fetched_at")
+            fetched_at = (
+                _coerce_datetime(raw_fetched)
+                if raw_fetched is not None
+                else datetime.now(UTC)
+            )
+            raw_effective: object = row.get("effective_date")
+            effective_date = (
+                _coerce_date(raw_effective)
+                if raw_effective is not None
+                else None
+            )
+            raw_reviewed: object = row.get("last_reviewed_at")
+            last_reviewed_at = (
+                _coerce_datetime(raw_reviewed)
+                if raw_reviewed is not None
+                else None
+            )
+            docs.append(
+                SourceDocument(
+                    id=sid,
+                    jurisdiction_id=jurisdiction_map[jur_slug].id,
+                    url=row["url"],
+                    title=row["title"],
+                    authority_level=row["authority_level"],
+                    fetched_at=fetched_at,
+                    source_text=source_text,
+                    source_text_hash=source_text_hash,
+                    effective_date=effective_date,
+                    last_reviewed_at=last_reviewed_at,
+                )
+            )
+        except (KeyError, ValueError) as exc:
             url = row.get("url", "?")
             raise SeedSchemaError(
                 f"{dataset}/source_documents.yaml[{i}] (url={url}): {exc}"
@@ -500,32 +538,50 @@ def parse_rules(
         if normalize(source_quote) not in normalize(source_doc.source_text):
             raise SeedIntegrityError(rule_slug, source_quote)
 
-        resolved: dict[str, object] = {
-            "disposition": row["disposition"],
-            "accepted_status": row["accepted_status"],
-            "source_quote": source_quote,
-            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
-            "material_id": material_map[mat_slug].id.value,
-            "source_document_id": source_doc.id,
-        }
-        if "id" in row:
-            resolved["id"] = row["id"]
-        if "preparation_steps" in row:
-            resolved["preparation_steps"] = row["preparation_steps"]
-        if "exceptions" in row:
-            resolved["exceptions"] = row["exceptions"]
-        if "warnings" in row:
-            resolved["warnings"] = row["warnings"]
-        if "confidence" in row:
-            resolved["confidence"] = row["confidence"]
-        if "effective_from" in row:
-            resolved["effective_from"] = row["effective_from"]
-        if "superseded_by" in row:
-            resolved["superseded_by"] = row["superseded_by"]
-
         try:
-            rule = Rule.model_validate(resolved)
-        except Exception as exc:
+            raw_id: object = row.get("id")
+            rid = (
+                RuleId(_coerce_uuid(raw_id))
+                if raw_id is not None
+                else RuleId(uuid.uuid4())
+            )
+            prep = tuple(row.get("preparation_steps") or ())
+            exc_list = tuple(row.get("exceptions") or ())
+            warn_list = tuple(row.get("warnings") or ())
+            raw_conf: object = row.get("confidence")
+            confidence = (
+                Confidence(raw_conf)
+                if raw_conf is not None
+                else Confidence.HIGH
+            )
+            raw_effective_from: object = row.get("effective_from")
+            effective_from = (
+                _coerce_date(raw_effective_from)
+                if raw_effective_from is not None
+                else None
+            )
+            raw_superseded: object = row.get("superseded_by")
+            superseded_by = (
+                RuleId(_coerce_uuid(raw_superseded))
+                if raw_superseded is not None
+                else None
+            )
+            rule = Rule(
+                id=rid,
+                jurisdiction_id=jurisdiction_map[jur_slug].id,
+                material_id=material_map[mat_slug].id,
+                source_document_id=source_doc.id,
+                disposition=Disposition(row["disposition"]),
+                accepted_status=AcceptedStatus(row["accepted_status"]),
+                source_quote=source_quote,
+                preparation_steps=prep,
+                exceptions=exc_list,
+                warnings=warn_list,
+                confidence=confidence,
+                effective_from=effective_from,
+                superseded_by=superseded_by,
+            )
+        except (KeyError, ValueError) as exc:
             raise SeedSchemaError(
                 f"{dataset}/rules.yaml rule '{rule_slug}': {exc}"
             ) from exc

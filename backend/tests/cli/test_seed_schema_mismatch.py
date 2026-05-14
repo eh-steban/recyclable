@@ -83,9 +83,6 @@ def test_rule_invalid_disposition_raises() -> None:
     from datetime import UTC, datetime  # noqa: PLC0415
 
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
-        SourceDocument,
-    )
     from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionId,
@@ -96,6 +93,10 @@ def test_rule_invalid_disposition_raises() -> None:
         Material,
         MaterialCategory,
         MaterialId,
+    )
+    from src.domain.knowledge_base.source import (  # noqa: PLC0415
+        SourceDocument,
+        SourceId,
     )
 
     now = datetime.now(UTC)
@@ -116,10 +117,12 @@ def test_rule_invalid_disposition_raises() -> None:
         category=MaterialCategory.METAL,
     )
     doc = SourceDocument(
-        jurisdiction_id=jur.id.value,
+        id=SourceId(uuid.uuid4()),
+        jurisdiction_id=jur.id,
         url="https://example.com",
         title="T",
         authority_level=1,
+        fetched_at=now,
         source_text="Valid source text with the quote here.",
         source_text_hash="x",
     )
@@ -150,9 +153,6 @@ def test_rules_invalid_enum_raises_seed_schema_error() -> None:
     from datetime import UTC, datetime  # noqa: PLC0415
 
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
-        SourceDocument,
-    )
     from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
         JurisdictionId,
@@ -163,6 +163,10 @@ def test_rules_invalid_enum_raises_seed_schema_error() -> None:
         Material,
         MaterialCategory,
         MaterialId,
+    )
+    from src.domain.knowledge_base.source import (  # noqa: PLC0415
+        SourceDocument,
+        SourceId,
     )
 
     now = datetime.now(UTC)
@@ -183,10 +187,12 @@ def test_rules_invalid_enum_raises_seed_schema_error() -> None:
         category=MaterialCategory.PAPER,
     )
     doc = SourceDocument(
-        jurisdiction_id=jur.id.value,
+        id=SourceId(uuid.uuid4()),
+        jurisdiction_id=jur.id,
         url="https://example.com/doc2",
         title="Doc2",
         authority_level=1,
+        fetched_at=now,
         source_text="Some text with a valid quote inside it.",
         source_text_hash="y",
     )

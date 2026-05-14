@@ -184,7 +184,7 @@ def run_seed(dataset: str, session: Session) -> None:
 
     logger.info("seed: writing %d source document(s)", len(source_docs))
     for doc in source_docs:
-        src_repo.upsert(doc)
+        src_repo.save(doc)
 
     logger.info(
         "seed: writing %d material(s) (plus aliases)", len(material_tuples)
@@ -197,7 +197,7 @@ def run_seed(dataset: str, session: Session) -> None:
 
     logger.info("seed: writing %d rule(s)", len(rules))
     for rule in rules:
-        rule_repo.upsert(rule)
+        rule_repo.save(rule)
 
     if regression_cases:
         logger.info(

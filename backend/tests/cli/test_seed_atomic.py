@@ -101,7 +101,7 @@ def test_mid_load_failure_rolls_back_all_rows(
     ) -> None:
         raise RuntimeError("injected mid-load failure")
 
-    monkeypatch.setattr(rule_repo_module.SqlRuleRepo, "upsert", boom)
+    monkeypatch.setattr(rule_repo_module.SqlRuleRepo, "save", boom)
 
     from src.cli.seed import run_seed  # noqa: PLC0415
 

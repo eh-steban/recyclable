@@ -5,7 +5,7 @@ import logging
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.cli.seed_schemas.source_document import SourceDocument
+from src.domain.knowledge_base.source import SourceDocument
 from src.infra.db.models.source_document import SourceDocumentORM
 
 logger = logging.getLogger(__name__)
@@ -17,13 +17,13 @@ class SqlSourceDocumentRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def upsert(self, doc: SourceDocument) -> None:
-        logger.debug("upserting source_document url=%s", doc.url)
+    def save(self, doc: SourceDocument) -> None:
+        logger.debug("saving source_document url=%s", doc.url)
         stmt = (
             insert(SourceDocumentORM)
             .values(
-                id=doc.id,
-                jurisdiction_id=doc.jurisdiction_id,
+                id=doc.id.value,
+                jurisdiction_id=doc.jurisdiction_id.value,
                 url=doc.url,
                 title=doc.title,
                 authority_level=doc.authority_level,
