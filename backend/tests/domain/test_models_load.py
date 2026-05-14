@@ -19,15 +19,21 @@ from src.cli.seed_schemas import (
     AcceptedStatus,
     Confidence,
     Disposition,
-    Jurisdiction,
-    JurisdictionType,
-    Material,
-    MaterialAlias,
-    MaterialCategory,
     RegressionCase,
     Rule,
     SourceDocument,
+)
+from src.domain.knowledge_base.jurisdiction import (
+    Jurisdiction,
+    JurisdictionId,
+    JurisdictionType,
     SupportedStatus,
+)
+from src.domain.knowledge_base.material import (
+    Material,
+    MaterialAlias,
+    MaterialCategory,
+    MaterialId,
 )
 from src.infra.db.models import (
     AnswerAuditRecordORM,
@@ -54,7 +60,7 @@ NOW = datetime.now(tz=UTC)
 
 def test_jurisdiction_model():
     j = Jurisdiction(
-        id=JURISDICTION_ID,
+        id=JurisdictionId(JURISDICTION_ID),
         name="City and County of Denver",
         slug="denver",
         type=JurisdictionType.CITY,
@@ -69,7 +75,7 @@ def test_jurisdiction_model():
 
 def test_material_model():
     m = Material(
-        id=MATERIAL_ID,
+        id=MaterialId(MATERIAL_ID),
         canonical_name="Aluminum beverage can",
         slug="aluminum-cans",
         category=MaterialCategory.METAL,
@@ -80,7 +86,7 @@ def test_material_model():
 
 def test_material_alias_model():
     a = MaterialAlias(
-        material_id=MATERIAL_ID,
+        material_id=MaterialId(MATERIAL_ID),
         alias="soda can",
     )
     assert a.weight == 1
@@ -148,32 +154,6 @@ def test_regression_case_model():
 # ---- Enum validation ----
 
 
-def test_jurisdiction_type_rejects_invalid() -> None:
-    # Intentionally passing an invalid type value to test Pydantic validation.
-    with pytest.raises(ValidationError):
-        _ = Jurisdiction.model_validate(
-            {
-                "name": "Test",
-                "slug": "test",
-                "type": "village",  # not in enum
-                "country": "US",
-                "supported_status": "supported",
-            }
-        )
-
-
-def test_material_category_rejects_invalid() -> None:
-    # Intentionally passing an invalid category to test Pydantic validation.
-    with pytest.raises(ValidationError):
-        _ = Material.model_validate(
-            {
-                "canonical_name": "Mystery material",
-                "slug": "mystery",
-                "category": "unknown_category",  # not in enum
-            }
-        )
-
-
 def test_rule_disposition_rejects_invalid() -> None:
     # Intentionally passing an invalid disposition to test Pydantic validation.
     with pytest.raises(ValidationError):
@@ -207,7 +187,7 @@ def test_orm_models_importable():
 
 
 def test_jurisdiction_orm_to_domain_roundtrip():
-    """Simulate reading an ORM row and mapping to the Pydantic domain model."""
+    """Simulate reading an ORM row and mapping to the domain entity."""
     orm = JurisdictionORM(
         id=JURISDICTION_ID,
         name="City and County of Denver",
@@ -219,7 +199,7 @@ def test_jurisdiction_orm_to_domain_roundtrip():
         updated_at=NOW,
     )
     domain = Jurisdiction(
-        id=orm.id,
+        id=JurisdictionId(orm.id),
         name=orm.name,
         slug=orm.slug,
         type=JurisdictionType(orm.type),
@@ -228,7 +208,7 @@ def test_jurisdiction_orm_to_domain_roundtrip():
         created_at=orm.created_at,
         updated_at=orm.updated_at,
     )
-    assert domain.id == orm.id
+    assert domain.id.value == orm.id
     assert domain.name == orm.name
     assert domain.slug == orm.slug
     assert domain.type.value == orm.type
@@ -247,17 +227,17 @@ def test_material_orm_to_domain_roundtrip():
         parent_id=None,
     )
     domain = Material(
-        id=orm.id,
+        id=MaterialId(orm.id),
         canonical_name=orm.canonical_name,
         slug=orm.slug,
         category=MaterialCategory(orm.category),
-        parent_id=orm.parent_id,
+        parent_id=None,
     )
-    assert domain.id == orm.id
+    assert domain.id.value == orm.id
     assert domain.canonical_name == orm.canonical_name
     assert domain.slug == orm.slug
     assert domain.category.value == orm.category
-    assert domain.parent_id == orm.parent_id
+    assert domain.parent_id is None
 
 
 def test_rule_orm_to_domain_roundtrip():
@@ -350,11 +330,11 @@ def test_material_alias_orm_to_domain_roundtrip():
         weight=2,
     )
     domain = MaterialAlias(
-        material_id=orm.material_id,
+        material_id=MaterialId(orm.material_id),
         alias=orm.alias,
         weight=orm.weight,
     )
-    assert domain.material_id == orm.material_id
+    assert domain.material_id.value == orm.material_id
     assert domain.alias == orm.alias
     assert domain.weight == orm.weight
 

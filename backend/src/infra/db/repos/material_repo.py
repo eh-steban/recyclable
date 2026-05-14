@@ -1,12 +1,12 @@
 """Repo for materials and aliases."""
 
 import logging
+import uuid
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.cli.seed_schemas.material import Material
-from src.cli.seed_schemas.material_alias import MaterialAlias
+from src.domain.knowledge_base.material import Material, MaterialAlias
 from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
 
@@ -19,23 +19,26 @@ class SqlMaterialRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def upsert(self, material: Material) -> None:
-        logger.debug("upserting material slug=%s", material.slug)
+    def save(self, material: Material) -> None:
+        logger.debug("saving material slug=%s", material.slug)
+        parent_uuid = (
+            material.parent_id.value if material.parent_id is not None else None
+        )
         stmt = (
             insert(MaterialORM)
             .values(
-                id=material.id,
+                id=material.id.value,
                 canonical_name=material.canonical_name,
                 slug=material.slug,
                 category=material.category.value,
-                parent_id=material.parent_id,
+                parent_id=parent_uuid,
             )
             .on_conflict_do_update(
                 index_elements=["slug"],
                 set_={
                     "canonical_name": material.canonical_name,
                     "category": material.category.value,
-                    "parent_id": material.parent_id,
+                    "parent_id": parent_uuid,
                 },
                 # Only update when content actually changed.
                 where=(
@@ -43,8 +46,8 @@ class SqlMaterialRepo:
                     | (MaterialORM.category != material.category.value)
                     | (
                         # parent_id nullable -- NULL IS DISTINCT FROM guard.
-                        (MaterialORM.parent_id != material.parent_id)
-                        if material.parent_id is not None
+                        (MaterialORM.parent_id != parent_uuid)
+                        if parent_uuid is not None
                         else (MaterialORM.parent_id.is_not(None))
                     )
                 ),
@@ -52,17 +55,17 @@ class SqlMaterialRepo:
         )
         _ = self._session.execute(stmt)
 
-    def upsert_alias(self, alias: MaterialAlias) -> None:
+    def save_alias(self, alias: MaterialAlias) -> None:
         logger.debug(
-            "upserting alias material_id=%s alias=%s",
+            "saving alias material_id=%s alias=%s",
             alias.material_id,
             alias.alias,
         )
         stmt = (
             insert(MaterialAliasORM)
             .values(
-                id=alias.id,
-                material_id=alias.material_id,
+                id=uuid.uuid4(),
+                material_id=alias.material_id.value,
                 alias=alias.alias,
                 weight=alias.weight,
             )

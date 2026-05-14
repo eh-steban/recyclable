@@ -42,13 +42,13 @@ from src.cli._seed_parse import (
     parse_source_documents,
     validate_dataset_path,
 )
-from src.cli.seed_schemas.material_alias import MaterialAlias
 from src.cli.seed_schemas.regression_case import RegressionCase
 from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
     SeedSchemaError,
 )
+from src.domain.knowledge_base.material import MaterialAlias
 from src.infra.db.repos.jurisdiction_repo import (
     SqlJurisdictionRepo,
 )
@@ -180,7 +180,7 @@ def run_seed(dataset: str, session: Session) -> None:
 
     logger.info("seed: writing %d jurisdiction(s)", len(jurisdictions))
     for j in jurisdictions:
-        jur_repo.upsert(j)
+        jur_repo.save(j)
 
     logger.info("seed: writing %d source document(s)", len(source_docs))
     for doc in source_docs:
@@ -190,10 +190,10 @@ def run_seed(dataset: str, session: Session) -> None:
         "seed: writing %d material(s) (plus aliases)", len(material_tuples)
     )
     for material, aliases in material_tuples:
-        mat_repo.upsert(material)
+        mat_repo.save(material)
         for alias_text in aliases:
             alias = MaterialAlias(material_id=material.id, alias=alias_text)
-            mat_repo.upsert_alias(alias)
+            mat_repo.save_alias(alias)
 
     logger.info("seed: writing %d rule(s)", len(rules))
     for rule in rules:

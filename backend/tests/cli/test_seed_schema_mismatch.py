@@ -79,32 +79,44 @@ def test_rule_missing_jurisdiction_raises() -> None:
 
 def test_rule_invalid_disposition_raises() -> None:
     """A rule with an invalid ``disposition`` raises ``SeedSchemaError``."""
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
-        Jurisdiction,
-        JurisdictionType,
-        SupportedStatus,
-    )
-    from src.cli.seed_schemas.material import (  # noqa: PLC0415
-        Material,
-        MaterialCategory,
-    )
     from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
         SourceDocument,
     )
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
+        Jurisdiction,
+        JurisdictionId,
+        JurisdictionType,
+        SupportedStatus,
+    )
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
+        Material,
+        MaterialCategory,
+        MaterialId,
+    )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j",
         name="J",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m", canonical_name="M", category=MaterialCategory.METAL
+        id=MaterialId(uuid.uuid4()),
+        slug="m",
+        canonical_name="M",
+        category=MaterialCategory.METAL,
     )
     doc = SourceDocument(
-        jurisdiction_id=jur.id,
+        jurisdiction_id=jur.id.value,
         url="https://example.com",
         title="T",
         authority_level=1,
@@ -134,32 +146,44 @@ def test_rule_invalid_disposition_raises() -> None:
 
 def test_rules_invalid_enum_raises_seed_schema_error() -> None:
     """A rule with a bad ``accepted_status`` enum raises SeedSchemaError."""
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
-        Jurisdiction,
-        JurisdictionType,
-        SupportedStatus,
-    )
-    from src.cli.seed_schemas.material import (  # noqa: PLC0415
-        Material,
-        MaterialCategory,
-    )
     from src.cli.seed_schemas.source_document import (  # noqa: PLC0415
         SourceDocument,
     )
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
+        Jurisdiction,
+        JurisdictionId,
+        JurisdictionType,
+        SupportedStatus,
+    )
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
+        Material,
+        MaterialCategory,
+        MaterialId,
+    )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j2",
         name="J2",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m2", canonical_name="M2", category=MaterialCategory.PAPER
+        id=MaterialId(uuid.uuid4()),
+        slug="m2",
+        canonical_name="M2",
+        category=MaterialCategory.PAPER,
     )
     doc = SourceDocument(
-        jurisdiction_id=jur.id,
+        jurisdiction_id=jur.id.value,
         url="https://example.com/doc2",
         title="Doc2",
         authority_level=1,
@@ -208,19 +232,27 @@ def test_rule_unknown_jurisdiction_slug_raises_entity_not_found() -> None:
 
 def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
     """Unknown material slug in a rule raises EntityNotFoundError."""
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j3",
         name="J3",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     bad_rule = [
         {
@@ -239,26 +271,38 @@ def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
 
 def test_rule_unknown_source_document_raises_entity_not_found() -> None:
     """Unknown source_document URL in a rule raises EntityNotFoundError."""
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
     from src.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
-    from src.cli.seed_schemas.material import (  # noqa: PLC0415
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
+        MaterialId,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j4",
         name="J4",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m4", canonical_name="M4", category=MaterialCategory.METAL
+        id=MaterialId(uuid.uuid4()),
+        slug="m4",
+        canonical_name="M4",
+        category=MaterialCategory.METAL,
     )
     bad_rule = [
         {
@@ -318,19 +362,27 @@ def test_regression_cases_unknown_jurisdiction_raises_entity_not_found() -> (
 
 def test_regression_cases_unknown_material_raises_entity_not_found() -> None:
     """Unknown material slug in a regression case raises EntityNotFoundError."""
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
     from src.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
-    from src.cli.seed_schemas.jurisdiction import (  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j5",
         name="J5",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     bad_data = [
         {

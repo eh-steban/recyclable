@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.cli.seed_schemas.jurisdiction import Jurisdiction
+from src.domain.knowledge_base.jurisdiction import Jurisdiction
 from src.infra.db.models.jurisdiction import JurisdictionORM
 
 logger = logging.getLogger(__name__)
@@ -18,12 +18,12 @@ class SqlJurisdictionRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def upsert(self, jurisdiction: Jurisdiction) -> None:
-        logger.debug("upserting jurisdiction slug=%s", jurisdiction.slug)
+    def save(self, jurisdiction: Jurisdiction) -> None:
+        logger.debug("saving jurisdiction slug=%s", jurisdiction.slug)
         stmt = (
             insert(JurisdictionORM)
             .values(
-                id=jurisdiction.id,
+                id=jurisdiction.id.value,
                 name=jurisdiction.name,
                 slug=jurisdiction.slug,
                 type=jurisdiction.type.value,

@@ -10,13 +10,12 @@ import hashlib
 import logging
 import pathlib
 import sys
+import uuid
 from datetime import UTC, datetime
 from typing import NotRequired, TypedDict, cast
 
 import yaml
 
-from src.cli.seed_schemas.jurisdiction import Jurisdiction
-from src.cli.seed_schemas.material import Material
 from src.cli.seed_schemas.regression_case import RegressionCase
 from src.cli.seed_schemas.rule import Rule
 from src.cli.seed_schemas.source_document import SourceDocument
@@ -24,6 +23,17 @@ from src.domain.exceptions import (
     EntityNotFoundError,
     SeedIntegrityError,
     SeedSchemaError,
+)
+from src.domain.knowledge_base.jurisdiction import (
+    Jurisdiction,
+    JurisdictionId,
+    JurisdictionType,
+    SupportedStatus,
+)
+from src.domain.knowledge_base.material import (
+    Material,
+    MaterialCategory,
+    MaterialId,
 )
 from src.domain.quote_normalize import normalize
 
@@ -249,18 +259,67 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _coerce_uuid(value: object) -> uuid.UUID:
+    """Coerce a YAML scalar to uuid.UUID. Raises ValueError on failure."""
+    if isinstance(value, uuid.UUID):
+        return value
+    if isinstance(value, str):
+        return uuid.UUID(value)
+    raise ValueError(f"expected UUID or str, got {type(value).__name__}")
+
+
+def _coerce_datetime(value: object) -> datetime:
+    """Coerce a YAML scalar to datetime. Raises ValueError on failure."""
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    raise ValueError(f"expected datetime or str, got {type(value).__name__}")
+
+
 def parse_jurisdictions(data: object, dataset: str) -> list[Jurisdiction]:
-    """Parse the jurisdictions YAML document into domain models."""
+    """Parse the jurisdictions YAML document into domain entities.
+
+    Any coercion or invariant-check failure surfaces as SeedSchemaError
+    so callers can keep their single-exception catch shape.
+    """
     items = as_list_of_rows(
         data, f"{dataset}/jurisdiction.yaml", JurisdictionRow
     )
     jurisdictions: list[Jurisdiction] = []
     for i, row in enumerate(items):
         try:
-            # model_validate accepts Any -- Pydantic coerces str to UUID,
-            # str to StrEnum, and str to datetime for the optional fields.
-            jurisdictions.append(Jurisdiction.model_validate(row))
-        except Exception as exc:
+            raw_id: object = row.get("id")
+            jid = (
+                JurisdictionId(_coerce_uuid(raw_id))
+                if raw_id is not None
+                else JurisdictionId(uuid.uuid4())
+            )
+            raw_created: object = row.get("created_at")
+            created_at = (
+                _coerce_datetime(raw_created)
+                if raw_created is not None
+                else datetime.now(UTC)
+            )
+            raw_updated: object = row.get("updated_at")
+            updated_at = (
+                _coerce_datetime(raw_updated)
+                if raw_updated is not None
+                else datetime.now(UTC)
+            )
+            jurisdictions.append(
+                Jurisdiction(
+                    id=jid,
+                    name=row["name"],
+                    slug=row["slug"],
+                    type=JurisdictionType(row["type"]),
+                    country=row["country"],
+                    supported_status=SupportedStatus(row["supported_status"]),
+                    created_at=created_at,
+                    updated_at=updated_at,
+                )
+            )
+        except (KeyError, ValueError) as exc:
             slug = row.get("slug", "?")
             raise SeedSchemaError(
                 f"{dataset}/jurisdiction.yaml[{i}] (slug={slug}): {exc}"
@@ -307,7 +366,7 @@ def parse_source_documents(
             "title": row["title"],
             "authority_level": row["authority_level"],
             "source_text": source_text,
-            "jurisdiction_id": jurisdiction_map[jur_slug].id,
+            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
             "source_text_hash": source_text_hash,
             "fetched_at": (
                 row["fetched_at"] if "fetched_at" in row else datetime.now(UTC)
@@ -335,7 +394,7 @@ def parse_materials(
 ) -> list[tuple[Material, list[str]]]:
     """Parse materials YAML into (Material, aliases) pairs.
 
-    Returns a list of (Material, [alias_str, ...]) tuples.
+    Returns a list of (domain.Material, [alias_str, ...]) tuples.
     """
     items = as_list_of_rows(data, f"{dataset}/materials.yaml", MaterialRow)
     results: list[tuple[Material, list[str]]] = []
@@ -351,19 +410,27 @@ def parse_materials(
             str(a) for a in cast(list[object], raw_aliases)
         ]
 
-        resolved: dict[str, object] = {
-            "canonical_name": row["canonical_name"],
-            "slug": row["slug"],
-            "category": row["category"],
-        }
-        if "id" in row:
-            resolved["id"] = row["id"]
-        if "parent_id" in row:
-            resolved["parent_id"] = row["parent_id"]
-
         try:
-            material = Material.model_validate(resolved)
-        except Exception as exc:
+            raw_id: object = row.get("id")
+            mid = (
+                MaterialId(_coerce_uuid(raw_id))
+                if raw_id is not None
+                else MaterialId(uuid.uuid4())
+            )
+            raw_parent: object = row.get("parent_id")
+            parent_id = (
+                MaterialId(_coerce_uuid(raw_parent))
+                if raw_parent is not None
+                else None
+            )
+            material = Material(
+                id=mid,
+                canonical_name=row["canonical_name"],
+                slug=row["slug"],
+                category=MaterialCategory(row["category"]),
+                parent_id=parent_id,
+            )
+        except (KeyError, ValueError) as exc:
             slug = row.get("slug", "?")
             raise SeedSchemaError(
                 f"{dataset}/materials.yaml[{i}] (slug={slug}): {exc}"
@@ -437,8 +504,8 @@ def parse_rules(
             "disposition": row["disposition"],
             "accepted_status": row["accepted_status"],
             "source_quote": source_quote,
-            "jurisdiction_id": jurisdiction_map[jur_slug].id,
-            "material_id": material_map[mat_slug].id,
+            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
+            "material_id": material_map[mat_slug].id.value,
             "source_document_id": source_doc.id,
         }
         if "id" in row:
@@ -493,7 +560,7 @@ def parse_regression_cases(
             "query": row["query"],
             "expected_status": row["expected_status"],
             "expected_disposition": row["expected_disposition"],
-            "jurisdiction_id": jurisdiction_map[jur_slug].id,
+            "jurisdiction_id": jurisdiction_map[jur_slug].id.value,
         }
         if "id" in row:
             resolved["id"] = row["id"]
@@ -509,7 +576,7 @@ def parse_regression_cases(
         if mat_slug is not None:
             if mat_slug not in material_map:
                 raise EntityNotFoundError("Material", mat_slug)
-            resolved["expected_material_id"] = material_map[mat_slug].id
+            resolved["expected_material_id"] = material_map[mat_slug].id.value
 
         try:
             cases.append(RegressionCase.model_validate(resolved))
