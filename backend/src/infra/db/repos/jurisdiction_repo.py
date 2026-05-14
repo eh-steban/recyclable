@@ -5,13 +5,8 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from src.domain.exceptions import (
-    DuplicateAggregateError,
-    RepositoryConcurrencyError,
-)
 from src.domain.knowledge_base.jurisdiction import (
     Jurisdiction,
     JurisdictionId,
@@ -19,6 +14,7 @@ from src.domain.knowledge_base.jurisdiction import (
     SupportedStatus,
 )
 from src.infra.db.models.jurisdiction import JurisdictionORM
+from src.infra.db.repos._exceptions import translate_repo_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -72,14 +68,8 @@ class SqlJurisdictionRepo:
                 ),
             )
         )
-        try:
+        with translate_repo_exceptions("Jurisdiction", str(jurisdiction.id)):
             _ = self._session.execute(stmt)
-        except IntegrityError as exc:
-            raise DuplicateAggregateError(
-                "Jurisdiction", str(jurisdiction.id)
-            ) from exc
-        except OperationalError as exc:
-            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def find_by_id(
         self, jurisdiction_id: JurisdictionId

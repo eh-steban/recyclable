@@ -85,6 +85,19 @@ def _call_with_retry(fn: Any, max_retries: int = 1) -> Any:
 
 
 # ---------------------------------------------------------------------------
+# Parsing helpers
+# ---------------------------------------------------------------------------
+
+
+def _first_text_block(response: Message) -> str | None:
+    """Return the text content of the first text block in response, or None."""
+    block = next((b for b in response.content if b.type == "text"), None)
+    if block is None:
+        return None
+    return block.text  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
 # AnthropicClient
 # ---------------------------------------------------------------------------
 
@@ -176,17 +189,14 @@ class AnthropicClient:
         will extend the parser with full schema validation.
         """
         try:
-            text_block = next(
-                (b for b in response.content if b.type == "text"),
-                None,
-            )
-            if text_block is None:
+            text = _first_text_block(response)
+            if text is None:
                 logger.warning("ask: response has no text block")
                 return NoEvaluation(
                     reason=NoEvaluationReason.VALIDATOR_REJECTED
                 )
 
-            payload: dict[str, Any] = json.loads(text_block.text)  # type: ignore[union-attr]
+            payload: dict[str, Any] = json.loads(text)
 
             # Extract mandatory fields; fall back to NoEvaluation on error.
             verdict_str: str = payload.get("verdict", "")
@@ -302,13 +312,10 @@ class AnthropicClient:
     ) -> list[tuple[MaterialId, float]]:
         """Parse Haiku classify response into (MaterialId, float) pairs."""
         try:
-            text_block = next(
-                (b for b in response.content if b.type == "text"),
-                None,
-            )
-            if text_block is None:
+            text = _first_text_block(response)
+            if text is None:
                 return []
-            items: list[dict[str, Any]] = json.loads(text_block.text)  # type: ignore[union-attr]
+            items: list[dict[str, Any]] = json.loads(text)
             id_map = {str(mid): mid for mid in known_material_ids}
             results: list[tuple[MaterialId, float]] = []
             for item in items:

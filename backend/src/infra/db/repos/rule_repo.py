@@ -5,13 +5,8 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from src.domain.exceptions import (
-    DuplicateAggregateError,
-    RepositoryConcurrencyError,
-)
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
 from src.domain.knowledge_base.rule import (
@@ -23,6 +18,7 @@ from src.domain.knowledge_base.rule import (
 )
 from src.domain.knowledge_base.source import SourceId
 from src.infra.db.models.rule import RuleORM
+from src.infra.db.repos._exceptions import translate_repo_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -96,12 +92,8 @@ class SqlRuleRepo:
                 ),
             )
         )
-        try:
+        with translate_repo_exceptions("Rule", str(rule.id)):
             _ = self._session.execute(stmt)
-        except IntegrityError as exc:
-            raise DuplicateAggregateError("Rule", str(rule.id)) from exc
-        except OperationalError as exc:
-            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def find_by_id(self, rule_id: RuleId) -> Rule | None:
         logger.debug("find_by_id rule_id=%s", rule_id)

@@ -5,13 +5,8 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from src.domain.exceptions import (
-    DuplicateAggregateError,
-    RepositoryConcurrencyError,
-)
 from src.domain.knowledge_base.material import (
     Material,
     MaterialAlias,
@@ -20,6 +15,7 @@ from src.domain.knowledge_base.material import (
 )
 from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
+from src.infra.db.repos._exceptions import translate_repo_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +68,8 @@ class SqlMaterialRepo:
                 ),
             )
         )
-        try:
+        with translate_repo_exceptions("Material", str(material.id)):
             _ = self._session.execute(stmt)
-        except IntegrityError as exc:
-            raise DuplicateAggregateError("Material", str(material.id)) from exc
-        except OperationalError as exc:
-            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def save_alias(self, alias: MaterialAlias) -> None:
         logger.debug(
@@ -97,15 +89,10 @@ class SqlMaterialRepo:
                 constraint="uq_material_aliases_material_id_alias",
             )
         )
-        try:
+        with translate_repo_exceptions(
+            "MaterialAlias", f"{alias.material_id}:{alias.alias}"
+        ):
             _ = self._session.execute(stmt)
-        except IntegrityError as exc:
-            raise DuplicateAggregateError(
-                "MaterialAlias",
-                f"{alias.material_id}:{alias.alias}",
-            ) from exc
-        except OperationalError as exc:
-            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def find_by_id(self, material_id: MaterialId) -> Material | None:
         logger.debug("find_by_id material_id=%s", material_id)

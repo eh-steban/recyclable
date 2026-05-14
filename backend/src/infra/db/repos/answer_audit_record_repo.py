@@ -18,16 +18,11 @@ from datetime import datetime
 from typing import Any, cast
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from src.domain.audit.answer_audit_record import (
     AnswerAuditRecord,
     AnswerAuditRecordId,
-)
-from src.domain.exceptions import (
-    DuplicateAggregateError,
-    RepositoryConcurrencyError,
 )
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
@@ -38,6 +33,7 @@ from src.domain.retrieval.item_verdict import (
     Refused,
 )
 from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
+from src.infra.db.repos._exceptions import translate_repo_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -141,15 +137,9 @@ class SqlAnswerAuditRecordRepo:
             latency_ms=record.latency_ms,
             created_at=record.created_at,
         )
-        try:
+        with translate_repo_exceptions("AnswerAuditRecord", str(record.id)):
             self._session.add(orm_row)
             self._session.flush()
-        except IntegrityError as exc:
-            raise DuplicateAggregateError(
-                "AnswerAuditRecord", str(record.id)
-            ) from exc
-        except OperationalError as exc:
-            raise RepositoryConcurrencyError(str(exc)) from exc
 
     def find_by_id(
         self, record_id: AnswerAuditRecordId
