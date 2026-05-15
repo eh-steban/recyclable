@@ -291,6 +291,29 @@ class TestRetrievedSourceUrlsFromRules:
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
+
+class TestFallbackForValidatorRejection:
+    """`fallback_for_validator_rejection` returns the spec-pinned outcome."""
+
+    def test_returns_validator_rejected_no_evaluation(self) -> None:
+        """fallback_for_validator_rejection() returns
+        NoEvaluation(reason=VALIDATOR_REJECTED) with a non-empty
+        recommended_action matching the spec-pinned grounding-failure text.
+        """
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Uncertain()),
+            rule_repo=_FakeRuleRepo(),
+            source_repo=_FakeSourceRepo(),
+            retrieval_llm=_RecordingLLM(),
+        )
+        query = Query(text="cardboard", location_input="Denver")
+
+        result = service.fallback_for_validator_rejection(query)
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
+        assert "grounded" in result.recommended_action.lower()
+
     def test_source_repo_miss_excludes_url_from_set(self) -> None:
         """A Rule whose source_document_id has no SourceDocument in the
         repo contributes no URL to retrieved_source_urls. The LLM that

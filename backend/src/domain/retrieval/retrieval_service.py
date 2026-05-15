@@ -178,3 +178,16 @@ class RetrievalService:
             )
 
         return llm_result
+
+    def fallback_for_validator_rejection(self, query: Query) -> NoEvaluation:
+        """Return a NoEvaluation(VALIDATOR_REJECTED) for construction-time
+        grounding failures.
+
+        """
+        logger.info("fallback_for_validator_rejection: query=%r", query.text)
+        return NoEvaluation(
+            reason=NoEvaluationReason.VALIDATOR_REJECTED,
+            recommended_action=(
+                "The answer could not be grounded in the retrieved sources."
+            ),
+        )

@@ -6,13 +6,13 @@ Verdict mapping (per private/specs/contracts/answer.md):
   Refused                         -> 'no'
   NotCovered | Conflicted         -> 'unknown'
 
-For Phase 4, only the evaluated save path is implemented.
-outcome_kind is always 'evaluated'; no_evaluation_reason is NULL.
-The NoEvaluation save path is deferred to Phase 5 mappers.
+Phase 5: both the evaluated and no_evaluation save paths are
+implemented. outcome_kind reflects the actual domain outcome;
+conditions JSONB round-trips Accepted.conditions.
 
 reportAny / reportExplicitAny are disabled for this file: the JSONB
 citations and validator_findings columns are runtime `Any` at the
-ORM boundary. Phase 5 will replace the casts with a typed parser.
+ORM boundary.
 """
 
 # pyright: reportAny=false, reportExplicitAny=false
@@ -32,6 +32,7 @@ from src.domain.audit.answer_audit_record import (
 )
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
+from src.domain.retrieval.evaluated_answer import NoEvaluationReason
 from src.domain.retrieval.item_verdict import (
     Accepted,
     Conflicted,
@@ -62,25 +63,36 @@ def _verdict_to_wire(record: AnswerAuditRecord) -> str:
 
 def _wire_to_verdict(
     verdict_str: str,
+    conditions_json: list[Any] | None = None,
 ) -> Accepted | Refused | NotCovered | Conflicted:
     """Map ORM wire string back to a domain ItemVerdict variant.
 
-    Phase 5 blocker: a row stored as 'conditional' reconstructs as
-    Accepted([]), silently dropping the conditions tuple. The audit
-    ORM has no column for conditions at Phase 4. Until Phase 5
-    extends the schema (either a dedicated conditions JSONB column
-    or persisting conditions inside validator_findings), do not
-    call find_by_id() and then re-save the record -- the round-trip
-    will coerce 'conditional' -> 'yes' on the next save().
-    Tracked in Phase 4 Checkpoint Deferred items.
+    Phase 5: conditions_json is read from the JSONB conditions column
+    so that 'conditional' rows round-trip faithfully.
     """
     if verdict_str == "yes":
         return Accepted()
     if verdict_str == "conditional":
-        return Accepted()
+        conds = tuple(str(c) for c in (conditions_json or []))
+        return Accepted(conditions=conds)
     if verdict_str == "no":
         return Refused()
     return NotCovered()
+
+
+# ---------------------------------------------------------------------------
+# NoEvaluation reason mapping
+# ---------------------------------------------------------------------------
+
+
+def _reason_to_orm(reason: NoEvaluationReason) -> str:
+    """Map domain NoEvaluationReason to the ORM enum string."""
+    return reason.value  # StrEnum values match the ORM enum literals
+
+
+def _orm_to_reason(reason_str: str) -> NoEvaluationReason:
+    """Map ORM enum string back to domain NoEvaluationReason."""
+    return NoEvaluationReason(reason_str)
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +128,16 @@ class SqlAnswerAuditRecordRepo:
             record.id,
             record.verdict,
         )
+        # outcome_kind/no_evaluation_reason come from the aggregate's
+        # no_evaluation_reason field (set by the application service on
+        # NoEvaluation paths; None for evaluated outcomes).
+        no_eval_reason: str | None = None
+        outcome_kind: str = "evaluated"
+
+        if record.no_evaluation_reason is not None:
+            outcome_kind = "no_evaluation"
+            no_eval_reason = _reason_to_orm(record.no_evaluation_reason)
+
         citations_json = [
             {
                 "title": c.title,
@@ -127,14 +149,21 @@ class SqlAnswerAuditRecordRepo:
         validator_findings_json: dict[str, object] = {
             "retrieved_source_urls": sorted(record.retrieved_source_urls),
         }
+
+        # Persist Accepted.conditions so round-trips are faithful.
+        conditions_json: list[str] | None = None
+        if isinstance(record.verdict, Accepted) and record.verdict.conditions:
+            conditions_json = list(record.verdict.conditions)
+
         orm_row = AnswerAuditRecordORM(
             id=record.id.value,
             query_text=record.query_text,
             query_location_input=record.query_location_input,
             jurisdiction_id=record.jurisdiction_id.value,
             verdict=_verdict_to_wire(record),
-            outcome_kind="evaluated",
-            no_evaluation_reason=None,
+            outcome_kind=outcome_kind,
+            no_evaluation_reason=no_eval_reason,
+            conditions=conditions_json,  # type: ignore[arg-type]
             recommended_action=record.recommended_action,
             citations=citations_json,  # type: ignore[arg-type]
             validator_findings=validator_findings_json,  # type: ignore[arg-type]
@@ -181,8 +210,13 @@ class SqlAnswerAuditRecordRepo:
         )
         retrieved_source_urls = frozenset(str(u) for u in retrieved_urls_raw)
 
-        # Reconstruct verdict from wire string.
-        verdict = _wire_to_verdict(row.verdict)
+        # Read conditions JSONB column (may be None for old rows).
+        raw_conditions = cast(
+            list[Any] | None, getattr(row, "conditions", None)
+        )
+
+        # Reconstruct verdict from wire string + conditions.
+        verdict = _wire_to_verdict(row.verdict, raw_conditions)
 
         # Ensure created_at is timezone-aware (Postgres returns tz-aware).
         created_at: datetime = row.created_at

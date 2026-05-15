@@ -41,11 +41,16 @@ OutcomeKindEnum = Enum(
     name="answer_outcome_kind",
 )
 
-# no_evaluation_reason: cause of a NoEvaluation outcome (nullable)
+# no_evaluation_reason: cause of a NoEvaluation outcome (nullable).
+# All six NoEvaluationReason variants are represented here so the
+# write path can persist any outcome (Phase 5).
 NoEvaluationReasonEnum = Enum(
     "out_of_jurisdiction",
     "no_evidence",
     "validator_rejected",
+    "llm_rejected",
+    "uncertain_material",
+    "conflicted",
     name="answer_no_evaluation_reason",
 )
 
@@ -77,6 +82,9 @@ class AnswerAuditRecordORM(Base):
     outcome_kind: Mapped[str] = mapped_column(OutcomeKindEnum, nullable=False)
     no_evaluation_reason: Mapped[str | None] = mapped_column(
         NoEvaluationReasonEnum, nullable=True
+    )
+    conditions: Mapped[list[str] | None] = mapped_column(
+        JSONB, nullable=True, default=None
     )
     recommended_action: Mapped[str] = mapped_column(
         Text, nullable=False, server_default=text("''")

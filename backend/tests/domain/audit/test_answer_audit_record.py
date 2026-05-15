@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
@@ -125,43 +126,36 @@ class TestINVLLM002EnforcedAtConstruction:
         assert len(rec.citations) == 1
 
 
-class TestCitationsCoercion:
-    """AnswerAuditRecord.citations is `tuple[Citation, ...]`; lists passed
-    at construction must be coerced to tuple so the aggregate's
-    immutability guarantee holds at runtime."""
+class TestCitationsTypeGuard:
+    """AnswerAuditRecord.citations is `tuple[Citation, ...]`. The
+    constructor rejects a non-tuple at runtime rather than coercing it,
+    so a boundary caller that violates the declared type fails fast."""
 
-    def test_list_citations_stored_as_tuple(self) -> None:
-        rec = AnswerAuditRecord(
-            id=AnswerAuditRecordId(uuid.uuid4()),
-            query_text="Q",
-            query_location_input="Denver",
-            jurisdiction_id=_J_ID,
-            verdict=NotCovered(),
-            citations=[_make_citation()],  # pyright: ignore[reportArgumentType]
-            retrieved_source_urls=frozenset([_SOURCE_URL]),
-            recommended_action="",
-            prompt_version="ask_compose_v1",
-            model_id="claude-sonnet-4-6",
-            latency_ms=1,
-            created_at=_NOW,
-        )
-        assert isinstance(rec.citations, tuple)
+    def test_list_citations_raises_type_error(self) -> None:
+        # Launder the intentionally-wrong list through object so the
+        # runtime guard is what rejects it -- no suppressed diagnostic.
+        # basedpyright requires the object hop for a cast between
+        # non-overlapping types.
+        raw = cast(object, [_make_citation()])
+        bad = cast(tuple[Citation, ...], raw)
+        with pytest.raises(TypeError, match="citations must be a tuple"):
+            _ = AnswerAuditRecord(
+                id=AnswerAuditRecordId(uuid.uuid4()),
+                query_text="Q",
+                query_location_input="Denver",
+                jurisdiction_id=_J_ID,
+                verdict=NotCovered(),
+                citations=bad,
+                retrieved_source_urls=frozenset([_SOURCE_URL]),
+                recommended_action="",
+                prompt_version="ask_compose_v1",
+                model_id="claude-sonnet-4-6",
+                latency_ms=1,
+                created_at=_NOW,
+            )
 
-    def test_empty_list_citations_stored_as_empty_tuple(self) -> None:
-        rec = AnswerAuditRecord(
-            id=AnswerAuditRecordId(uuid.uuid4()),
-            query_text="Q",
-            query_location_input="Denver",
-            jurisdiction_id=_J_ID,
-            verdict=NotCovered(),
-            citations=[],  # pyright: ignore[reportArgumentType]
-            retrieved_source_urls=frozenset(),
-            recommended_action="",
-            prompt_version="ask_compose_v1",
-            model_id="claude-sonnet-4-6",
-            latency_ms=1,
-            created_at=_NOW,
-        )
+    def test_tuple_citations_succeeds(self) -> None:
+        rec = _make_record(NotCovered(), (), frozenset())
         assert isinstance(rec.citations, tuple)
         assert rec.citations == ()
 

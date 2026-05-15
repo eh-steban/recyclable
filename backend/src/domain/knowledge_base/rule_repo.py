@@ -32,3 +32,14 @@ class RuleRepo(Protocol):
         (INV-PROD-002).
         """
         ...
+
+    def find_for_jurisdiction(
+        self, jurisdiction_id: JurisdictionId
+    ) -> list[Rule]:
+        """Return all current rules for a jurisdiction.
+
+        Returns only rules with superseded_by IS NULL (INV-AUTH-002).
+        Used by SEO page use cases to enumerate the active material set
+        for a jurisdiction without iterating over all materials.
+        """
+        ...

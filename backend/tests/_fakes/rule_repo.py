@@ -22,6 +22,18 @@ class InMemoryRuleRepo:
     def find_by_id(self, rule_id: RuleId) -> Rule | None:
         return self._store.get(rule_id.value)
 
+    def find_for_jurisdiction(
+        self, jurisdiction_id: JurisdictionId
+    ) -> list[Rule]:
+        """Return all active rules for a jurisdiction."""
+        return [
+            r
+            for r in self._store.values()
+            if (
+                r.jurisdiction_id == jurisdiction_id and r.superseded_by is None
+            )
+        ]
+
     def find_for(
         self,
         jurisdiction_id: JurisdictionId,

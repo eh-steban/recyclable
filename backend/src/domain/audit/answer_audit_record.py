@@ -17,8 +17,9 @@ the application service mints the id, constructs the record
 """
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import cast
 
 from src.domain.audit.answer_audit_record_validator import (
     validate_answer_audit_record,
@@ -26,6 +27,7 @@ from src.domain.audit.answer_audit_record_validator import (
 from src.domain.exceptions import AnswerAuditRecordValidationError
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
+from src.domain.retrieval.evaluated_answer import NoEvaluationReason
 from src.domain.retrieval.item_verdict import ItemVerdict
 
 # ---------------------------------------------------------------------------
@@ -75,6 +77,10 @@ class AnswerAuditRecord:
         model_id: the model used for this call (INV-LLM-005).
         latency_ms: total end-to-end latency in milliseconds.
         created_at: UTC timestamp.
+        no_evaluation_reason: set when this record represents a
+                              NoEvaluation outcome; None for evaluated
+                              outcomes. Used by the repo to persist the
+                              correct outcome_kind and reason enum value.
     """
 
     id: AnswerAuditRecordId
@@ -89,11 +95,18 @@ class AnswerAuditRecord:
     model_id: str
     latency_ms: int
     created_at: datetime
+    no_evaluation_reason: NoEvaluationReason | None = field(default=None)
 
     def __post_init__(self) -> None:
-        # Coerce mutable inputs (lists) to tuple to preserve immutability.
-        if not isinstance(self.citations, tuple):
-            object.__setattr__(self, "citations", tuple(self.citations))
+        # Runtime boundary guard. The declared type is the contract;
+        # callers crossing the LLM/DB boundary can still pass the wrong
+        # type at runtime. cast(object, ...) defeats static narrowing so
+        # this stays a real check -- reject, never silently coerce.
+        if not isinstance(cast(object, self.citations), tuple):
+            kind = type(self.citations).__name__
+            raise TypeError(
+                f"AnswerAuditRecord.citations must be a tuple, got {kind}"
+            )
         # Level-2 whole-object validation (architecture.md § Three-level
         # validation). Runs AnswerAuditRecordValidator inline; violation
         # raises AnswerAuditRecordValidationError.
