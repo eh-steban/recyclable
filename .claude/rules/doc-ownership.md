@@ -11,7 +11,7 @@ Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-05-12
+**Last reconciled:** 2026-05-15
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a

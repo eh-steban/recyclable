@@ -16,6 +16,7 @@ not all at once. Use `private/learnings-index.md` to find what's relevant.
 | Discovery Type | Destination | When to Use | Size |
 | --- | --- | --- | --- |
 | Cross-project pattern (appears 2+ times) | `private/learnings.md` | "We keep making this mistake" across services | 20-40 lines |
+| Repo-wide architecture / pattern decision | `.claude/rules/architecture.md` (what) + `ddd/<shard>` (why) | Type-category, Entity-vs-Value, repo style, Aggregate boundary, layering | 5-30 lines |
 | Service-specific architecture constraint | `.claude/rules/[service]/[service]-mental-model.md` | Full explanation unique to one service | 200-400 lines |
 | Feature-specific requirement/assumption | `private/specs/NNN-feature.md` → Assumptions section | This feature depends on X being true | 5-15 lines |
 | Experiment outcome/validation | `private/product/experiments/NNN/learnings.md` | After experiment reaches terminal status | 20-50 lines |
@@ -26,11 +27,16 @@ not all at once. Use `private/learnings-index.md` to find what's relevant.
 ```text
 You discover something important
     ↓
+Is it a repo-wide architecture / software-pattern decision?
+(type-category, Entity-vs-Value, repo style, Aggregate boundary, layering)
+    → Yes → .claude/rules/architecture.md (what)
+            + ddd/<shard> (why, when the rationale is non-obvious)
+    → No  ↓
 Have you seen this pattern 2+ times?
     → Yes → Does it affect multiple services?
             ↳ Yes → private/learnings.md (link to mental model)
             ↳ No  → .claude/rules/[service]/[service]-mental-model.md
-    → No  → Is it service-specific architecture?
+    → No  → Is it a service-specific architecture constraint?
             ↳ Yes → .claude/rules/[service]/[service]-mental-model.md
             ↳ No  → Is it feature-specific?
                     ↳ Yes → private/specs/NNN-feature.md → Assumptions

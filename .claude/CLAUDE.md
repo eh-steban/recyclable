@@ -146,7 +146,9 @@ file.
 
 1. Run `test-auditor` against changed services.
 2. Run `code-reviewer` against the unstaged diff.
-3. Fix issues before reporting done.
+3. If the diff adds or changes comments or docstrings, run
+   `comment-reviewer` against the diff.
+4. Fix issues before reporting done.
 
 Quick-fixes (typos, config changes, one-line edits) self-review only.
 For specs and katas, run `spec-writer` instead.
