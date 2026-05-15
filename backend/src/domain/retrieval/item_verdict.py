@@ -12,6 +12,7 @@ Verdict mapping (per contracts/answer.md):
 """
 
 from dataclasses import dataclass, field
+from typing import cast
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,9 +27,14 @@ class Accepted:
     conditions: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
-        # Coerce mutable inputs (lists) to tuple to preserve immutability.
-        if not isinstance(self.conditions, tuple):
-            object.__setattr__(self, "conditions", tuple(self.conditions))
+        # Runtime boundary guard. The declared type is the contract;
+        # callers crossing the LLM/DB boundary can still pass the wrong
+        # type at runtime. cast(object, ...) defeats type checker
+        # narrowing so this stays a real check -- reject, never
+        # silently coerce.
+        if not isinstance(cast(object, self.conditions), tuple):
+            kind = type(self.conditions).__name__
+            raise TypeError(f"Accepted.conditions must be a tuple, got {kind}")
 
 
 @dataclass(frozen=True, slots=True)
