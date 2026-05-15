@@ -21,23 +21,15 @@ branch_labels = None
 depends_on = None
 
 _NO_EVAL_REASON_TYPE = "answer_no_evaluation_reason"
+_NEW_REASONS = ("llm_rejected", "uncertain_material", "conflicted")
+_ADD_ENUM_VALUE = "ALTER TYPE {t} ADD VALUE IF NOT EXISTS '{v}'"
 
 
 def upgrade() -> None:
     # Extend the no_evaluation_reason enum with three missing variants.
     # ALTER TYPE ... ADD VALUE is transactional in Postgres 12+.
-    op.execute(
-        f"ALTER TYPE {_NO_EVAL_REASON_TYPE} "
-        "ADD VALUE IF NOT EXISTS 'llm_rejected'"
-    )
-    op.execute(
-        f"ALTER TYPE {_NO_EVAL_REASON_TYPE} "
-        "ADD VALUE IF NOT EXISTS 'uncertain_material'"
-    )
-    op.execute(
-        f"ALTER TYPE {_NO_EVAL_REASON_TYPE} "
-        "ADD VALUE IF NOT EXISTS 'conflicted'"
-    )
+    for reason in _NEW_REASONS:
+        op.execute(_ADD_ENUM_VALUE.format(t=_NO_EVAL_REASON_TYPE, v=reason))
 
     # Add the conditions JSONB column (nullable -- existing rows have
     # NULL, meaning no conditions tuple was recorded).
