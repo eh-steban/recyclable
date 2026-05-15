@@ -84,5 +84,5 @@ class Answer(BaseModel):
     jurisdiction: JurisdictionRefWire
     preparation_steps: list[str]
     recommended_action: str
-    refusal_reason: str | None  # 'out_of_jurisdiction' | 'no_evidence' | null
+    refusal_reason: str | None  # see answer.md § Response
     short_answer: str  # 'yes' | 'no' | 'conditional' | 'unknown'

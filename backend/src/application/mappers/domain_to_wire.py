@@ -73,7 +73,7 @@ def _refusal_reason_for_verdict(verdict: ItemVerdict) -> str | None:
         case NotCovered():
             return "no_evidence"
         case Conflicted():
-            return "no_evidence"
+            return "conflict_unresolved"
         case _ as unreachable:
             assert_never(unreachable)
 

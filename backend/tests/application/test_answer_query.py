@@ -15,6 +15,7 @@ from src.application.answer_query import AnswerQuery
 from src.application.answer_query_command import AnswerQueryCommand
 from src.application.get_jurisdiction_page import GetJurisdictionPage
 from src.application.mappers.domain_to_wire import (
+    evaluated_answer_to_wire,
     no_evaluation_to_wire,
     verdict_to_short_answer,
 )
@@ -51,6 +52,7 @@ from src.domain.retrieval.evaluated_answer import (
 )
 from src.domain.retrieval.item_verdict import (
     Accepted,
+    Conflicted,
     ItemVerdict,
 )
 from src.domain.retrieval.location_resolver import DENVER_JURISDICTION_ID
@@ -617,6 +619,26 @@ def test_item_verdict_sum_completeness_exhaustiveness() -> None:
             f"verdict_to_short_answer({variant_type.__name__}) returned "
             f"unexpected value {result!r}"
         )
+
+
+def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
+    """Conflicted -> short_answer='unknown',
+    refusal_reason='conflict_unresolved' (answer.md Verdict mapping).
+
+    Distinct from NotCovered's 'no_evidence': a source conflict is not
+    an absence of evidence.
+    """
+    answer = _make_evaluated_answer(Conflicted(), ())
+    result = evaluated_answer_to_wire(
+        answer,
+        audit_record_id=uuid.uuid4(),
+        jurisdiction_id=_make_jurisdiction_id(),
+        jurisdiction_name="Denver",
+    )
+
+    assert result.short_answer == "unknown"
+    assert result.refusal_reason == "conflict_unresolved"
+    assert result.citations == []
 
 
 # ===========================================================================
