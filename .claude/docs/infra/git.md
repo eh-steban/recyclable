@@ -141,3 +141,35 @@ scripts/wt create fix-parse-timing fix/parse-timing        # fix/ branch
 scripts/wt create souls feature/souls-tracking             # explicit feature/
 scripts/wt create release-v2 release/v2.0.0               # release/ with version
 ```
+
+---
+
+## Submodules
+
+`private/` is a git submodule (its own repo). A parent-repo commit
+records the submodule only as a gitlink (a pinned commit SHA).
+
+### Project rules (in addition to the spec)
+
+Not hook-enforced -- guidance for humans and agents, checked at review.
+
+- A submodule gitlink bump MUST travel in the **same commit as the
+  parent-repo work that motivated it**. When a feature or fix is
+  accompanied by a spec, plan, learnings, or other `private/` change,
+  commit inside the submodule first, then `git add private` and fold
+  the bump into that same feature/fix commit (amend it if the work is
+  already committed locally and unpushed). The submodule change and
+  the code it documents or depends on land or revert as one unit.
+- A standalone `chore(...): bump private ...` commit is reserved for
+  submodule updates with **no parent-repo change to attach to** --
+  e.g. a strategy or plan revision unrelated to any code change in
+  flight. If there is motivating work in the same branch, the bump
+  belongs with it, not on its own.
+- Push the submodule before (or together with) the parent, so the
+  gitlink the parent records is reachable for everyone else. A parent
+  commit pointing at an unpushed submodule commit is broken for every
+  other clone.
+
+Rationale: a gitlink bump split from the work it serves makes the
+parent history lie about what changed together, and a `git revert` of
+the feature leaves the submodule pointer stranded (or vice versa).
