@@ -1,14 +1,36 @@
-"""Tests for LocationResolver pure function.
-
-TDD red step: written before implementation exists.
-"""
+"""Tests for LocationResolver pure function and ResolvedJurisdiction Value."""
 
 import pytest
 
 from src.domain.retrieval.location_resolver import (
+    DENVER,
     DENVER_JURISDICTION_ID,
+    ResolvedJurisdiction,
     resolve_location,
 )
+
+_DENVER_DISPLAY_NAME = "City and County of Denver"
+
+
+class TestResolvedJurisdictionValue:
+    """ResolvedJurisdiction is a pure Value: immutable, value equality."""
+
+    def test_value_equality_same_attributes(self) -> None:
+        a = ResolvedJurisdiction(
+            jurisdiction_id=DENVER_JURISDICTION_ID,
+            name=_DENVER_DISPLAY_NAME,
+        )
+        b = ResolvedJurisdiction(
+            jurisdiction_id=DENVER_JURISDICTION_ID,
+            name=_DENVER_DISPLAY_NAME,
+        )
+        assert a == b
+
+    def test_denver_constant_carries_correct_id(self) -> None:
+        assert DENVER.jurisdiction_id == DENVER_JURISDICTION_ID
+
+    def test_denver_constant_carries_display_name(self) -> None:
+        assert DENVER.name == _DENVER_DISPLAY_NAME
 
 
 class TestLocationResolverNonDenver:
@@ -34,30 +56,43 @@ class TestLocationResolverNonDenver:
 
 
 class TestLocationResolverCityNames:
-    """City-name aliases all return the Denver JurisdictionId."""
+    """City-name aliases all return a ResolvedJurisdiction for Denver."""
 
     def test_denver_bare(self) -> None:
-        assert resolve_location("Denver") == DENVER_JURISDICTION_ID
+        result = resolve_location("Denver")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
+        assert result.name == _DENVER_DISPLAY_NAME
 
     def test_denver_co(self) -> None:
-        assert resolve_location("Denver, CO") == DENVER_JURISDICTION_ID
+        result = resolve_location("Denver, CO")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
 
     def test_denver_colorado(self) -> None:
-        assert resolve_location("Denver, Colorado") == DENVER_JURISDICTION_ID
+        result = resolve_location("Denver, Colorado")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
 
     def test_city_and_county(self) -> None:
-        assert (
-            resolve_location("City and County of Denver")
-            == DENVER_JURISDICTION_ID
-        )
+        result = resolve_location("City and County of Denver")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
 
     def test_case_insensitive(self) -> None:
-        assert resolve_location("denver") == DENVER_JURISDICTION_ID
-        assert resolve_location("DENVER") == DENVER_JURISDICTION_ID
-        assert resolve_location("denver, co") == DENVER_JURISDICTION_ID
+        for alias in ("denver", "DENVER", "denver, co"):
+            result = resolve_location(alias)
+            assert result is not None, f"Expected hit for {alias!r}"
+            assert result.jurisdiction_id == DENVER_JURISDICTION_ID
 
     def test_leading_trailing_whitespace_trimmed(self) -> None:
-        assert resolve_location("  Denver  ") == DENVER_JURISDICTION_ID
+        result = resolve_location("  Denver  ")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
+
+    def test_hit_equals_denver_constant(self) -> None:
+        """A city-name hit equals the exported DENVER constant."""
+        assert resolve_location("Denver") == DENVER
 
 
 class TestLocationResolverZipCodes:
@@ -111,8 +146,12 @@ class TestLocationResolverZipCodes:
         ],
     )
     def test_denver_zip_resolves(self, zip_code: str) -> None:
-        assert resolve_location(zip_code) == DENVER_JURISDICTION_ID
+        result = resolve_location(zip_code)
+        assert result is not None, f"Expected Denver hit for ZIP {zip_code!r}"
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID
 
     def test_zip_case_insensitive_does_not_matter_digits(self) -> None:
         # ZIPs are digits; whitespace-trim still applies
-        assert resolve_location("  80201  ") == DENVER_JURISDICTION_ID
+        result = resolve_location("  80201  ")
+        assert result is not None
+        assert result.jurisdiction_id == DENVER_JURISDICTION_ID

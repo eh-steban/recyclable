@@ -35,7 +35,10 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluation,
 )
 from src.domain.retrieval.item_verdict import NotCovered
-from src.domain.retrieval.location_resolver import resolve_location
+from src.domain.retrieval.location_resolver import (
+    ResolvedJurisdiction,
+    resolve_location,
+)
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_service import RetrievalService
 
@@ -70,10 +73,14 @@ def _make_record(
     The NotCovered sentinel makes the construction-time validator pass
     (NotCovered is not definitive; no citations are required).
     """
-    jurisdiction_id = resolve_location(command.location_input)
-    if jurisdiction_id is None:
-        # OOJ path: store sentinel (no real jurisdiction).
-        jurisdiction_id = _OOJ_JURISDICTION_ID
+    resolved: ResolvedJurisdiction | None = resolve_location(
+        command.location_input
+    )
+    jurisdiction_id = (
+        resolved.jurisdiction_id
+        if resolved is not None
+        else _OOJ_JURISDICTION_ID
+    )
 
     if isinstance(outcome, EvaluatedAnswer):
         # Use citation URLs as retrieved_source_urls for the audit record.
@@ -203,15 +210,17 @@ class AnswerQuery:
         outcome: EvaluatedAnswer | NoEvaluation,
     ) -> Answer:
         """Map domain outcome to wire Answer."""
-        jurisdiction_id = resolve_location(command.location_input)
-        jurisdiction_name = "Denver" if jurisdiction_id is not None else ""
+        resolved: ResolvedJurisdiction | None = resolve_location(
+            command.location_input
+        )
 
         if isinstance(outcome, EvaluatedAnswer):
-            jid: JurisdictionId = (
-                jurisdiction_id
-                if jurisdiction_id is not None
+            jid = (
+                resolved.jurisdiction_id
+                if resolved is not None
                 else _OOJ_JURISDICTION_ID
             )
+            jurisdiction_name = resolved.name if resolved is not None else ""
             return evaluated_answer_to_wire(
                 outcome,
                 record_id_value,
@@ -223,6 +232,10 @@ class AnswerQuery:
                 outcome,
                 record_id_value,
                 command.location_input,
-                jurisdiction_id=jurisdiction_id,
-                jurisdiction_name=jurisdiction_name,
+                jurisdiction_id=(
+                    resolved.jurisdiction_id if resolved is not None else None
+                ),
+                jurisdiction_name=(
+                    resolved.name if resolved is not None else None
+                ),
             )

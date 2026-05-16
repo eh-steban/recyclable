@@ -18,7 +18,6 @@ Application services are thin task coordinators).
 import logging
 from typing import final
 
-from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material_normalizer import MaterialNormalizer
 from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
@@ -70,10 +69,8 @@ class RetrievalService:
         Returns NoEvaluation with an appropriate reason on any refusal.
         """
         # Step 1: resolve location
-        jurisdiction_id: JurisdictionId | None = resolve_location(
-            query.location_input
-        )
-        if jurisdiction_id is None:
+        resolved = resolve_location(query.location_input)
+        if resolved is None:
             logger.info(
                 "location resolution miss: location=%r", query.location_input
             )
@@ -124,11 +121,11 @@ class RetrievalService:
         material_id = normalization.material.id
 
         # Step 3: retrieve rules
-        rules = self._rule_repo.find_for(jurisdiction_id, material_id)
+        rules = self._rule_repo.find_for(resolved.jurisdiction_id, material_id)
         if not rules:
             logger.info(
                 "no rules for jurisdiction=%s material=%s",
-                jurisdiction_id,
+                resolved.jurisdiction_id,
                 material_id,
             )
             return NoEvaluation(

@@ -802,3 +802,61 @@ def test_no_evidence_mapper_produces_unknown_with_no_evidence_refusal() -> None:
     assert result.refusal_reason == "no_evidence"
     assert result.clarifying_question is None
     assert result.citations == []
+
+
+# ===========================================================================
+# Jurisdiction display name -- resolver name flows to wire (INV-PROD-003)
+# ===========================================================================
+
+
+def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
+    """The wire jurisdiction.name must come from ResolvedJurisdiction.name,
+    not from a hardcoded literal.
+
+    Exercises the Phase 5 review finding fix: resolve_location now returns
+    a ResolvedJurisdiction carrying the canonical display name from the
+    Denver alias table ("City and County of Denver"), which must reach the
+    wire response unchanged.
+    """
+    source_url = "https://denvergov.org/recycling"
+    citation = _make_citation(source_url)
+    verdict = Accepted()
+    llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
+
+    jid = DENVER_JURISDICTION_ID
+    mat = _make_material("cardboard")
+    src_id = SourceId(uuid.uuid4())
+    rule_repo = InMemoryRuleRepo()
+    source_repo = InMemorySourceRepo()
+    src_doc = SourceDocument(
+        id=src_id,
+        jurisdiction_id=jid,
+        url=source_url,
+        title="Denver Recycling Guide",
+        authority_level=1,
+        fetched_at=datetime.now(tz=UTC),
+        source_text="Cardboard is accepted curbside.",
+        source_text_hash="abc123",
+    )
+    source_repo.save(src_doc)
+    rule_repo.save(_make_rule(jid, mat.id, src_id))
+
+    normalizer = _FakeNormalizer(Resolved(material=mat))
+    svc, _ = _build_service(
+        normalizer=normalizer,
+        llm=llm,
+        rule_repo=rule_repo,
+        source_repo=source_repo,
+    )
+
+    answer = svc.execute(
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        )
+    )
+
+    # The canonical name must be "City and County of Denver" -- sourced from
+    # the DENVER ResolvedJurisdiction constant, not a hardcoded "Denver".
+    assert answer.jurisdiction.name == "City and County of Denver"
+    assert answer.jurisdiction.id is not None
