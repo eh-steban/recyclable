@@ -46,6 +46,8 @@ target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "PLC0415"]
+# B008: FastAPI's canonical DI pattern uses Depends() in default args.
+ignore = ["B008"]
 
 [tool.mypy]
 python_version = "3.14"

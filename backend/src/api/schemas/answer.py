@@ -56,7 +56,6 @@ class AskRequest(BaseModel):
     query: str = Field(
         ...,
         description="Free-text user question, max 500 chars",
-        max_length=500,
     )
     location: str = Field(
         ...,
