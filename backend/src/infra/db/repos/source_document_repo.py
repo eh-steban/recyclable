@@ -29,41 +29,42 @@ class SqlSourceDocumentRepo:
         """Mint a fresh SourceId (application-generated UUID)."""
         return SourceId(uuid.uuid4())
 
-    def save(self, doc: SourceDocument) -> None:
-        logger.debug("saving source_document url=%s", doc.url)
+    def save(self, source: SourceDocument) -> None:
+        logger.debug("saving source_document url=%s", source.url)
         stmt = (
             insert(SourceDocumentORM)
             .values(
-                id=doc.id.value,
-                jurisdiction_id=doc.jurisdiction_id.value,
-                url=doc.url,
-                title=doc.title,
-                authority_level=doc.authority_level,
-                fetched_at=doc.fetched_at,
-                effective_date=doc.effective_date,
-                source_text=doc.source_text,
-                source_text_hash=doc.source_text_hash,
-                last_reviewed_at=doc.last_reviewed_at,
+                id=source.id.value,
+                jurisdiction_id=source.jurisdiction_id.value,
+                url=source.url,
+                title=source.title,
+                authority_level=source.authority_level,
+                fetched_at=source.fetched_at,
+                effective_date=source.effective_date,
+                source_text=source.source_text,
+                source_text_hash=source.source_text_hash,
+                last_reviewed_at=source.last_reviewed_at,
             )
             .on_conflict_do_update(
                 index_elements=["id"],
                 set_={
-                    "url": doc.url,
-                    "title": doc.title,
-                    "authority_level": doc.authority_level,
-                    "fetched_at": doc.fetched_at,
-                    "effective_date": doc.effective_date,
-                    "source_text": doc.source_text,
-                    "source_text_hash": doc.source_text_hash,
-                    "last_reviewed_at": doc.last_reviewed_at,
+                    "url": source.url,
+                    "title": source.title,
+                    "authority_level": source.authority_level,
+                    "fetched_at": source.fetched_at,
+                    "effective_date": source.effective_date,
+                    "source_text": source.source_text,
+                    "source_text_hash": source.source_text_hash,
+                    "last_reviewed_at": source.last_reviewed_at,
                 },
                 # Only update when content hash actually changed.
                 where=(
-                    SourceDocumentORM.source_text_hash != doc.source_text_hash
+                    SourceDocumentORM.source_text_hash
+                    != source.source_text_hash
                 ),
             )
         )
-        with translate_repo_exceptions("SourceDocument", str(doc.id)):
+        with translate_repo_exceptions("SourceDocument", str(source.id)):
             _ = self._session.execute(stmt)
 
     def find_by_id(self, source_id: SourceId) -> SourceDocument | None:

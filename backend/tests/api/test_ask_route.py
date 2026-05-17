@@ -5,10 +5,12 @@ inject fake application services -- no Postgres, no Anthropic SDK.
 
 Behavior checks per Phase 6 plan:
   - happy-path response shape (Denver)
+  - HTTP 200 on exactly 500-char query (INV-LLM-004 boundary accepted)
   - HTTP 400 on 501-char query (INV-LLM-004 length cap)
   - out-of-jurisdiction (Aurora) returns short_answer='unknown',
     citations=[], non-empty audit_record_id, no Anthropic call
   - 404 on slug-miss for both page routes
+  - NoEvaluation -> wire Answer serialization via real mapper
 """
 
 import uuid
@@ -34,7 +36,13 @@ from src.api.schemas.jurisdiction_page import (
     MaterialSummaryWire,
     RuleWire,
 )
+from src.application.answer_query import AnswerQuery
 from src.application.answer_query_command import AnswerQueryCommand
+from src.domain.audit.answer_audit_record import AnswerAuditRecordId
+from src.domain.retrieval.evaluated_answer import (
+    NoEvaluation,
+    NoEvaluationReason,
+)
 from src.main import app
 
 # ---------------------------------------------------------------------------
@@ -237,16 +245,25 @@ def test_ask_501_char_query_returns_400() -> None:
 
     Validates INV-LLM-004: the 500-char cap bounds the prompt-injection
     surface. The route enforces this before delegating to the application
-    service.
+    service. An override is registered so FastAPI's DI resolves without
+    reaching the fail-fast get_material_normalizer stub.
     """
     long_query = "x" * 501
+    fake_svc = _FakeAnswerQuery(_denver_answer())
 
-    resp = _client().post(
-        "/ask",
-        json={"query": long_query, "location": "Denver"},
-    )
-    assert resp.status_code == 400
-    assert resp.json()["error"] == "query_too_long"
+    def _override() -> _FakeAnswerQuery:
+        return fake_svc
+
+    app.dependency_overrides[get_answer_query] = _override
+    try:
+        resp = _client().post(
+            "/ask",
+            json={"query": long_query, "location": "Denver"},
+        )
+        assert resp.status_code == 400
+        assert resp.json()["error"] == "query_too_long"
+    finally:
+        app.dependency_overrides.pop(get_answer_query, None)
 
 
 # ---------------------------------------------------------------------------
@@ -381,3 +398,111 @@ def test_material_page_slug_miss_returns_404() -> None:
         assert resp.json()["error"] == "not_found"
     finally:
         app.dependency_overrides.pop(get_material_page_service, None)
+
+
+# ---------------------------------------------------------------------------
+# POST /ask -- 500-character boundary ACCEPTED (INV-LLM-004 boundary)
+# ---------------------------------------------------------------------------
+
+
+def test_ask_500_char_query_accepted() -> None:
+    """POST /ask with exactly 500-char query returns HTTP 200 (not 400).
+
+    Validates INV-LLM-004 boundary: the cap is > 500, so a query of
+    exactly 500 characters is within the allowed range and must not
+    be rejected.
+    """
+    boundary_query = "x" * 500
+    fake_svc = _FakeAnswerQuery(_denver_answer())
+
+    def _override() -> _FakeAnswerQuery:
+        return fake_svc
+
+    app.dependency_overrides[get_answer_query] = _override
+    try:
+        resp = _client().post(
+            "/ask",
+            json={"query": boundary_query, "location": "Denver"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["short_answer"] == "yes"
+    finally:
+        app.dependency_overrides.pop(get_answer_query, None)
+
+
+# ---------------------------------------------------------------------------
+# POST /ask -- NoEvaluation -> wire Answer via real mapper at HTTP layer
+# ---------------------------------------------------------------------------
+
+
+def test_ask_no_evaluation_wire_via_real_mapper() -> None:
+    """NoEvaluation outcome serializes correctly through the real mapper.
+
+    Uses a real AnswerQuery instance backed by in-memory fakes so that
+    no_evaluation_to_wire() is exercised in the actual HTTP call path,
+    not bypassed by the fake service returning a pre-built Answer.
+
+    Verifies: short_answer='unknown', citations=[], refusal_reason set,
+    jurisdiction.id=None for OUT_OF_JURISDICTION, audit_record_id is a
+    non-empty UUID string.
+    """
+    # -- Fake repos / services -------------------------------------------------
+
+    class _FakeRetrievalService:
+        """Returns NoEvaluation(OUT_OF_JURISDICTION) unconditionally."""
+
+        def answer(self, query: object) -> NoEvaluation:
+            return NoEvaluation(
+                reason=NoEvaluationReason.OUT_OF_JURISDICTION,
+                recommended_action=("TestCity is not yet supported."),
+            )
+
+        def fallback_for_validator_rejection(
+            self, query: object
+        ) -> NoEvaluation:
+            return NoEvaluation(
+                reason=NoEvaluationReason.VALIDATOR_REJECTED,
+                recommended_action="Validator rejected.",
+            )
+
+    class _FakeAuditRepo:
+        """In-memory audit repo; records are discarded."""
+
+        _next_id: uuid.UUID = uuid.UUID("00000000-0000-0000-0000-000000000042")
+
+        def next_identity(self) -> AnswerAuditRecordId:
+            return AnswerAuditRecordId(uuid.uuid4())
+
+        def save(self, record: object) -> None:
+            pass
+
+        def find_by_id(self, record_id: object) -> None:
+            return None
+
+    real_svc = AnswerQuery(
+        retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]
+        audit_repo=_FakeAuditRepo(),  # type: ignore[arg-type]
+    )
+
+    def _override() -> AnswerQuery:
+        return real_svc
+
+    app.dependency_overrides[get_answer_query] = _override
+    try:
+        resp = _client().post(
+            "/ask",
+            json={
+                "query": "Can I recycle cardboard?",
+                "location": "TestCity",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["short_answer"] == "unknown"
+        assert body["citations"] == []
+        assert body["refusal_reason"] == "out_of_jurisdiction"
+        assert body["jurisdiction"]["id"] is None
+        assert isinstance(body["audit_record_id"], str)
+        assert len(body["audit_record_id"]) > 0
+    finally:
+        app.dependency_overrides.pop(get_answer_query, None)

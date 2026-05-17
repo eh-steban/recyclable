@@ -18,7 +18,7 @@ import logging
 import re
 import time
 from collections.abc import Callable
-from typing import Any, Final, final
+from typing import Any, Final, cast, final
 
 import anthropic
 from anthropic.types import Message, MessageParam
@@ -37,6 +37,7 @@ from src.domain.retrieval.item_verdict import (
     NotCovered,
     Refused,
 )
+from src.domain.retrieval.retrieval_llm import LLMMessage
 
 logger = logging.getLogger(__name__)
 
@@ -147,10 +148,14 @@ class AnthropicClient:
 
     def ask(
         self,
-        messages: list[MessageParam],
+        messages: list[LLMMessage],
         system_prompt: str,
     ) -> EvaluatedAnswer | NoEvaluation:
         """Call Sonnet with prompt-cached system block; parse into domain type.
+
+        Accepts the domain's SDK-free LLMMessage type (the port forbids
+        Anthropic SDK types in the domain layer); the cast to the SDK's
+        MessageParam is the adapter-boundary translation.
 
         Returns EvaluatedAnswer on a well-formed JSON response that passes
         basic field checks. Returns NoEvaluation on any parse failure.
@@ -173,7 +178,7 @@ class AnthropicClient:
                             "cache_control": {"type": "ephemeral"},
                         }
                     ],
-                    messages=messages,
+                    messages=cast("list[MessageParam]", messages),
                     timeout=self._timeout_s,
                 )
             )

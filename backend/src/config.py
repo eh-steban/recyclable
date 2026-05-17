@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         env_file=".env", extra="ignore"
     )
 
-    database_url: str = "postgresql+psycopg://recyclable:recyclable_dev@localhost:5432/recyclable"
+    database_url: str = ""
     log_level: str = "INFO"
     anthropic_api_key: str = ""
 

@@ -134,6 +134,30 @@ class SqlRuleRepo:
             return []
         return [self._to_domain(row)]
 
+    def find_for_jurisdiction(
+        self, jurisdiction_id: JurisdictionId
+    ) -> list[Rule]:
+        """Return all active rules for a jurisdiction.
+
+        Filters: jurisdiction match + superseded_by IS NULL (INV-AUTH-002).
+        Orders by effective_from DESC NULLS LAST for deterministic output.
+        Used by SEO page use cases to enumerate the active material set
+        without iterating over all materials.
+        """
+        logger.debug(
+            "find_for_jurisdiction jurisdiction_id=%s", jurisdiction_id
+        )
+        stmt = (
+            select(RuleORM)
+            .where(
+                RuleORM.jurisdiction_id == jurisdiction_id.value,
+                RuleORM.superseded_by.is_(None),
+            )
+            .order_by(RuleORM.effective_from.desc().nullslast())
+        )
+        rows = self._session.execute(stmt).scalars().all()
+        return [self._to_domain(row) for row in rows]
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

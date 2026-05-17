@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from src.api.deps import get_answer_query
-from src.api.schemas.answer import Answer, AskRequest
+from src.api.schemas.answer import Answer, AskRequest, ErrorEnvelope
 from src.application.answer_query import AnswerQuery
 from src.application.answer_query_command import AnswerQueryCommand
 
@@ -27,7 +27,16 @@ router = APIRouter()
 _MAX_QUERY_LEN = 500
 
 
-@router.post("/ask", response_model=Answer)
+@router.post(
+    "/ask",
+    response_model=Answer,
+    responses={
+        400: {
+            "model": ErrorEnvelope,
+            "description": ("query_too_long -- query exceeds 500 characters"),
+        },
+    },
+)
 def ask(
     body: AskRequest,
     service: AnswerQuery = Depends(get_answer_query),
@@ -36,7 +45,7 @@ def ask(
 
     Returns HTTP 200 for all retrieval outcomes including refusals.
     Returns HTTP 400 with error='query_too_long' when query exceeds
-    500 characters (INV-LLM-004).
+    500 characters.
     """
     if len(body.query) > _MAX_QUERY_LEN:
         logger.warning("ask: query_too_long length=%d", len(body.query))

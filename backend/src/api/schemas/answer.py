@@ -8,6 +8,26 @@ never imported by the domain layer.
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
+# Shared error envelope (answer.md § Error shapes)
+# ---------------------------------------------------------------------------
+
+
+class ErrorEnvelope(BaseModel):
+    """Typed error envelope for application-level errors.
+
+    All non-2xx application errors use this shape:
+      { "error": "<machine_code>" }
+
+    Known codes per answer.md § Known error codes:
+      query_too_long  -- 400, POST /ask, query > 500 chars
+      not_found       -- 404, page routes, slug miss
+      internal_error  -- 500, all routes, unhandled server error
+    """
+
+    error: str
+
+
+# ---------------------------------------------------------------------------
 # Nested types
 # ---------------------------------------------------------------------------
 

@@ -1,8 +1,12 @@
 """FastAPI application entry point.
 
 Startup checks (run when the ASGI lifespan starts):
-  - ANTHROPIC_API_KEY must be non-empty.
-  - DATABASE_URL must be non-empty.
+  - ANTHROPIC_API_KEY must be non-empty in the environment.
+  - DATABASE_URL must be non-empty in the environment.
+
+Both are read from os.environ directly so that an unset var is caught
+even if config.py provides a default (D6: boot check must not be made
+inert by a settings-object fallback). Per spec § Boot-check specification.
 
 On failure the lifespan raises RuntimeError with a descriptive message.
 uvicorn surfaces the traceback and exits non-zero; TestClient surfaces
@@ -16,6 +20,7 @@ uvicorn invocation, routers and boot checks live here instead.
 """
 
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -45,16 +50,22 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 
 def _check_boot_config() -> None:
-    """Raise RuntimeError with a descriptive message on missing config."""
+    """Raise RuntimeError with a descriptive message on missing env vars.
+
+    Reads DATABASE_URL and ANTHROPIC_API_KEY from os.environ directly so
+    that the check cannot be bypassed by a settings-object default value.
+    Inspects both vars before raising so a single error enumerates every
+    absent variable (per spec § Boot-check specification D6).
+    """
     errors: list[str] = []
-    if not settings.anthropic_api_key:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
         errors.append(
-            "ANTHROPIC_API_KEY is not set (empty string). "
+            "ANTHROPIC_API_KEY is not set or is empty. "
             "Export the key before starting the server."
         )
-    if not settings.database_url:
+    if not os.environ.get("DATABASE_URL"):
         errors.append(
-            "DATABASE_URL is not set (empty string). "
+            "DATABASE_URL is not set or is empty. "
             "Export a valid Postgres URL before starting the server."
         )
     if errors:
