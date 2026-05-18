@@ -205,6 +205,17 @@ Application services in `application/` are thin coordinators: open
 the transaction, enforce authorization, validate input, call one
 Domain Service or one Aggregate command, return.
 
+**Authorization on the user path is write-restriction.** The Sonnet
+`/ask` surface is read-only against `rules`, `sources`, and
+`traces`; its only sanctioned writes are the `AnswerAuditRecord` the
+API service mints per query and feedback annotations on an existing
+record (INV-AUTH-001). "Enforce authorization" here means a use case
+on this surface must not reach a rule/source mutation -- not even
+indirectly through a feedback endpoint that writes the same tables,
+which is INV-AUTH-001's stated violation example. Rule and source
+writes belong to the worker/CLI surface behind the review-and-apply
+gate (INV-LLM-003).
+
 Concretely for the user path:
 
 ```text
@@ -223,6 +234,15 @@ RetrievalService (Domain Service in domain/retrieval/)
   validate grounding (GroundingValidator Specification)
   return EvaluatedAnswer | NoEvaluation
 ```
+
+**Trust boundary at prompt composition.** The `Query` reaching
+`PromptComposer` is untrusted free text from the public `/ask`
+surface. The composer delimits it from the system prompt and never
+concatenates it as instructions; the system prompt is not
+user-controllable (INV-LLM-004). `GroundingValidator` is an *output*
+check and does not substitute for input containment -- prompt
+injection that subverts grounding is the cheapest attack on the
+product's core guarantee.
 
 If an application service grows beyond "validate input -> call one
 thing -> map and return," extract the choreography into a Domain
@@ -269,7 +289,8 @@ do not know which adapter invoked them.
 - Anthropic SDK via `infra/external/anthropic_client.py` --
   implements LLM ports.
 - HTTP source fetcher via `infra/external/source_fetcher.py` --
-  implements the source-fetcher port.
+  implements the source-fetcher port; target-restricted per
+  INV-LLM-006 (no SSRF).
 
 Adding a new client surface (a different HTTP framework, a queue
 consumer, a gRPC server) lands as a new driving adapter. Swapping
@@ -377,6 +398,16 @@ the typed-id Value; the seam exists so identity strategy can
 change (Snowflake, external issuance, deterministic test ids)
 without touching call sites.
 
+**Corollary -- a client never supplies an id on a write path.**
+Because `save()` is an upsert by id (see "Repositories" below),
+binding a wire-supplied id into the domain command would let a
+caller overwrite or forge another record -- audit-record forgery,
+or clobbering a `Rule`. The wire-request-to-command mapper drops
+any client-sent id; ids enter only via `next_identity()`. This is
+the security reason the three-category model forbids wire schemas
+from carrying identity into the domain, not merely a layering
+preference.
+
 ## Three-level validation
 
 Validation answers three different questions; do not collapse them
@@ -402,6 +433,16 @@ into one method on the Entity. Per `ddd/entities.md` Principle 9:
   load what it needs.
   *Example:* "this `Rule`'s `Jurisdiction` exists in the knowledge
   base before it can be published" (Ingestion-side).
+
+**Adversarial input bounds sit at the API boundary, not in the
+domain.** The three levels above answer domain *correctness*. Size
+and rate limits on untrusted request input (the free-text `/ask`
+`query`) are a distinct, earlier control: the route rejects an
+over-length query before retrieval or prompt composition
+(INV-LLM-007). "Is this well-formed" (attribute validation) and "is
+this within safe bounds for an untrusted caller" (boundary guard)
+are separate questions; the second does not become the first just
+because both inspect one field.
 
 A field-level guard does not need an aggregate. A whole-object
 invariant is the prototypical aggregate-promotion trigger
