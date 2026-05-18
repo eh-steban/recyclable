@@ -173,3 +173,11 @@ Not hook-enforced -- guidance for humans and agents, checked at review.
 Rationale: a gitlink bump split from the work it serves makes the
 parent history lie about what changed together, and a `git revert` of
 the feature leaves the submodule pointer stranded (or vice versa).
+
+### Worktrees and the private submodule
+
+Use `scripts/wt` to create and remove worktrees. It branches `private/`
+to match the parent branch, rebases it on `sync`, and cleans it up on
+`remove`. Do not hand-roll worktrees: a hand-made worktree leaves
+`private/` in detached HEAD, so submodule commits land on no branch and
+lose per-worktree isolation.

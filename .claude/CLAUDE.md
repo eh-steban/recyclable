@@ -108,6 +108,8 @@ edits a matching file; see any agent file's "Loading rules on demand"
 section for the mechanism.
 
 Git standards live separately at `.claude/docs/infra/git.md`.
+Worktrees: use `scripts/wt` (it branches the `private/` submodule to
+match) -- see that file's `### Worktrees and the private submodule`.
 
 ## Workflow
 
