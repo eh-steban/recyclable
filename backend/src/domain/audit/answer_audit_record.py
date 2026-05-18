@@ -98,10 +98,9 @@ class AnswerAuditRecord:
     no_evaluation_reason: NoEvaluationReason | None = field(default=None)
 
     def __post_init__(self) -> None:
-        # Runtime boundary guard. The declared type is the contract;
-        # callers crossing the LLM/DB boundary can still pass the wrong
-        # type at runtime. cast(object, ...) defeats static narrowing so
-        # this stays a real check -- reject, never silently coerce.
+        # Runtime boundary guard: cast(object, ...) keeps this a real check
+        # despite the declared tuple type. See private/learnings.md
+        # (tuple boundary-guard idiom).
         if not isinstance(cast(object, self.citations), tuple):
             kind = type(self.citations).__name__
             raise TypeError(

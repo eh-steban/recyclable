@@ -27,11 +27,9 @@ class Accepted:
     conditions: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
-        # Runtime boundary guard. The declared type is the contract;
-        # callers crossing the LLM/DB boundary can still pass the wrong
-        # type at runtime. cast(object, ...) defeats type checker
-        # narrowing so this stays a real check -- reject, never
-        # silently coerce.
+        # Runtime boundary guard: cast(object, ...) keeps this a real check
+        # despite the declared tuple type. See private/learnings.md
+        # (tuple boundary-guard idiom).
         if not isinstance(cast(object, self.conditions), tuple):
             kind = type(self.conditions).__name__
             raise TypeError(f"Accepted.conditions must be a tuple, got {kind}")
