@@ -6,8 +6,8 @@ Verdict mapping (per private/specs/contracts/answer.md):
   Refused                         -> 'no'
   NotCovered | Conflicted         -> 'unknown'
 
-Phase 5: both the evaluated and no_evaluation save paths are
-implemented. outcome_kind reflects the actual domain outcome;
+Both the evaluated and no_evaluation save paths are implemented:
+outcome_kind reflects the actual domain outcome;
 conditions JSONB round-trips Accepted.conditions.
 
 reportAny / reportExplicitAny are disabled for this file: the JSONB
@@ -67,8 +67,8 @@ def _wire_to_verdict(
 ) -> Accepted | Refused | NotCovered | Conflicted:
     """Map ORM wire string back to a domain ItemVerdict variant.
 
-    Phase 5: conditions_json is read from the JSONB conditions column
-    so that 'conditional' rows round-trip faithfully.
+    conditions_json is read from the JSONB conditions column so that
+    'conditional' rows round-trip faithfully.
     """
     if verdict_str == "yes":
         return Accepted()

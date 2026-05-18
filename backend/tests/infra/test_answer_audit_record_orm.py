@@ -53,7 +53,7 @@ def test_answer_audit_record_orm_d6_columns() -> None:
         "verdict",
         "outcome_kind",
         "no_evaluation_reason",
-        "conditions",  # Phase 5 -- nullable JSONB for Accepted.conditions
+        "conditions",  # nullable JSONB for Accepted.conditions
         "recommended_action",
         "citations",
         "validator_findings",

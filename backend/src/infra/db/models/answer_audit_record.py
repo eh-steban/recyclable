@@ -43,7 +43,7 @@ OutcomeKindEnum = Enum(
 
 # no_evaluation_reason: cause of a NoEvaluation outcome (nullable).
 # All six NoEvaluationReason variants are represented here so the
-# write path can persist any outcome (Phase 5).
+# write path can persist any outcome.
 NoEvaluationReasonEnum = Enum(
     "out_of_jurisdiction",
     "no_evidence",

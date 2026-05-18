@@ -146,7 +146,7 @@ class AnswerQuery:
     def execute(self, command: AnswerQueryCommand) -> Answer:
         """Run the ask flow and return a wire Answer.
 
-        Sequence (plan Phase 5.1):
+        Sequence:
           1. Mint audit_record_id.
           2. Call RetrievalService.answer() -- LLM I/O outside txn.
           3. Construct AnswerAuditRecord; catch construction-time AARVE.
