@@ -7,10 +7,9 @@ The ItemVerdict -> short_answer mapping is sum-complete: the final
 match arm uses assert_never so basedpyright flags missing arms at
 lint time (INV-LLM-001, INV-PROD-001).
 
-Asymmetry note (appended to learnings):
-  Multiple NoEvaluationReason values map to the same wire
-  short_answer='unknown'. This is intentional -- the wire shape
-  does not distinguish the cause; the audit record does.
+Multiple NoEvaluationReason values intentionally collapse to
+short_answer='unknown'; the audit record carries the precise cause.
+See private/learnings.md (wire-shape lossiness vs. audit fidelity).
 """
 
 import uuid
