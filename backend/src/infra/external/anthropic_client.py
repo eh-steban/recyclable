@@ -6,9 +6,9 @@ MaterialNormalizerLLM (Haiku, normalizer fallback).
 INV-LLM-005: model IDs are pinned as module-level constants.
 No caller passes a model parameter.
 
-reportAny / reportExplicitAny are disabled for this file: LLM JSON
-responses are genuinely untyped at the SDK boundary. Phase 5 will
-add schema validation; until then, `Any` is the honest type.
+reportAny / reportExplicitAny are disabled here: LLM JSON responses
+are untyped at the SDK boundary; `Any` is the honest type until
+schema validation is added.
 """
 
 # pyright: reportAny=false, reportExplicitAny=false
@@ -206,8 +206,7 @@ class AnthropicClient:
     ) -> EvaluatedAnswer | NoEvaluation:
         """Parse the raw SDK response into a domain EvaluatedAnswer.
 
-        Degrades to NoEvaluation on any JSON or schema mismatch -- Phase 5
-        will extend the parser with full schema validation.
+        Degrades to NoEvaluation on any JSON or schema mismatch.
         """
         try:
             text = _first_text_block(response)
