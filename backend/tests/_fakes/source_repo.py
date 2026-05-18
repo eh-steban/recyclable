@@ -6,7 +6,7 @@ from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.source import SourceDocument, SourceId
 
 
-class InMemorySourceRepo:
+class MemSourceRepo:
     """Dict-backed SourceRepo satisfying the domain Protocol."""
 
     def __init__(self) -> None:

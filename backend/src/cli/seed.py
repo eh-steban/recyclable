@@ -50,15 +50,15 @@ from src.domain.exceptions import (
 )
 from src.domain.knowledge_base.material import MaterialAlias
 from src.infra.db.repos.jurisdiction_repo import (
-    SqlJurisdictionRepo,
+    PgJurisdictionRepo,
 )
-from src.infra.db.repos.material_repo import SqlMaterialRepo
+from src.infra.db.repos.material_repo import PgMaterialRepo
 from src.infra.db.repos.regression_case_repo import (
-    SqlRegressionCaseRepo,
+    PgRegressionCaseRepo,
 )
-from src.infra.db.repos.rule_repo import SqlRuleRepo
+from src.infra.db.repos.rule_repo import PgRuleRepo
 from src.infra.db.repos.source_document_repo import (
-    SqlSourceDocumentRepo,
+    PgSourceDocumentRepo,
 )
 from src.infra.db.session import get_engine
 
@@ -172,11 +172,11 @@ def run_seed(dataset: str, session: Session) -> None:
         )
 
     # ---- 3. Write to DB (all inside the caller's transaction) ----
-    jur_repo = SqlJurisdictionRepo(session)
-    mat_repo = SqlMaterialRepo(session)
-    src_repo = SqlSourceDocumentRepo(session)
-    rule_repo = SqlRuleRepo(session)
-    rc_repo = SqlRegressionCaseRepo(session)
+    jur_repo = PgJurisdictionRepo(session)
+    mat_repo = PgMaterialRepo(session)
+    src_repo = PgSourceDocumentRepo(session)
+    rule_repo = PgRuleRepo(session)
+    rc_repo = PgRegressionCaseRepo(session)
 
     logger.info("seed: writing %d jurisdiction(s)", len(jurisdictions))
     for j in jurisdictions:

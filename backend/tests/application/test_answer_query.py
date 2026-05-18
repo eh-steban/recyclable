@@ -60,11 +60,11 @@ from src.domain.retrieval.location_resolver import DENVER_JURISDICTION_ID
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
-from tests._fakes.answer_audit_record_repo import InMemoryAnswerAuditRecordRepo
-from tests._fakes.jurisdiction_repo import InMemoryJurisdictionRepo
-from tests._fakes.material_repo import InMemoryMaterialRepo
-from tests._fakes.rule_repo import InMemoryRuleRepo
-from tests._fakes.source_repo import InMemorySourceRepo
+from tests._fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
+from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
+from tests._fakes.material_repo import MemMaterialRepo
+from tests._fakes.rule_repo import MemRuleRepo
+from tests._fakes.source_repo import MemSourceRepo
 
 # ---------------------------------------------------------------------------
 # Fake LLM implementations
@@ -220,17 +220,17 @@ def _build_service(
     *,
     normalizer: _FakeNormalizer | None = None,
     llm: _FakeLLM | _NeverCalledLLM | None = None,
-    rule_repo: InMemoryRuleRepo | None = None,
-    source_repo: InMemorySourceRepo | None = None,
-    audit_repo: InMemoryAnswerAuditRecordRepo | None = None,
+    rule_repo: MemRuleRepo | None = None,
+    source_repo: MemSourceRepo | None = None,
+    audit_repo: MemAnswerAuditRecordRepo | None = None,
 ) -> tuple[
     AnswerQuery,
-    InMemoryAnswerAuditRecordRepo,
+    MemAnswerAuditRecordRepo,
 ]:
     """Assemble AnswerQuery with overridable doubles."""
-    _rule_repo = rule_repo or InMemoryRuleRepo()
-    _source_repo = source_repo or InMemorySourceRepo()
-    _audit_repo = audit_repo or InMemoryAnswerAuditRecordRepo()
+    _rule_repo = rule_repo or MemRuleRepo()
+    _source_repo = source_repo or MemSourceRepo()
+    _audit_repo = audit_repo or MemAnswerAuditRecordRepo()
 
     # Default: Denver resolves (location "Denver, CO" hardcoded to
     # Denver in LocationResolver); normalizer returns Uncertain unless
@@ -270,8 +270,8 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
     mat = _make_material("cardboard")
     src = _make_source(jid)
 
-    rule_repo = InMemoryRuleRepo()
-    source_repo = InMemorySourceRepo()
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src.id,
         jurisdiction_id=jid,
@@ -437,8 +437,8 @@ def test_validator_rejected_path() -> None:
     jid = DENVER_JURISDICTION_ID
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
-    rule_repo = InMemoryRuleRepo()
-    source_repo = InMemorySourceRepo()
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src_id,
         jurisdiction_id=jid,
@@ -503,8 +503,8 @@ def test_save_raises_propagates() -> None:
     jid = DENVER_JURISDICTION_ID
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
-    rule_repo = InMemoryRuleRepo()
-    source_repo = InMemorySourceRepo()
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src_id,
         jurisdiction_id=jid,
@@ -561,8 +561,8 @@ def test_llm_rejected_path() -> None:
     jid = DENVER_JURISDICTION_ID
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
-    rule_repo = InMemoryRuleRepo()
-    source_repo = InMemorySourceRepo()
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src_id,
         jurisdiction_id=jid,
@@ -668,11 +668,11 @@ def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
         superseded_by=active_rule.id,  # marks it superseded
     )
 
-    rule_repo = InMemoryRuleRepo()
+    rule_repo = MemRuleRepo()
     rule_repo.save(active_rule)
     rule_repo.save(superseded_rule)
 
-    source_repo = InMemorySourceRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src_id,
         jurisdiction_id=jid,
@@ -695,10 +695,10 @@ def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
         created_at=datetime.now(tz=UTC),
         updated_at=datetime.now(tz=UTC),
     )
-    jurisdiction_repo = InMemoryJurisdictionRepo()
+    jurisdiction_repo = MemJurisdictionRepo()
     jurisdiction_repo.save(jurisdiction)
 
-    material_repo = InMemoryMaterialRepo()
+    material_repo = MemMaterialRepo()
     material_repo.save(mat)
 
     use_case = GetJurisdictionPage(
@@ -748,7 +748,7 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
             confidence="high",
         )
     )
-    audit_repo = InMemoryAnswerAuditRecordRepo()
+    audit_repo = MemAnswerAuditRecordRepo()
     svc = AnswerQuery(
         retrieval_service=fake_svc,  # type: ignore[arg-type]
         audit_repo=audit_repo,
@@ -824,8 +824,8 @@ def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
     jid = DENVER_JURISDICTION_ID
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
-    rule_repo = InMemoryRuleRepo()
-    source_repo = InMemorySourceRepo()
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
     src_doc = SourceDocument(
         id=src_id,
         jurisdiction_id=jid,

@@ -8,7 +8,7 @@ from src.domain.audit.answer_audit_record import (
 )
 
 
-class InMemoryAnswerAuditRecordRepo:
+class MemAnswerAuditRecordRepo:
     """Dict-backed AnswerAuditRecordRepo satisfying the domain Protocol."""
 
     def __init__(self) -> None:

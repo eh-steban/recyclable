@@ -9,7 +9,7 @@ from src.domain.knowledge_base.material import (
 )
 
 
-class InMemoryMaterialRepo:
+class MemMaterialRepo:
     """Dict-backed MaterialRepo satisfying the domain Protocol."""
 
     def __init__(self) -> None:

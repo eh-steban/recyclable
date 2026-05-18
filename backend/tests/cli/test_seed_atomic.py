@@ -96,12 +96,12 @@ def test_mid_load_failure_rolls_back_all_rows(
 
     # Inject failure: rule upsert raises RuntimeError.
     def boom(
-        _self: rule_repo_module.SqlRuleRepo,
+        _self: rule_repo_module.PgRuleRepo,
         _rule: object,
     ) -> None:
         raise RuntimeError("injected mid-load failure")
 
-    monkeypatch.setattr(rule_repo_module.SqlRuleRepo, "save", boom)
+    monkeypatch.setattr(rule_repo_module.PgRuleRepo, "save", boom)
 
     from src.cli.seed import run_seed  # noqa: PLC0415
 

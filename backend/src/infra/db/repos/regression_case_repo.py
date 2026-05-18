@@ -11,7 +11,7 @@ from src.infra.db.models.regression_case import RegressionCaseORM
 logger = logging.getLogger(__name__)
 
 
-class SqlRegressionCaseRepo:
+class PgRegressionCaseRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

@@ -1,4 +1,4 @@
-"""SQL implementation of the SourceRepo port."""
+"""Postgres implementation of the SourceRepo port."""
 
 import logging
 import uuid
@@ -15,7 +15,7 @@ from src.infra.db.repos._exceptions import translate_repo_exceptions
 logger = logging.getLogger(__name__)
 
 
-class SqlSourceDocumentRepo:
+class PgSourceDocumentRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

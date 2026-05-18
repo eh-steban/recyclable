@@ -1,4 +1,4 @@
-"""DB-backed integration tests for SqlRuleRepo.find_for().
+"""DB-backed integration tests for PgRuleRepo.find_for().
 
 Verifies:
 - Active rule is returned; superseded rule is not.
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
-from src.infra.db.repos.rule_repo import SqlRuleRepo
+from src.infra.db.repos.rule_repo import PgRuleRepo
 
 # ---------------------------------------------------------------------------
 # Session fixture (rolls back after each test)
@@ -164,7 +164,7 @@ def test_find_for_returns_active_rule(db_session: Session) -> None:
     # superseded_by IS NOT NULL, so the partial unique index does not apply.
     _insert_rule(db_session, jid, mid, sid, superseded_by=active_rid)
 
-    repo = SqlRuleRepo(db_session)
+    repo = PgRuleRepo(db_session)
     results = repo.find_for(JurisdictionId(jid), MaterialId(mid))
 
     assert len(results) == 1
@@ -179,7 +179,7 @@ def test_find_for_unknown_material_returns_empty(
     jid = _insert_jurisdiction(db_session, f"denver-{uuid.uuid4()}")
     unseeded_mid = uuid.uuid4()  # not in DB at all
 
-    repo = SqlRuleRepo(db_session)
+    repo = PgRuleRepo(db_session)
     results = repo.find_for(JurisdictionId(jid), MaterialId(unseeded_mid))
 
     assert results == []
@@ -201,7 +201,7 @@ def test_find_for_material_in_other_jurisdiction_returns_empty(
     # Query for the same material under jurisdiction B (no rule exists).
     jid_b = _insert_jurisdiction(db_session, f"city-b-{uuid.uuid4()}")
 
-    repo = SqlRuleRepo(db_session)
+    repo = PgRuleRepo(db_session)
     results = repo.find_for(JurisdictionId(jid_b), MaterialId(mid))
 
     assert results == []

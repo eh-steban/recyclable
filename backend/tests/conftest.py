@@ -14,11 +14,11 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-from tests._fakes.answer_audit_record_repo import InMemoryAnswerAuditRecordRepo
-from tests._fakes.jurisdiction_repo import InMemoryJurisdictionRepo
-from tests._fakes.material_repo import InMemoryMaterialRepo
-from tests._fakes.rule_repo import InMemoryRuleRepo
-from tests._fakes.source_repo import InMemorySourceRepo
+from tests._fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
+from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
+from tests._fakes.material_repo import MemMaterialRepo
+from tests._fakes.rule_repo import MemRuleRepo
+from tests._fakes.source_repo import MemSourceRepo
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -47,30 +47,30 @@ def db_url() -> str:
 
 
 @pytest.fixture()
-def in_memory_jurisdiction_repo() -> InMemoryJurisdictionRepo:
-    """Return a fresh InMemoryJurisdictionRepo instance."""
-    return InMemoryJurisdictionRepo()
+def mem_jurisdiction_repo() -> MemJurisdictionRepo:
+    """Return a fresh MemJurisdictionRepo instance."""
+    return MemJurisdictionRepo()
 
 
 @pytest.fixture()
-def in_memory_material_repo() -> InMemoryMaterialRepo:
-    """Return a fresh InMemoryMaterialRepo instance."""
-    return InMemoryMaterialRepo()
+def mem_material_repo() -> MemMaterialRepo:
+    """Return a fresh MemMaterialRepo instance."""
+    return MemMaterialRepo()
 
 
 @pytest.fixture()
-def in_memory_rule_repo() -> InMemoryRuleRepo:
-    """Return a fresh InMemoryRuleRepo instance."""
-    return InMemoryRuleRepo()
+def mem_rule_repo() -> MemRuleRepo:
+    """Return a fresh MemRuleRepo instance."""
+    return MemRuleRepo()
 
 
 @pytest.fixture()
-def in_memory_source_repo() -> InMemorySourceRepo:
-    """Return a fresh InMemorySourceRepo instance."""
-    return InMemorySourceRepo()
+def mem_source_repo() -> MemSourceRepo:
+    """Return a fresh MemSourceRepo instance."""
+    return MemSourceRepo()
 
 
 @pytest.fixture()
-def in_memory_answer_audit_record_repo() -> InMemoryAnswerAuditRecordRepo:
-    """Return a fresh InMemoryAnswerAuditRecordRepo instance."""
-    return InMemoryAnswerAuditRecordRepo()
+def mem_answer_audit_record_repo() -> MemAnswerAuditRecordRepo:
+    """Return a fresh MemAnswerAuditRecordRepo instance."""
+    return MemAnswerAuditRecordRepo()

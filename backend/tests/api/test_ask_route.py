@@ -51,7 +51,7 @@ from src.main import app
 
 
 @final
-class _FakeAnswerQuery:
+class MemAnswerQuery:
     """Returns a pre-canned Answer; records call count."""
 
     def __init__(self, result: Answer) -> None:
@@ -208,9 +208,9 @@ def _client() -> TestClient:
 
 def test_ask_denver_happy_path_response_shape() -> None:
     """POST /ask with a Denver location returns a valid Answer shape."""
-    fake_svc = _FakeAnswerQuery(_denver_answer())
+    fake_svc = MemAnswerQuery(_denver_answer())
 
-    def _override() -> _FakeAnswerQuery:
+    def _override() -> MemAnswerQuery:
         return fake_svc
 
     app.dependency_overrides[get_answer_query] = _override
@@ -249,9 +249,9 @@ def test_ask_501_char_query_returns_400() -> None:
     reaching the fail-fast get_material_normalizer stub.
     """
     long_query = "x" * 501
-    fake_svc = _FakeAnswerQuery(_denver_answer())
+    fake_svc = MemAnswerQuery(_denver_answer())
 
-    def _override() -> _FakeAnswerQuery:
+    def _override() -> MemAnswerQuery:
         return fake_svc
 
     app.dependency_overrides[get_answer_query] = _override
@@ -281,9 +281,9 @@ def test_ask_aurora_ooj_shape_and_no_llm_call() -> None:
       - audit_record_id is a non-empty string
       - the application service was called exactly once
     """
-    fake_svc = _FakeAnswerQuery(_aurora_answer())
+    fake_svc = MemAnswerQuery(_aurora_answer())
 
-    def _override() -> _FakeAnswerQuery:
+    def _override() -> MemAnswerQuery:
         return fake_svc
 
     app.dependency_overrides[get_answer_query] = _override
@@ -413,9 +413,9 @@ def test_ask_500_char_query_accepted() -> None:
     be rejected.
     """
     boundary_query = "x" * 500
-    fake_svc = _FakeAnswerQuery(_denver_answer())
+    fake_svc = MemAnswerQuery(_denver_answer())
 
-    def _override() -> _FakeAnswerQuery:
+    def _override() -> MemAnswerQuery:
         return fake_svc
 
     app.dependency_overrides[get_answer_query] = _override
@@ -465,7 +465,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
                 recommended_action="Validator rejected.",
             )
 
-    class _FakeAuditRepo:
+    class MemAuditRepo:
         """In-memory audit repo; records are discarded."""
 
         _next_id: uuid.UUID = uuid.UUID("00000000-0000-0000-0000-000000000042")
@@ -481,7 +481,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
 
     real_svc = AnswerQuery(
         retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]
-        audit_repo=_FakeAuditRepo(),  # type: ignore[arg-type]
+        audit_repo=MemAuditRepo(),  # type: ignore[arg-type]
     )
 
     def _override() -> AnswerQuery:

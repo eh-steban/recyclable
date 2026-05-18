@@ -1,4 +1,4 @@
-"""DB-backed integration tests for SqlAnswerAuditRecordRepo.
+"""DB-backed integration tests for PgAnswerAuditRecordRepo.
 
 These tests require a live Postgres connection; they are skipped when the
 database is unreachable (via the db_url fixture).
@@ -28,7 +28,7 @@ from src.domain.exceptions import (
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.item_verdict import Accepted
-from src.infra.db.repos.answer_audit_record_repo import SqlAnswerAuditRecordRepo
+from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
 
 # ---------------------------------------------------------------------------
 # Session fixture: rolls back after each test (SAVEPOINT pattern)
@@ -122,7 +122,7 @@ def test_save_and_find_roundtrip(db_session: Session) -> None:
     """save() then find_by_id() returns an equivalent AnswerAuditRecord."""
     jid = _make_jurisdiction(db_session)
     record = _make_record(jid)
-    repo = SqlAnswerAuditRecordRepo(db_session)
+    repo = PgAnswerAuditRecordRepo(db_session)
     repo.save(record)
 
     loaded = repo.find_by_id(record.id)
@@ -147,7 +147,7 @@ def test_save_and_find_roundtrip(db_session: Session) -> None:
 
 def test_find_by_id_returns_none_for_unknown(db_session: Session) -> None:
     """find_by_id() returns None for an id that was never saved."""
-    repo = SqlAnswerAuditRecordRepo(db_session)
+    repo = PgAnswerAuditRecordRepo(db_session)
     result = repo.find_by_id(AnswerAuditRecordId(uuid.uuid4()))
     assert result is None
 
@@ -161,7 +161,7 @@ def test_duplicate_id_raises_duplicate_aggregate_error(
     """
     jid = _make_jurisdiction(db_session)
     record = _make_record(jid)
-    repo = SqlAnswerAuditRecordRepo(db_session)
+    repo = PgAnswerAuditRecordRepo(db_session)
     repo.save(record)
     db_session.flush()  # flush to materialise the first insert
 
@@ -209,7 +209,7 @@ def test_closed_session_raises_repository_concurrency_error() -> None:
     closed_session = Session(engine)
     closed_session.close()
 
-    repo = SqlAnswerAuditRecordRepo(closed_session)
+    repo = PgAnswerAuditRecordRepo(closed_session)
     jid = JurisdictionId(uuid.uuid4())
     record = _make_record(jid)
 

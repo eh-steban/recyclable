@@ -1,4 +1,4 @@
-"""SQL implementation of the MaterialRepo port."""
+"""Postgres implementation of the MaterialRepo port."""
 
 import logging
 import uuid
@@ -20,7 +20,7 @@ from src.infra.db.repos._exceptions import translate_repo_exceptions
 logger = logging.getLogger(__name__)
 
 
-class SqlMaterialRepo:
+class PgMaterialRepo:
     _session: Session
 
     def __init__(self, session: Session) -> None:

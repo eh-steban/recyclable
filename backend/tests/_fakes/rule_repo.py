@@ -7,7 +7,7 @@ from src.domain.knowledge_base.material import MaterialId
 from src.domain.knowledge_base.rule import Rule, RuleId
 
 
-class InMemoryRuleRepo:
+class MemRuleRepo:
     """Dict-backed RuleRepo satisfying the domain Protocol."""
 
     def __init__(self) -> None:

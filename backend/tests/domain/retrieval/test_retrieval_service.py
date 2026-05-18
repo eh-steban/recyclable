@@ -82,7 +82,7 @@ class _FakeNormalizer:
         return self._result
 
 
-class _FakeRuleRepo:
+class MemRuleRepo:
     """Configurable rule repo -- returns a pre-set rule list from find_for.
 
     Default is empty (forces the NO_EVIDENCE path). Other Protocol
@@ -109,7 +109,7 @@ class _FakeRuleRepo:
         return list(self._rules)
 
 
-class _FakeSourceRepo:
+class MemSourceRepo:
     """Dict-backed source repo. Unknown SourceIds return None."""
 
     def __init__(
@@ -176,8 +176,8 @@ class TestAmbiguousMaterialPath:
             material_normalizer=_FakeNormalizer(
                 Ambiguous(candidates=candidates)
             ),
-            rule_repo=_FakeRuleRepo(),
-            source_repo=_FakeSourceRepo(),
+            rule_repo=MemRuleRepo(),
+            source_repo=MemSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -196,8 +196,8 @@ class TestUncertainMaterialPath:
         llm = _RecordingLLM()
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Uncertain()),
-            rule_repo=_FakeRuleRepo(),
-            source_repo=_FakeSourceRepo(),
+            rule_repo=MemRuleRepo(),
+            source_repo=MemSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -219,8 +219,8 @@ class TestResolvedMaterialReachesRetrievalStep:
         llm = _RecordingLLM()
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repo=_FakeRuleRepo(),
-            source_repo=_FakeSourceRepo(),
+            rule_repo=MemRuleRepo(),
+            source_repo=MemSourceRepo(),
             retrieval_llm=llm,
         )
 
@@ -252,8 +252,8 @@ class TestRetrievedSourceUrlsFromRules:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repo=_FakeRuleRepo(rules=[rule]),
-            source_repo=_FakeSourceRepo(docs={source_id: source}),
+            rule_repo=MemRuleRepo(rules=[rule]),
+            source_repo=MemSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
 
@@ -279,8 +279,8 @@ class TestRetrievedSourceUrlsFromRules:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repo=_FakeRuleRepo(rules=[rule]),
-            source_repo=_FakeSourceRepo(docs={source_id: source}),
+            rule_repo=MemRuleRepo(rules=[rule]),
+            source_repo=MemSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
 
@@ -302,8 +302,8 @@ class TestFallbackForValidatorRejection:
         """
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Uncertain()),
-            rule_repo=_FakeRuleRepo(),
-            source_repo=_FakeSourceRepo(),
+            rule_repo=MemRuleRepo(),
+            source_repo=MemSourceRepo(),
             retrieval_llm=_RecordingLLM(),
         )
         query = Query(text="cardboard", location_input="Denver")
@@ -332,8 +332,8 @@ class TestFallbackForValidatorRejection:
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repo=_FakeRuleRepo(rules=[rule]),
-            source_repo=_FakeSourceRepo(docs={}),
+            rule_repo=MemRuleRepo(rules=[rule]),
+            source_repo=MemSourceRepo(docs={}),
             retrieval_llm=_ConfigurableLLM(llm_answer),
         )
 

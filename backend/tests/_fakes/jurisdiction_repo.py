@@ -5,7 +5,7 @@ import uuid
 from src.domain.knowledge_base.jurisdiction import Jurisdiction, JurisdictionId
 
 
-class InMemoryJurisdictionRepo:
+class MemJurisdictionRepo:
     """Dict-backed JurisdictionRepo satisfying the domain Protocol."""
 
     def __init__(self) -> None:

@@ -33,11 +33,11 @@ from src.domain.knowledge_base.material_repo import MaterialRepo
 from src.domain.knowledge_base.rule_repo import RuleRepo
 from src.domain.knowledge_base.source_repo import SourceRepo
 from src.domain.retrieval.retrieval_service import RetrievalService
-from src.infra.db.repos.answer_audit_record_repo import SqlAnswerAuditRecordRepo
-from src.infra.db.repos.jurisdiction_repo import SqlJurisdictionRepo
-from src.infra.db.repos.material_repo import SqlMaterialRepo
-from src.infra.db.repos.rule_repo import SqlRuleRepo
-from src.infra.db.repos.source_document_repo import SqlSourceDocumentRepo
+from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
+from src.infra.db.repos.jurisdiction_repo import PgJurisdictionRepo
+from src.infra.db.repos.material_repo import PgMaterialRepo
+from src.infra.db.repos.rule_repo import PgRuleRepo
+from src.infra.db.repos.source_document_repo import PgSourceDocumentRepo
 from src.infra.db.session import get_session
 from src.infra.external.anthropic_client import AnthropicClient
 
@@ -64,31 +64,31 @@ def get_anthropic_client() -> AnthropicClient:
 def get_jurisdiction_repo(
     session: Session = Depends(get_db),
 ) -> JurisdictionRepo:
-    return SqlJurisdictionRepo(session)
+    return PgJurisdictionRepo(session)
 
 
 def get_material_repo(
     session: Session = Depends(get_db),
 ) -> MaterialRepo:
-    return SqlMaterialRepo(session)
+    return PgMaterialRepo(session)
 
 
 def get_rule_repo(
     session: Session = Depends(get_db),
 ) -> RuleRepo:
-    return SqlRuleRepo(session)
+    return PgRuleRepo(session)
 
 
 def get_source_repo(
     session: Session = Depends(get_db),
 ) -> SourceRepo:
-    return SqlSourceDocumentRepo(session)
+    return PgSourceDocumentRepo(session)
 
 
 def get_audit_repo(
     session: Session = Depends(get_db),
 ) -> AnswerAuditRecordRepo:
-    return SqlAnswerAuditRecordRepo(session)
+    return PgAnswerAuditRecordRepo(session)
 
 
 def get_material_normalizer() -> MaterialNormalizer:

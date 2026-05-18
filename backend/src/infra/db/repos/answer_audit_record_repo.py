@@ -96,11 +96,11 @@ def _orm_to_reason(reason_str: str) -> NoEvaluationReason:
 
 
 # ---------------------------------------------------------------------------
-# SqlAnswerAuditRecordRepo
+# PgAnswerAuditRecordRepo
 # ---------------------------------------------------------------------------
 
 
-class SqlAnswerAuditRecordRepo:
+class PgAnswerAuditRecordRepo:
     """Persistence-oriented repo for AnswerAuditRecord aggregate."""
 
     _session: Session
