@@ -1,8 +1,9 @@
 """Application-service tests for AnswerQuery.
 
 Uses in-memory port doubles (no Postgres, no Anthropic).
-Exercises all behavior checks from the Phase 5 Checkpoint plus
-reviewer-requested additions (findings 1, 3, 11).
+Covers: happy path, OOJ, ambiguous/uncertain material,
+validator-rejected, save-failure, LLM-rejected,
+ItemVerdict sum-completeness, and SEO-page paths.
 """
 
 import uuid
@@ -251,7 +252,7 @@ def _build_service(
 
 
 # ===========================================================================
-# Behavior check 1 -- Happy path
+# --- Happy path ---
 # ===========================================================================
 
 
@@ -310,7 +311,7 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
 
 
 # ===========================================================================
-# Behavior check 2 -- OOJ path
+# --- OOJ path ---
 # ===========================================================================
 
 
@@ -342,7 +343,7 @@ def test_ooj_path_unknown_aurora() -> None:
 
 
 # ===========================================================================
-# Behavior check 3 -- Ambiguous-material path
+# --- Ambiguous-material path ---
 # ===========================================================================
 
 
@@ -378,7 +379,7 @@ def test_ambiguous_material_path() -> None:
 
 
 # ===========================================================================
-# Behavior check 4 -- Uncertain-material path
+# --- Uncertain-material path ---
 # ===========================================================================
 
 
@@ -411,7 +412,7 @@ def test_uncertain_material_path() -> None:
 
 
 # ===========================================================================
-# Behavior check 5 -- Validator-rejected path
+# --- Validator-rejected path ---
 # ===========================================================================
 
 
@@ -474,7 +475,7 @@ def test_validator_rejected_path() -> None:
 
 
 # ===========================================================================
-# Behavior check 6 -- repo.save raises
+# --- repo.save raises ---
 # ===========================================================================
 
 
@@ -540,7 +541,7 @@ def test_save_raises_propagates() -> None:
 
 
 # ===========================================================================
-# Behavior check 7 -- LLM_REJECTED (retry budget exhausted)
+# --- LLM_REJECTED (retry budget exhausted) ---
 # ===========================================================================
 
 
@@ -597,7 +598,7 @@ def test_llm_rejected_path() -> None:
 
 
 # ===========================================================================
-# Behavior check 8 -- ItemVerdict sum-completeness
+# --- ItemVerdict sum-completeness ---
 # ===========================================================================
 
 
@@ -642,7 +643,7 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
 
 
 # ===========================================================================
-# Behavior check 9 -- SEO pages: superseded rules excluded
+# --- SEO pages: superseded rules excluded ---
 # ===========================================================================
 
 
@@ -778,8 +779,6 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
 def test_no_evidence_mapper_produces_unknown_with_no_evidence_refusal() -> None:
     """NoEvaluation(reason=NO_EVIDENCE) maps to short_answer='unknown' and
     refusal_reason='no_evidence' via no_evaluation_to_wire.
-
-    Closes the deferred-items entry from the Phase 5 Checkpoint.
     """
     outcome = NoEvaluation(
         reason=NoEvaluationReason.NO_EVIDENCE,
@@ -813,10 +812,9 @@ def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
     """The wire jurisdiction.name must come from ResolvedJurisdiction.name,
     not from a hardcoded literal.
 
-    Exercises the Phase 5 review finding fix: resolve_location now returns
-    a ResolvedJurisdiction carrying the canonical display name from the
-    Denver alias table ("City and County of Denver"), which must reach the
-    wire response unchanged.
+    resolve_location returns a ResolvedJurisdiction carrying the canonical
+    display name from the Denver alias table ("City and County of Denver"),
+    which must reach the wire response unchanged.
     """
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
