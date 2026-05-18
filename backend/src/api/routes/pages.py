@@ -31,10 +31,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/pages")
 
-_NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
+_JURISDICTION_NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
     404: {
         "model": ErrorEnvelope,
-        "description": "not_found -- no jurisdiction or material for this slug",
+        "description": "not_found -- no jurisdiction for this slug",
+    },
+}
+
+_MATERIAL_NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
+    404: {
+        "model": ErrorEnvelope,
+        "description": (
+            "not_found -- no jurisdiction or material for these slugs"
+        ),
     },
 }
 
@@ -42,7 +51,7 @@ _NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
 @router.get(
     "/jurisdiction/{slug}",
     response_model=JurisdictionPageWire,
-    responses=_NOT_FOUND_RESPONSE,
+    responses=_JURISDICTION_NOT_FOUND_RESPONSE,
 )
 def get_jurisdiction_page(
     slug: str,
@@ -62,7 +71,7 @@ def get_jurisdiction_page(
 @router.get(
     "/jurisdiction/{j_slug}/material/{m_slug}",
     response_model=MaterialPageWire,
-    responses=_NOT_FOUND_RESPONSE,
+    responses=_MATERIAL_NOT_FOUND_RESPONSE,
 )
 def get_material_page(
     j_slug: str,
