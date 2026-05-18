@@ -223,8 +223,9 @@ class SqlAnswerAuditRecordRepo:
         if created_at.tzinfo is None:
             created_at = created_at.replace(tzinfo=dt.UTC)
 
-        # jurisdiction_id is nullable in the ORM but always set for evaluated
-        # records; default to a sentinel UUID if somehow NULL.
+        # NULL jurisdiction_id -> all-zero UUID sentinel (OOJ convention).
+        # See .claude/rules/backend/backend-mental-model.md
+        # (out-of-jurisdiction sentinel).
         jid = (
             row.jurisdiction_id
             if row.jurisdiction_id is not None
