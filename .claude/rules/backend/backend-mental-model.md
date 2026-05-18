@@ -48,6 +48,17 @@ synchronously. The worker calls Opus for the agentic research loop.
 - Concurrency model for the ingestion loop is not yet decided.
 - Multi-tenant boundaries are not yet defined.
 
+## Common gotchas
+
+- **Out-of-jurisdiction sentinel.** `uuid.UUID(int=0)` (all-zero UUID) is the
+  project-wide sentinel for "no real jurisdiction resolved" on the user path.
+  It is minted as the named constant `_OOJ_JURISDICTION_ID` in
+  `application/answer_query.py` and re-materialized ad hoc in the
+  `SqlAnswerAuditRecordRepo` row-hydration path when the ORM
+  `jurisdiction_id` column is `NULL`. Treat an all-zero `JurisdictionId` as
+  a domain-level "no jurisdiction" marker; never seed a real jurisdiction
+  with this id.
+
 ## Open questions
 
 - Where does conflict detection live -- domain service or use case?
