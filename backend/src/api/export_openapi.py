@@ -41,7 +41,7 @@ def main() -> None:
 
     spec = app.openapi()
     json.dump(spec, sys.stdout, indent=2)
-    sys.stdout.write("\n")
+    _ = sys.stdout.write("\n")
 
 
 if __name__ == "__main__":

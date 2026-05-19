@@ -26,8 +26,8 @@ def upgrade() -> None:
 
     # GIN trigram index on material_aliases.alias for fast similarity().
     op.execute(
-        f"CREATE INDEX IF NOT EXISTS {_GIN_INDEX}"
-        " ON material_aliases USING GIN (alias gin_trgm_ops);"
+        f"CREATE INDEX IF NOT EXISTS {_GIN_INDEX} "
+        + "ON material_aliases USING GIN (alias gin_trgm_ops);"
     )
 
 

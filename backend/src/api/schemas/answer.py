@@ -5,7 +5,9 @@ These are Pydantic v2 models; they live in api/schemas/ and are
 never imported by the domain layer.
 """
 
-from pydantic import BaseModel, Field
+from typing import ClassVar
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # ---------------------------------------------------------------------------
 # Shared error envelope (answer.md § Error shapes)
@@ -43,7 +45,7 @@ class CitationWire(BaseModel):
     url: str
     quote: str | None = None
 
-    model_config = {"populate_by_name": True}
+    model_config: ClassVar[ConfigDict] = ConfigDict(populate_by_name=True)
 
 
 class FacilityWire(BaseModel):

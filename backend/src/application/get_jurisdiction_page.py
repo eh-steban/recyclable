@@ -66,8 +66,10 @@ class GetJurisdictionPage:
             material = self._material_repo.find_by_id(rule.material_id)
             if material is None:
                 logger.warning(
-                    "GetJurisdictionPage: rule %s references missing "
-                    "material %s -- skipping",
+                    (
+                        "GetJurisdictionPage: rule %s references"
+                        " missing material %s -- skipping"
+                    ),
                     rule.id,
                     rule.material_id,
                 )

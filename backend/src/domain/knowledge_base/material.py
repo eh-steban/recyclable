@@ -3,6 +3,7 @@
 import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import override
 
 # ---------------------------------------------------------------------------
 # Typed identity Value
@@ -15,6 +16,7 @@ class MaterialId:
 
     value: uuid.UUID
 
+    @override
     def __str__(self) -> str:
         return str(self.value)
 

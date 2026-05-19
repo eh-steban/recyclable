@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import override
 
 # ---------------------------------------------------------------------------
 # Typed identity Values
@@ -21,6 +22,7 @@ class JurisdictionId:
 
     value: uuid.UUID
 
+    @override
     def __str__(self) -> str:
         return str(self.value)
 

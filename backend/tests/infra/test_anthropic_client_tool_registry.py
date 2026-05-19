@@ -1,3 +1,7 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
+# pyright: reportUnknownVariableType=false
+# Justification: MagicMock's interface is untyped; the lambda passed to
+# monkeypatch.setattr has unknown kwargs. No domain logic is tested here.
 """AnthropicClient tool-registry guard tests.
 
 Verifies that AnthropicClient rejects tool registries containing
@@ -21,7 +25,7 @@ def patched_anthropic(monkeypatch: pytest.MonkeyPatch):
     return fake_client
 
 
-def test_safe_tool_registry_constructs(patched_anthropic) -> None:
+def test_safe_tool_registry_constructs(patched_anthropic: object) -> None:  # pyright: ignore[reportUnusedParameter]
     """AnthropicClient accepts a registry with only safe tool names."""
     client = AnthropicClient(
         api_key="test",
@@ -49,7 +53,8 @@ def test_safe_tool_registry_constructs(patched_anthropic) -> None:
     ],
 )
 def test_destructive_tool_name_raises_value_error(
-    patched_anthropic, bad_name: str
+    patched_anthropic: object,  # pyright: ignore[reportUnusedParameter]
+    bad_name: str,
 ) -> None:
     """AnthropicClient raises ValueError for any destructive tool name."""
     with pytest.raises(ValueError, match=bad_name):

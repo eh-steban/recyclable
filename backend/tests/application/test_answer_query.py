@@ -1,3 +1,7 @@
+# pyright: reportAny=false
+# Justification: typing.get_args(ItemVerdict) returns tuple[Any, ...] because
+# get_args() is generic-untyped at runtime. All Any propagation here originates
+# from that single runtime introspection call; no domain logic is obscured.
 """Application-service tests for AnswerQuery.
 
 Uses in-memory port doubles (no Postgres, no Anthropic).
@@ -81,8 +85,8 @@ class _FakeLLM:
 
     def ask(
         self,
-        messages: list[LLMMessage],
-        system_prompt: str,
+        messages: list[LLMMessage],  # pyright: ignore[reportUnusedParameter]
+        system_prompt: str,  # pyright: ignore[reportUnusedParameter]
     ) -> EvaluatedAnswer | NoEvaluation:
         self.call_count += 1
         return self._result
@@ -94,8 +98,8 @@ class _NeverCalledLLM:
 
     def ask(
         self,
-        messages: list[LLMMessage],
-        system_prompt: str,
+        messages: list[LLMMessage],  # pyright: ignore[reportUnusedParameter]
+        system_prompt: str,  # pyright: ignore[reportUnusedParameter]
     ) -> EvaluatedAnswer | NoEvaluation:
         raise AssertionError("LLM should not be called on this path")
 
@@ -110,7 +114,7 @@ class _FakeNormalizer:
     def __init__(self, result: NormalizationResult) -> None:
         self._result = result
 
-    def normalize(self, query_text: str) -> NormalizationResult:
+    def normalize(self, query_text: str) -> NormalizationResult:  # pyright: ignore[reportUnusedParameter]
         return self._result
 
 
@@ -134,10 +138,10 @@ class _FakeRetrievalService:
     ) -> None:
         self._answer_result = answer_result
 
-    def answer(self, query: Query) -> EvaluatedAnswer | NoEvaluation:
+    def answer(self, query: Query) -> EvaluatedAnswer | NoEvaluation:  # pyright: ignore[reportUnusedParameter]
         return self._answer_result
 
-    def fallback_for_validator_rejection(self, query: Query) -> NoEvaluation:
+    def fallback_for_validator_rejection(self, query: Query) -> NoEvaluation:  # pyright: ignore[reportUnusedParameter]
         return NoEvaluation(
             reason=NoEvaluationReason.VALIDATOR_REJECTED,
             recommended_action=(
@@ -486,10 +490,10 @@ class _BrokenAuditRepo:
     def next_identity(self) -> AnswerAuditRecordId:
         return AnswerAuditRecordId(uuid.uuid4())
 
-    def save(self, record: object) -> None:
+    def save(self, record: object) -> None:  # pyright: ignore[reportUnusedParameter]
         raise RuntimeError("DB write failed")
 
-    def find_by_id(self, record_id: AnswerAuditRecordId) -> None:
+    def find_by_id(self, record_id: AnswerAuditRecordId) -> None:  # pyright: ignore[reportUnusedParameter]
         return None
 
 

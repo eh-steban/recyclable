@@ -10,6 +10,7 @@ charter covers "eval replay" alongside the user-path AnswerAuditRecord.
 
 import uuid
 from dataclasses import dataclass
+from typing import override
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
@@ -26,6 +27,7 @@ class RegressionCaseId:
 
     value: uuid.UUID
 
+    @override
     def __str__(self) -> str:
         return str(self.value)
 

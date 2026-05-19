@@ -182,12 +182,12 @@ class AnswerQuery:
         try:
             record = _make_record(record_id, command, outcome, latency_ms, end)
         except AnswerAuditRecordValidationError as exc:
-            logger.warning(
-                "construction-time validator rejected record id=%s: "
-                "%s; falling back to VALIDATOR_REJECTED",
-                record_id,
-                exc,
+            _msg = (
+                "construction-time validator rejected"
+                " record id=%s: %s;"
+                " falling back to VALIDATOR_REJECTED"
             )
+            logger.warning(_msg, record_id, exc)
             outcome = self._retrieval_service.fallback_for_validator_rejection(
                 query
             )

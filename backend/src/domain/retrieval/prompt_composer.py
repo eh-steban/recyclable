@@ -32,6 +32,12 @@ def ask_compose_v1(query: Query, rule_context: str) -> list[LLMMessage]:
         A list of message dicts compatible with the Anthropic SDK's
         ``messages`` parameter.
     """
+    # rule_context is intentionally not consumed here: by design the
+    # caller routes it to the Anthropic SDK `system=` parameter (see
+    # docstring), so this composition step never reads it. Bound to `_`
+    # to record that as deliberate -- not a forgotten wire-up. The
+    # caller-side system-prompt injection is the integration point.
+    _ = rule_context
     user_content = (
         f"<user_query>{query.text}</user_query>\n\n"
         f"Location: {query.location_input}"

@@ -58,7 +58,7 @@ def verdict_to_short_answer(verdict: ItemVerdict) -> str:
             return "unknown"
         case Conflicted():
             return "unknown"
-        case _ as unreachable:
+        case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 
 
@@ -73,7 +73,7 @@ def _refusal_reason_for_verdict(verdict: ItemVerdict) -> str | None:
             return "no_evidence"
         case Conflicted():
             return "conflict_unresolved"
-        case _ as unreachable:
+        case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)
 
 

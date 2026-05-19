@@ -1,3 +1,7 @@
+# pyright: reportAny=false
+# Justification: TestClient.response.json() returns Any; subscript access on
+# the parsed body cannot be statically typed without a full wire-schema parse.
+# This suppression is scoped to this test file only.
 """FastAPI route tests for POST /ask and page routes.
 
 Tests use Starlette TestClient with FastAPI dependency overrides to
@@ -58,7 +62,7 @@ class MemAnswerQuery:
         self._result = result
         self.call_count = 0
 
-    def execute(self, command: AnswerQueryCommand) -> Answer:
+    def execute(self, _command: AnswerQueryCommand) -> Answer:
         self.call_count += 1
         return self._result
 
@@ -71,7 +75,7 @@ class _FakeGetJurisdictionPage:
         self._result = result
         self.call_count = 0
 
-    def execute(self, slug: str) -> JurisdictionPageWire | None:
+    def execute(self, _slug: str) -> JurisdictionPageWire | None:
         self.call_count += 1
         return self._result
 
@@ -85,7 +89,7 @@ class _FakeGetMaterialPage:
         self.call_count = 0
 
     def execute(
-        self, jurisdiction_slug: str, material_slug: str
+        self, _jurisdiction_slug: str, _material_slug: str
     ) -> MaterialPageWire | None:
         self.call_count += 1
         return self._result
@@ -451,14 +455,15 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
     class _FakeRetrievalService:
         """Returns NoEvaluation(OUT_OF_JURISDICTION) unconditionally."""
 
-        def answer(self, query: object) -> NoEvaluation:
+        def answer(self, query: object) -> NoEvaluation:  # pyright: ignore[reportUnusedParameter]
             return NoEvaluation(
                 reason=NoEvaluationReason.OUT_OF_JURISDICTION,
                 recommended_action=("TestCity is not yet supported."),
             )
 
         def fallback_for_validator_rejection(
-            self, query: object
+            self,
+            query: object,  # pyright: ignore[reportUnusedParameter]
         ) -> NoEvaluation:
             return NoEvaluation(
                 reason=NoEvaluationReason.VALIDATOR_REJECTED,
@@ -473,10 +478,10 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
         def next_identity(self) -> AnswerAuditRecordId:
             return AnswerAuditRecordId(uuid.uuid4())
 
-        def save(self, record: object) -> None:
+        def save(self, record: object) -> None:  # pyright: ignore[reportUnusedParameter]
             pass
 
-        def find_by_id(self, record_id: object) -> None:
+        def find_by_id(self, record_id: object) -> None:  # pyright: ignore[reportUnusedParameter]
             return None
 
     real_svc = AnswerQuery(

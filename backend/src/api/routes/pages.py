@@ -10,7 +10,6 @@ Routes per private/specs/contracts/jurisdiction-page.md:
 """
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -31,14 +30,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/pages")
 
-_JURISDICTION_NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
+_JURISDICTION_NOT_FOUND_RESPONSE: dict[int | str, dict[str, object]] = {
     404: {
         "model": ErrorEnvelope,
         "description": "not_found -- no jurisdiction for this slug",
     },
 }
 
-_MATERIAL_NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
+_MATERIAL_NOT_FOUND_RESPONSE: dict[int | str, dict[str, object]] = {
     404: {
         "model": ErrorEnvelope,
         "description": (

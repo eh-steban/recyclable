@@ -90,11 +90,6 @@ def _reason_to_orm(reason: NoEvaluationReason) -> str:
     return reason.value  # StrEnum values match the ORM enum literals
 
 
-def _orm_to_reason(reason_str: str) -> NoEvaluationReason:
-    """Map ORM enum string back to domain NoEvaluationReason."""
-    return NoEvaluationReason(reason_str)
-
-
 # ---------------------------------------------------------------------------
 # PgAnswerAuditRecordRepo
 # ---------------------------------------------------------------------------

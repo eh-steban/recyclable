@@ -19,7 +19,7 @@ the application service mints the id, constructs the record
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import cast
+from typing import cast, override
 
 from src.domain.audit.answer_audit_record_validator import (
     validate_answer_audit_record,
@@ -41,6 +41,7 @@ class AnswerAuditRecordId:
 
     value: uuid.UUID
 
+    @override
     def __str__(self) -> str:
         return str(self.value)
 

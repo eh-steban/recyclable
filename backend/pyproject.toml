@@ -54,6 +54,26 @@ python_version = "3.14"
 strict = true
 ignore_missing_imports = true
 
+[tool.basedpyright]
+# Root + tests + migrations are all part of the analysis surface.
+include = ["src", "tests", "migrations"]
+# pytest sets pythonpath=["."] so `import src.*` resolves from the backend/
+# root. Mirror that here so basedpyright sees the same import graph.
+extraPaths = ["."]
+# FastAPI's canonical DI pattern uses Depends(), Query(), Header(), etc.
+# in parameter default expressions; this is unavoidable and idiomatic.
+reportCallInDefaultInitializer = "none"
+[[tool.basedpyright.executionEnvironments]]
+# Tests legitimately reach into private/protected internals to verify
+# behavior (e.g. repo._store, _check_boot_config), and pytest assertion
+# helpers / discarded results make reportUnusedCallResult near-pure
+# noise here. Scope both relaxations to tests/** only; src/** keeps
+# reportPrivateUsage AND reportUnusedCallResult enabled so a dropped
+# domain-finder result in src/ still fails the checker.
+root = "tests"
+reportPrivateUsage = "none"
+reportUnusedCallResult = "none"
+
 [dependency-groups]
 dev = [
     "basedpyright>=1.39.3",

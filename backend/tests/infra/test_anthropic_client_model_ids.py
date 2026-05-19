@@ -1,3 +1,11 @@
+# pyright: reportAny=false, reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false
+# pyright: reportUnknownLambdaType=false, reportMissingParameterType=false
+# pyright: reportUnknownParameterType=false
+# Justification: MagicMock's interface is untyped by design; all Any/Unknown
+# warnings in this file originate from unittest.mock.MagicMock and the
+# monkeypatched anthropic.Anthropic constructor. No domain logic is tested
+# here -- only that the SDK is called with the correct model_id argument.
 """AnthropicClient model-id pin tests (INV-LLM-005).
 
 Asserts that ask() dispatches to the Sonnet model and classify()
@@ -21,7 +29,9 @@ from src.infra.external.anthropic_client import (
 
 
 @pytest.fixture()
-def client_with_spy(monkeypatch: pytest.MonkeyPatch):
+def client_with_spy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[AnthropicClient, mock.MagicMock]:
     """Return an AnthropicClient whose underlying SDK calls are captured."""
     # Build a spy that records calls to messages.create.
     messages_spy = mock.MagicMock()
@@ -39,7 +49,9 @@ def client_with_spy(monkeypatch: pytest.MonkeyPatch):
     return AnthropicClient(api_key="test"), messages_spy
 
 
-def test_ask_uses_sonnet_model(client_with_spy) -> None:
+def test_ask_uses_sonnet_model(
+    client_with_spy: tuple[AnthropicClient, mock.MagicMock],
+) -> None:
     """ask() must call the Anthropic SDK with model=SONNET_MODEL_ID."""
     client, spy = client_with_spy
     client.ask(

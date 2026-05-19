@@ -72,9 +72,7 @@ def _make_jurisdiction(session: Session) -> JurisdictionId:
     jid = uuid.uuid4()
     _ = session.execute(
         text(
-            "INSERT INTO jurisdictions "
-            "(id, name, slug, type, country, supported_status) "
-            "VALUES (:id, :name, :slug, :type, :country, :status)"
+            "INSERT INTO jurisdictions (id, name, slug, type, country, supported_status) VALUES (:id, :name, :slug, :type, :country, :status)"  # noqa: E501
         ),
         {
             "id": str(jid),

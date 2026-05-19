@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
+async def _lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     _check_boot_config()
     logger.info("startup checks passed")
     yield
@@ -60,13 +60,13 @@ def _check_boot_config() -> None:
     errors: list[str] = []
     if not os.environ.get("ANTHROPIC_API_KEY"):
         errors.append(
-            "ANTHROPIC_API_KEY is not set or is empty. "
-            "Export the key before starting the server."
+            "ANTHROPIC_API_KEY is not set or is empty."
+            + " Export the key before starting the server."
         )
     if not os.environ.get("DATABASE_URL"):
         errors.append(
-            "DATABASE_URL is not set or is empty. "
-            "Export a valid Postgres URL before starting the server."
+            "DATABASE_URL is not set or is empty."
+            + " Export a valid Postgres URL before starting the server."
         )
     if errors:
         for msg in errors:

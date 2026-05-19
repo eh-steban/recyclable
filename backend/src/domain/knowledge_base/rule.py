@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
+from typing import override
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
@@ -20,6 +21,7 @@ class RuleId:
 
     value: uuid.UUID
 
+    @override
     def __str__(self) -> str:
         return str(self.value)
 

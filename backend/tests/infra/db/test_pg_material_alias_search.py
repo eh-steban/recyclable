@@ -1,5 +1,4 @@
 # pyright: reportUnusedCallResult=false
-# pyright: reportUnusedFunction=false
 # pyright: reportAny=false
 """Postgres integration tests for PgMaterialAliasSearch.
 
@@ -12,13 +11,19 @@ These tests verify that PgMaterialAliasSearch correctly:
   - Excludes materials with similarity == 0 (HAVING MAX > 0).
   - Collapses multiple aliases for the same material to their max score.
   - Returns an empty list when no aliases match.
+
+Isolation strategy: each test gets its own function-scoped `db_session`
+that is bound to a connection-level transaction.  The transaction is
+rolled back in teardown, so test rows never reach the DB and the suite
+is correct regardless of pre-existing seed data.  This mirrors the
+pattern in tests/infra/test_rule_repo_find_for.py.
 """
 
 import uuid
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import Engine, create_engine, func, select, text
 from sqlalchemy.orm import Session
 
 from src.domain.knowledge_base.material import MaterialCategory, MaterialId
@@ -40,22 +45,34 @@ _SQL_INSERT_ALIAS = (
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def db_session(db_url: str) -> Generator[Session]:
-    """Synchronous Session connected to the integration test database."""
-    engine = create_engine(db_url)
-    with Session(engine) as session:
-        yield session
+@pytest.fixture()
+def db_engine(db_url: str) -> Generator[Engine]:
+    """Engine for this test module; disposed after each test."""
+    engine = create_engine(db_url, pool_pre_ping=True)
+    yield engine
     engine.dispose()
 
 
-@pytest.fixture(autouse=True)
-def _cleanup(db_session: Session) -> Generator[None]:
-    """Delete rows inserted by each test after it runs."""
-    yield
-    db_session.execute(text("DELETE FROM material_aliases WHERE TRUE"))
-    db_session.execute(text("DELETE FROM materials WHERE TRUE"))
-    db_session.commit()
+@pytest.fixture()
+def db_session(db_engine: Engine) -> Generator[Session]:
+    """Per-test Session bound to a transaction that rolls back on teardown.
+
+    All INSERTs made during a test are invisible to other connections and
+    are discarded on rollback -- no DELETE cleanup required, no clash with
+    seed data already in the DB.
+    """
+    conn = db_engine.connect()
+    trans = conn.begin()
+    session = Session(bind=conn)
+    yield session
+    session.close()
+    trans.rollback()
+    conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 
 def _insert_material(
@@ -73,7 +90,7 @@ def _insert_material(
             "cat": MaterialCategory.OTHER.value,
         },
     )
-    session.commit()
+    session.flush()
     return MaterialId(mat_id)
 
 
@@ -92,7 +109,7 @@ def _insert_alias(
             "weight": weight,
         },
     )
-    session.commit()
+    session.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -180,12 +197,19 @@ def test_search_collapses_multi_alias_to_max(
 
 
 @pytest.mark.integration
-def test_search_empty_when_no_aliases(
+def test_search_empty_when_no_similarity_match(
     db_session: Session,
 ) -> None:
-    """No aliases in DB -> empty results."""
+    """Query with zero trigram overlap against all aliases -> empty results.
+
+    Verifies the HAVING MAX(similarity) > 0 filter: when no alias produces
+    any trigram similarity to the query, the result list is empty.  Uses a
+    deliberately nonsense query ("zzzzzzzqqqqq") that has zero pg_trgm
+    similarity to all realistic material alias strings, so the test is
+    correct whether or not seed data is present.
+    """
     adapter = PgMaterialAliasSearch(db_session)
-    results = adapter.search("cardboard")
+    results = adapter.search("zzzzzzzqqqqq")
     assert results == []
 
 

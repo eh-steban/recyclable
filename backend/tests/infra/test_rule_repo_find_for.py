@@ -60,9 +60,7 @@ def _insert_jurisdiction(session: Session, slug: str) -> uuid.UUID:
     jid = uuid.uuid4()
     _ = session.execute(
         text(
-            "INSERT INTO jurisdictions "
-            "(id, name, slug, type, country, supported_status) "
-            "VALUES (:id, :name, :slug, :type, :country, :status)"
+            "INSERT INTO jurisdictions (id, name, slug, type, country, supported_status) VALUES (:id, :name, :slug, :type, :country, :status)"  # noqa: E501
         ),
         {
             "id": str(jid),
@@ -80,8 +78,7 @@ def _insert_material(session: Session, slug: str) -> uuid.UUID:
     mid = uuid.uuid4()
     _ = session.execute(
         text(
-            "INSERT INTO materials (id, canonical_name, slug, category) "
-            "VALUES (:id, :name, :slug, :category)"
+            "INSERT INTO materials (id, canonical_name, slug, category) VALUES (:id, :name, :slug, :category)"  # noqa: E501
         ),
         {"id": str(mid), "name": slug, "slug": slug, "category": "paper"},
     )
@@ -94,10 +91,7 @@ def _insert_source(session: Session, jid: uuid.UUID) -> uuid.UUID:
     body = "Source text for testing."
     _ = session.execute(
         text(
-            "INSERT INTO source_documents "
-            "(id, jurisdiction_id, url, title, authority_level,"
-            " fetched_at, source_text, source_text_hash) "
-            "VALUES (:id, :jid, :url, :title, :auth, now(), :txt, :hash)"
+            "INSERT INTO source_documents (id, jurisdiction_id, url, title, authority_level, fetched_at, source_text, source_text_hash) VALUES (:id, :jid, :url, :title, :auth, now(), :txt, :hash)"  # noqa: E501
         ),
         {
             "id": str(sid),
@@ -124,12 +118,7 @@ def _insert_rule(
     rid = uuid.uuid4()
     _ = session.execute(
         text(
-            "INSERT INTO rules "
-            "(id, jurisdiction_id, material_id, disposition, accepted_status,"
-            " source_document_id, source_quote, confidence,"
-            " effective_from, superseded_by) "
-            "VALUES (:id, :jid, :mid, :disp, :status,"
-            "        :sid, :quote, :conf, :eff, :sup)"
+            "INSERT INTO rules (id, jurisdiction_id, material_id, disposition, accepted_status, source_document_id, source_quote, confidence, effective_from, superseded_by) VALUES (:id, :jid, :mid, :disp, :status, :sid, :quote, :conf, :eff, :sup)"  # noqa: E501
         ),
         {
             "id": str(rid),
