@@ -110,7 +110,7 @@ class _FakeNormalizer:
     def __init__(self, result: NormalizationResult) -> None:
         self._result = result
 
-    def normalize(self, text: str) -> NormalizationResult:
+    def normalize(self, query_text: str) -> NormalizationResult:
         return self._result
 
 
@@ -353,7 +353,7 @@ def test_ambiguous_material_path() -> None:
     """
     cand1 = _make_material("pet-bottle")
     cand2 = _make_material("hdpe-jug")
-    normalizer = _FakeNormalizer(Ambiguous(candidates=[cand1, cand2]))
+    normalizer = _FakeNormalizer(Ambiguous(candidates=(cand1, cand2)))
 
     svc, audit_repo = _build_service(
         normalizer=normalizer,
@@ -750,7 +750,9 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     )
     audit_repo = MemAnswerAuditRecordRepo()
     svc = AnswerQuery(
-        retrieval_service=fake_svc,  # type: ignore[arg-type]
+        # RetrievalService is @final; subclassing is forbidden;
+        # fake substitution test-only.
+        retrieval_service=fake_svc,  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         audit_repo=audit_repo,
     )
 

@@ -101,6 +101,12 @@ class MemRuleRepo:
     def find_by_id(self, rule_id: RuleId) -> Rule | None:  # pyright: ignore[reportUnusedParameter]
         raise NotImplementedError("not exercised by these tests")
 
+    def find_for_jurisdiction(
+        self,
+        jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
+    ) -> list[Rule]:
+        raise NotImplementedError("not exercised by these tests")
+
     def find_for(
         self,
         jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]

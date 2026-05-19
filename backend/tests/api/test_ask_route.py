@@ -480,7 +480,9 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
             return None
 
     real_svc = AnswerQuery(
-        retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]
+        # RetrievalService is @final; subclassing is forbidden;
+        # fake substitution is test-only.
+        retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         audit_repo=MemAuditRepo(),  # type: ignore[arg-type]
     )
 

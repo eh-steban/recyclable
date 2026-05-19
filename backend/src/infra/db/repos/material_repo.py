@@ -124,6 +124,12 @@ class PgMaterialRepo:
             for row in rows
         ]
 
+    def all_material_ids(self) -> list[MaterialId]:
+        logger.debug("all_material_ids")
+        stmt = select(MaterialORM.id)
+        raw_ids = self._session.execute(stmt).scalars().all()
+        return [MaterialId(mid) for mid in raw_ids]
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

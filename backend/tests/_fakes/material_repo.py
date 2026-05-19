@@ -34,3 +34,6 @@ class MemMaterialRepo:
 
     def find_aliases_for(self, material_id: MaterialId) -> list[MaterialAlias]:
         return [a for a in self._aliases if a.material_id == material_id]
+
+    def all_material_ids(self) -> list[MaterialId]:
+        return [MaterialId(uid) for uid in self._store]

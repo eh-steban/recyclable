@@ -39,6 +39,18 @@ repos:
 
   - repo: local
     hooks:
+      # TEMPORARY: changed-files only, errors-only. basedpyright exits
+      # non-zero on warnings, and the tree carries ~167 pre-existing
+      # warnings (FastAPI Depends defaults, unused-call-result). Restore
+      # the whole-tree, warnings-included check once that backlog is
+      # cleared.
+      - id: basedpyright
+        name: basedpyright (backend type check, changed files)
+        entry: bash -c 'cd backend && uv run basedpyright --level error "${@#backend/}"' --
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: true
+
       - id: check-commit-msg
         name: project commit message rules
         entry: bin/check-commit-msg
