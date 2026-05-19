@@ -1,7 +1,3 @@
-# pyright: reportAny=false
-# Justification: TestClient.response.json() returns Any; subscript access on
-# the parsed body cannot be statically typed without a full wire-schema parse.
-# This suppression is scoped to this test file only.
 """FastAPI route tests for POST /ask and page routes.
 
 Tests use Starlette TestClient with FastAPI dependency overrides to
@@ -455,7 +451,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
     class _FakeRetrievalService:
         """Returns NoEvaluation(OUT_OF_JURISDICTION) unconditionally."""
 
-        def answer(self, query: object) -> NoEvaluation:  # pyright: ignore[reportUnusedParameter]
+        def answer(self, query: object) -> NoEvaluation:
             return NoEvaluation(
                 reason=NoEvaluationReason.OUT_OF_JURISDICTION,
                 recommended_action=("TestCity is not yet supported."),
@@ -463,7 +459,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
 
         def fallback_for_validator_rejection(
             self,
-            query: object,  # pyright: ignore[reportUnusedParameter]
+            query: object,
         ) -> NoEvaluation:
             return NoEvaluation(
                 reason=NoEvaluationReason.VALIDATOR_REJECTED,
@@ -478,10 +474,10 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
         def next_identity(self) -> AnswerAuditRecordId:
             return AnswerAuditRecordId(uuid.uuid4())
 
-        def save(self, record: object) -> None:  # pyright: ignore[reportUnusedParameter]
+        def save(self, record: object) -> None:
             pass
 
-        def find_by_id(self, record_id: object) -> None:  # pyright: ignore[reportUnusedParameter]
+        def find_by_id(self, record_id: object) -> None:
             return None
 
     real_svc = AnswerQuery(

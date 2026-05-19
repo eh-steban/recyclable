@@ -73,6 +73,12 @@ reportCallInDefaultInitializer = "none"
 root = "tests"
 reportPrivateUsage = "none"
 reportUnusedCallResult = "none"
+# Pytest fixture injection uses parameter names to match fixtures; the
+# parameter value is never read directly.  Suppress for tests/.
+reportUnusedParameter = "none"
+# Dynamic driver access (e.g. getattr for psycopg driver_connection) is
+# intentional in test helpers; suppress reportAny for tests/.
+reportAny = "none"
 
 [dependency-groups]
 dev = [

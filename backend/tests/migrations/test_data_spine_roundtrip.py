@@ -39,9 +39,12 @@ def alembic_cfg(db_url: str) -> Config:
 
 
 @pytest.fixture(scope="module")
-def engine(db_url: str) -> Generator[Engine]:
+def engine(db_url: str, alembic_cfg: Config) -> Generator[Engine]:
     eng = create_engine(db_url)
     yield eng
+    # Restore the test DB to head so non-migration tests that run after
+    # this module always see a fully migrated schema.
+    command.upgrade(alembic_cfg, "head")
     eng.dispose()
 
 

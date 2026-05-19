@@ -9,47 +9,16 @@ Verifies:
 
 import hashlib
 import uuid
-from collections.abc import Generator
 from datetime import date
 
 import pytest
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
 from src.infra.db.repos.rule_repo import PgRuleRepo
-
-# ---------------------------------------------------------------------------
-# Session fixture (rolls back after each test)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def db_engine_rules(db_url: str) -> Generator[Engine]:
-    engine = create_engine(db_url, pool_pre_ping=True)
-    yield engine
-    engine.dispose()
-
-
-@pytest.fixture()
-def db_session(db_engine_rules: Engine) -> Generator[Session]:
-    conn = db_engine_rules.connect()
-    trans = conn.begin()
-    session = Session(bind=conn)
-    try:
-        _ = conn.execute(text("SELECT 1 FROM rules LIMIT 0"))
-    except Exception:
-        session.close()
-        trans.rollback()
-        conn.close()
-        pytest.skip("rules table not found -- migration needed")
-    yield session
-    session.close()
-    trans.rollback()
-    conn.close()
-
 
 # ---------------------------------------------------------------------------
 # Seed helpers (raw SQL to avoid depending on repo save())

@@ -1,20 +1,17 @@
 """DB-backed integration tests for PgAnswerAuditRecordRepo.
 
 These tests require a live Postgres connection; they are skipped when the
-database is unreachable (via the db_url fixture).
+database is unreachable (via the db_session fixture).
 
 Each test runs inside a transaction that is rolled back on teardown,
 leaving the DB clean for the next test.
 """
 
-import os
 import uuid
-from collections.abc import Generator
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.exc import OperationalError as SQLAOperationalError
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 from src.domain.audit.answer_audit_record import (
@@ -29,38 +26,6 @@ from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.item_verdict import Accepted
 from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
-
-# ---------------------------------------------------------------------------
-# Session fixture: rolls back after each test (SAVEPOINT pattern)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def db_engine_for_audit(db_url: str) -> Generator[Engine]:
-    engine = create_engine(db_url, pool_pre_ping=True)
-    yield engine
-    engine.dispose()
-
-
-@pytest.fixture()
-def db_session(db_engine_for_audit: Engine) -> Generator[Session]:
-    """Yield a Session wrapped in a transaction that rolls back on teardown."""
-    conn = db_engine_for_audit.connect()
-    trans = conn.begin()
-    session = Session(bind=conn)
-    # Ensure audit table exists (skip test if not).
-    try:
-        _ = conn.execute(text("SELECT 1 FROM answer_audit_records LIMIT 0"))
-    except Exception:
-        session.close()
-        trans.rollback()
-        conn.close()
-        pytest.skip("answer_audit_records table not found -- migration needed")
-    yield session
-    session.close()
-    trans.rollback()
-    conn.close()
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -188,29 +153,40 @@ def test_duplicate_id_raises_duplicate_aggregate_error(
         repo.save(duplicate)
 
 
-def test_closed_session_raises_repository_concurrency_error() -> None:
-    """Passing a closed session raises RepositoryConcurrencyError, not
-    sqlalchemy.exc.OperationalError.
+def test_closed_session_raises_repository_concurrency_error(
+    db_engine: Engine,
+) -> None:
+    """Repo raises RepositoryConcurrencyError when the connection is broken.
+
+    Simulates a mid-transaction connection loss (OperationalError) by
+    forcibly closing the underlying psycopg driver connection while the
+    SQLAlchemy Connection object is still open.  The repo must translate
+    the resulting OperationalError into a domain-level
+    RepositoryConcurrencyError so the application layer never imports
+    sqlalchemy.exc.
+
+    Uses the shared test-DB engine to avoid touching the dev database.
+    The engine is already reachability-checked by the session-scoped
+    ``db_engine`` fixture -- no separate skip guard needed.
     """
-    db_url_env = os.environ.get(
-        "DATABASE_URL",
-        "postgresql+psycopg://recyclable:recyclable_dev@localhost:5432/recyclable",
-    )
-    try:
-        engine = create_engine(db_url_env, pool_pre_ping=True)
-        with engine.connect():
-            pass
-    except SQLAOperationalError:
-        pytest.skip("Postgres unreachable")
+    conn = db_engine.connect()
+    # Break the underlying psycopg connection to force an OperationalError
+    # on the next DB operation, simulating a lost connection.
+    # driver_connection is the raw psycopg Connection object (dbapi-level).
+    # We access it via getattr to avoid the Optional-member type error; its
+    # presence is guaranteed for a freshly-opened psycopg connection.
+    driver = getattr(conn.connection, "driver_connection", None)
+    assert driver is not None, "expected a live driver_connection"
+    driver.close()
 
-    # Create and immediately close a session.
-    closed_session = Session(engine)
-    closed_session.close()
-
-    repo = PgAnswerAuditRecordRepo(closed_session)
+    broken_session = Session(bind=conn)
+    repo = PgAnswerAuditRecordRepo(broken_session)
     jid = JurisdictionId(uuid.uuid4())
     record = _make_record(jid)
 
-    with pytest.raises(RepositoryConcurrencyError):
-        repo.save(record)
-        closed_session.flush()
+    try:
+        with pytest.raises(RepositoryConcurrencyError):
+            repo.save(record)
+    finally:
+        broken_session.close()
+        conn.close()

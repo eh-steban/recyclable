@@ -17,6 +17,12 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    # Prefer a URL set programmatically (e.g. by test fixtures via
+    # cfg.set_main_option("sqlalchemy.url", ...)), then fall back to the
+    # DATABASE_URL environment variable used by the normal dev/CI workflow.
+    url = config.get_main_option("sqlalchemy.url")
+    if url:
+        return url
     url = os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError("DATABASE_URL environment variable is not set")

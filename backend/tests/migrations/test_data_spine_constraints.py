@@ -91,6 +91,9 @@ def engine(db_url: str, alembic_cfg: Config) -> Generator[Engine]:
     eng = create_engine(db_url)
     command.upgrade(alembic_cfg, "head")
     yield eng
+    # Ensure the test DB is at head on teardown (it should already be, but
+    # be explicit so non-migration tests that follow are unaffected).
+    command.upgrade(alembic_cfg, "head")
     eng.dispose()
 
 

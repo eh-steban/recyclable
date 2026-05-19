@@ -1,4 +1,4 @@
-# pyright: reportAny=false, reportUnknownMemberType=false
+# pyright: reportUnknownMemberType=false
 # pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false
 # pyright: reportUnknownLambdaType=false, reportMissingParameterType=false
 # pyright: reportUnknownParameterType=false

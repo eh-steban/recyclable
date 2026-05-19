@@ -39,7 +39,7 @@ class MemMaterialAliasSearch:
 
     def search(
         self,
-        query_text: str,  # noqa: ARG002  # pyright: ignore[reportUnusedParameter]
+        query_text: str,  # noqa: ARG002
     ) -> list[tuple[MaterialId, float]]:
         """Return the preset rows regardless of query_text."""
         return list(self._rows)

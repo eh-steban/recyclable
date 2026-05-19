@@ -25,7 +25,7 @@ def patched_anthropic(monkeypatch: pytest.MonkeyPatch):
     return fake_client
 
 
-def test_safe_tool_registry_constructs(patched_anthropic: object) -> None:  # pyright: ignore[reportUnusedParameter]
+def test_safe_tool_registry_constructs(patched_anthropic: object) -> None:
     """AnthropicClient accepts a registry with only safe tool names."""
     client = AnthropicClient(
         api_key="test",
@@ -53,7 +53,7 @@ def test_safe_tool_registry_constructs(patched_anthropic: object) -> None:  # py
     ],
 )
 def test_destructive_tool_name_raises_value_error(
-    patched_anthropic: object,  # pyright: ignore[reportUnusedParameter]
+    patched_anthropic: object,
     bad_name: str,
 ) -> None:
     """AnthropicClient raises ValueError for any destructive tool name."""

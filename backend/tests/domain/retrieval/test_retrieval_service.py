@@ -78,7 +78,7 @@ class _FakeNormalizer:
     def __init__(self, result: NormalizationResult) -> None:
         self._result = result
 
-    def normalize(self, query_text: str) -> NormalizationResult:  # pyright: ignore[reportUnusedParameter]
+    def normalize(self, query_text: str) -> NormalizationResult:
         return self._result
 
 
@@ -95,22 +95,22 @@ class MemRuleRepo:
     def next_identity(self) -> RuleId:
         raise NotImplementedError("not exercised by these tests")
 
-    def save(self, rule: Rule) -> None:  # pyright: ignore[reportUnusedParameter]
+    def save(self, rule: Rule) -> None:
         raise NotImplementedError("not exercised by these tests")
 
-    def find_by_id(self, rule_id: RuleId) -> Rule | None:  # pyright: ignore[reportUnusedParameter]
+    def find_by_id(self, rule_id: RuleId) -> Rule | None:
         raise NotImplementedError("not exercised by these tests")
 
     def find_for_jurisdiction(
         self,
-        jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
+        jurisdiction_id: JurisdictionId,
     ) -> list[Rule]:
         raise NotImplementedError("not exercised by these tests")
 
     def find_for(
         self,
-        jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
-        material_id: MaterialId,  # pyright: ignore[reportUnusedParameter]
+        jurisdiction_id: JurisdictionId,
+        material_id: MaterialId,
     ) -> list[Rule]:
         return list(self._rules)
 
@@ -126,7 +126,7 @@ class MemSourceRepo:
     def next_identity(self) -> SourceId:
         raise NotImplementedError("not exercised by these tests")
 
-    def save(self, source: SourceDocument) -> None:  # pyright: ignore[reportUnusedParameter]
+    def save(self, source: SourceDocument) -> None:
         raise NotImplementedError("not exercised by these tests")
 
     def find_by_id(self, source_id: SourceId) -> SourceDocument | None:
@@ -134,7 +134,7 @@ class MemSourceRepo:
 
     def find_for_jurisdiction(
         self,
-        jurisdiction_id: JurisdictionId,  # pyright: ignore[reportUnusedParameter]
+        jurisdiction_id: JurisdictionId,
     ) -> list[SourceDocument]:
         raise NotImplementedError("not exercised by these tests")
 
@@ -148,8 +148,8 @@ class _RecordingLLM:
 
     def ask(
         self,
-        messages: list[LLMMessage],  # pyright: ignore[reportUnusedParameter]
-        system_prompt: str,  # pyright: ignore[reportUnusedParameter]
+        messages: list[LLMMessage],
+        system_prompt: str,
     ):
         self.call_count += 1
         raise AssertionError(
@@ -166,8 +166,8 @@ class _ConfigurableLLM:
 
     def ask(
         self,
-        messages: list[LLMMessage],  # pyright: ignore[reportUnusedParameter]
-        system_prompt: str,  # pyright: ignore[reportUnusedParameter]
+        messages: list[LLMMessage],
+        system_prompt: str,
     ) -> EvaluatedAnswer | NoEvaluation:
         return self._response
 

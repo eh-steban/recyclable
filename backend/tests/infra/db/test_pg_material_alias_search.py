@@ -1,9 +1,7 @@
-# pyright: reportUnusedCallResult=false
-# pyright: reportAny=false
 """Postgres integration tests for PgMaterialAliasSearch.
 
 Requires a live Postgres with the pg_trgm extension and migration 0004
-applied. Skipped when the database is unreachable (via the `db_url`
+applied. Skipped when the database is unreachable (via the ``db_session``
 fixture in conftest.py).
 
 These tests verify that PgMaterialAliasSearch correctly:
@@ -12,18 +10,16 @@ These tests verify that PgMaterialAliasSearch correctly:
   - Collapses multiple aliases for the same material to their max score.
   - Returns an empty list when no aliases match.
 
-Isolation strategy: each test gets its own function-scoped `db_session`
-that is bound to a connection-level transaction.  The transaction is
-rolled back in teardown, so test rows never reach the DB and the suite
-is correct regardless of pre-existing seed data.  This mirrors the
-pattern in tests/infra/test_rule_repo_find_for.py.
+Isolation strategy: each test gets the shared function-scoped ``db_session``
+from the root conftest, which is bound to a connection-level transaction
+that is rolled back on teardown.  Test rows never reach the DB and the
+suite is correct regardless of pre-existing seed data.
 """
 
 import uuid
-from collections.abc import Generator
 
 import pytest
-from sqlalchemy import Engine, create_engine, func, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from src.domain.knowledge_base.material import MaterialCategory, MaterialId
@@ -39,36 +35,6 @@ _SQL_INSERT_ALIAS = (
     "INSERT INTO material_aliases (id, material_id, alias, weight)"
     " VALUES (:id, :mid, :alias, :weight)"
 )
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def db_engine(db_url: str) -> Generator[Engine]:
-    """Engine for this test module; disposed after each test."""
-    engine = create_engine(db_url, pool_pre_ping=True)
-    yield engine
-    engine.dispose()
-
-
-@pytest.fixture()
-def db_session(db_engine: Engine) -> Generator[Session]:
-    """Per-test Session bound to a transaction that rolls back on teardown.
-
-    All INSERTs made during a test are invisible to other connections and
-    are discarded on rollback -- no DELETE cleanup required, no clash with
-    seed data already in the DB.
-    """
-    conn = db_engine.connect()
-    trans = conn.begin()
-    session = Session(bind=conn)
-    yield session
-    session.close()
-    trans.rollback()
-    conn.close()
-
 
 # ---------------------------------------------------------------------------
 # Helpers
