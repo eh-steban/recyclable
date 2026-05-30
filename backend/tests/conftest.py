@@ -19,8 +19,10 @@ import os
 import subprocess
 import warnings
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
+from dotenv import load_dotenv
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -34,6 +36,8 @@ from tests._fakes.source_repo import MemSourceRepo
 # ---------------------------------------------------------------------------
 # Test-database URL -- NEVER the dev ``recyclable`` database
 # ---------------------------------------------------------------------------
+
+load_dotenv(Path(__file__).parent.parent / ".env.test", override=False)
 
 TEST_DATABASE_URL: str = os.environ.get(
     "TEST_DATABASE_URL",
