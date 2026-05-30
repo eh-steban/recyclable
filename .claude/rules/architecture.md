@@ -490,6 +490,11 @@ receive the Protocol via FastAPI `Depends` and never import the
 concrete class. The domain layer never imports `sqlalchemy`. Per
 `ddd/repositories.md` Principle 4 + the layering rules above.
 
+FastAPI dependency-provider functions in `deps.py` annotate their
+return type as the domain Protocol (the port), not the concrete
+implementation -- this is the DIP return-side complement to the
+interface-in-domain, implementation-in-infra rule above.
+
 ### Persistence exceptions translate at the boundary
 
 Repo implementations catch SQLAlchemy framework exceptions
