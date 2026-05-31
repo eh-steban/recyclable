@@ -1,0 +1,19 @@
+# Frontend-specific ignores (Node / Next.js). Shared patterns live in
+# the repo root .gitignore.
+
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# typescript
+*.tsbuildinfo
+
+# generated OpenAPI snapshot is committed; build output is not
+/.vercel

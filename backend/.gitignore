@@ -1,0 +1,16 @@
+# Backend-specific ignores (Python). Shared patterns live in the repo
+# root .gitignore.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tooling caches (ruff, pytest, coverage)
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
