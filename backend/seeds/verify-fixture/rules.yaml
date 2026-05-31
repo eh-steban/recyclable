@@ -2,7 +2,7 @@
 # 8 rules: 4+ accepted, 1+ rejected, all with source_quote.
 # All rules reference source documents by URL (stable unique key).
 - slug: syn-denver-aluminum-cans
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-aluminum-cans
   source_document: https://synthetic.example.com/recycling-guide
   disposition: curbside_recycle
@@ -11,7 +11,7 @@
   confidence: high
 
 - slug: syn-denver-plastic-bottles
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-plastic-bottles
   source_document: https://synthetic.example.com/recycling-guide
   disposition: curbside_recycle
@@ -20,7 +20,7 @@
   confidence: high
 
 - slug: syn-denver-glass-bottles
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-glass-bottles
   source_document: https://synthetic.example.com/recycling-guide
   disposition: curbside_recycle
@@ -29,7 +29,7 @@
   confidence: high
 
 - slug: syn-denver-cardboard
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-cardboard
   source_document: https://synthetic.example.com/recycling-guide
   disposition: curbside_recycle
@@ -38,7 +38,7 @@
   confidence: high
 
 - slug: syn-denver-plastic-bags
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-plastic-bags
   source_document: https://synthetic.example.com/recycling-guide
   disposition: landfill
@@ -47,7 +47,7 @@
   confidence: high
 
 - slug: syn-denver-paper
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-paper
   source_document: https://synthetic.example.com/recycling-guide
   disposition: curbside_recycle
@@ -56,7 +56,7 @@
   confidence: high
 
 - slug: syn-denver-electronics
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-electronics
   source_document: https://synthetic.example.com/materials-policy
   disposition: dropoff
@@ -65,7 +65,7 @@
   confidence: medium
 
 - slug: syn-denver-motor-oil
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-motor-oil
   source_document: https://synthetic.example.com/recycling-guide
   disposition: hazardous_waste

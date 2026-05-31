@@ -7,7 +7,7 @@
 # Recycling-Service URL (authority_level 1) -- rinse/prep guidance.
 
 - slug: denver-aluminum-cans
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: aluminum-cans
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -19,7 +19,7 @@
   confidence: high
 
 - slug: denver-corrugated-cardboard
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: corrugated-cardboard
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -32,7 +32,7 @@
   confidence: high
 
 - slug: denver-glass-bottles
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: glass-bottles
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -47,7 +47,7 @@
   confidence: high
 
 - slug: denver-pet-bottles
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: pet-bottles
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -62,7 +62,7 @@
   confidence: high
 
 - slug: denver-hdpe-bottles
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: hdpe-bottles
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Recycling-Service
@@ -76,7 +76,7 @@
   confidence: high
 
 - slug: denver-paper
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: paper
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -93,7 +93,7 @@
   confidence: high
 
 - slug: denver-plastic-bags
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: plastic-bags
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
@@ -105,7 +105,7 @@
   confidence: high
 
 - slug: denver-styrofoam
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: styrofoam
   source_document: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling

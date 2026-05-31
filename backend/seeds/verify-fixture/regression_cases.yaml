@@ -9,7 +9,7 @@
 # --- Accepted cases (3) ---
 - id: 00000000-0005-0000-0000-000000000091
   query: Can I recycle aluminum cans?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-aluminum-cans
   expected_status: accepted
   expected_disposition: curbside_recycle
@@ -18,7 +18,7 @@
 
 - id: 00000000-0005-0000-0000-000000000092
   query: Are plastic bottles recyclable?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-plastic-bottles
   expected_status: accepted
   expected_disposition: curbside_recycle
@@ -27,7 +27,7 @@
 
 - id: 00000000-0005-0000-0000-000000000093
   query: Can I recycle glass bottles?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-glass-bottles
   expected_status: accepted
   expected_disposition: curbside_recycle
@@ -37,7 +37,7 @@
 # --- Rejected cases (2) ---
 - id: 00000000-0005-0000-0000-000000000094
   query: Can I put plastic bags in the recycling bin?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-plastic-bags
   expected_status: rejected
   expected_disposition: landfill
@@ -46,7 +46,7 @@
 
 - id: 00000000-0005-0000-0000-000000000095
   query: Can I recycle motor oil at the curb?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-motor-oil
   expected_status: rejected
   expected_disposition: hazardous_waste
@@ -56,7 +56,7 @@
 # --- Conditional case (1) ---
 - id: 00000000-0005-0000-0000-000000000096
   query: How do I dispose of old electronics?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   material: syn-electronics
   expected_status: conditional
   expected_disposition: dropoff
@@ -66,7 +66,7 @@
 # --- Refusal-required cases (2) ---
 - id: 00000000-0005-0000-0000-000000000097
   query: Can I recycle items from another city here?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   expected_status: rejected
   expected_disposition: landfill
   must_cite_source: false
@@ -74,7 +74,7 @@
 
 - id: 00000000-0005-0000-0000-000000000098
   query: What are the recycling rules for an unsupported jurisdiction?
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   expected_status: rejected
   expected_disposition: landfill
   must_cite_source: false

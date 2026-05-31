@@ -75,7 +75,7 @@ _ACCEPTANCE_CHECKS: list[tuple[str, str, int, int | None]] = [
         "denver jurisdiction (expect 1)",
         """
         SELECT count(*) FROM jurisdictions
-        WHERE slug = 'denver'
+        WHERE slug = 'denver-co-us'
           AND supported_status = 'supported'
         """,
         1,
@@ -86,7 +86,7 @@ _ACCEPTANCE_CHECKS: list[tuple[str, str, int, int | None]] = [
         """
         SELECT count(*) FROM source_documents
         WHERE jurisdiction_id = (
-            SELECT id FROM jurisdictions WHERE slug = 'denver'
+            SELECT id FROM jurisdictions WHERE slug = 'denver-co-us'
           )
           AND authority_level <= 2
           AND length(source_text) > 0
@@ -99,7 +99,7 @@ _ACCEPTANCE_CHECKS: list[tuple[str, str, int, int | None]] = [
         """
         SELECT count(*) FROM rules
         WHERE jurisdiction_id = (
-            SELECT id FROM jurisdictions WHERE slug = 'denver'
+            SELECT id FROM jurisdictions WHERE slug = 'denver-co-us'
           )
           AND superseded_by IS NULL
           AND source_document_id IS NOT NULL

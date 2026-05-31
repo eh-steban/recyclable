@@ -79,8 +79,8 @@ def test_seeded_db_partial_pass(
     with Session(db_engine) as session:
         passed = run_verify("test-fixture", session)
 
-    # The test-fixture has no 'denver' jurisdiction, so Denver acceptance
-    # checks will fail.  run_verify must return False.
+    # The test-fixture has no 'denver-co-us' jurisdiction, so the Denver
+    # acceptance checks will fail.  run_verify must return False.
     assert not passed, (
         "Expected run_verify to return False -- test-fixture lacks Denver data"
     )
@@ -135,9 +135,9 @@ def test_verify_fixture_passes_all_checks(
 ) -> None:
     """Seeding the verify-fixture dataset satisfies all acceptance queries.
 
-    The verify-fixture uses slug='denver' (required by the hardcoded
-    acceptance queries) but contains only synthetic placeholder content
-    -- it is not real Denver data (Phase C territory).
+    The verify-fixture uses slug='denver-co-us' (matching the acceptance
+    queries) but contains only synthetic placeholder content -- it is not
+    real Denver data.
     """
     _ = clean_db  # injected for DB truncation side effect
     import src.cli.seed as seed_module  # noqa: PLC0415
