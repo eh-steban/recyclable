@@ -23,7 +23,6 @@ dev = [
     "pytest-postgresql>=6.0,<7.0",
     "pytest-cov>=5.0,<6.0",
     "ruff>=0.4,<1.0",
-    "mypy>=1.10,<2.0",
 ]
 
 [tool.uv]
@@ -48,11 +47,6 @@ target-version = "py314"
 select = ["E", "F", "I", "UP", "B", "SIM", "PLC0415"]
 # B008: FastAPI's canonical DI pattern uses Depends() in default args.
 ignore = ["B008"]
-
-[tool.mypy]
-python_version = "3.14"
-strict = true
-ignore_missing_imports = true
 
 [tool.basedpyright]
 # Root + tests + migrations are all part of the analysis surface.
