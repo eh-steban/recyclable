@@ -40,6 +40,40 @@ Both surfaces share the same database and the same grounding contract.
 - **Server-side enforcement of grounding.** The route handler refuses
   to render an answer if grounding evidence is absent. Client-side
   validation is a UX layer, not a security layer.
+- **Organize the Presentation Context by user-facing surface.**
+  Presentation types, translation, and fetch helpers in `lib/api/`
+  are grouped by the page or flow the user experiences -- the
+  jurisdiction page, the material page, later the ask flow -- not
+  by the backend's domain concepts and not by mechanical
+  type-buckets (a single `types.ts` or `translate.ts` file).
+
+  *Why:* a Presentation Context's reason-to-change is the UX, so
+  the page is its natural cohesion axis (`ddd/modules.md`
+  Principle 2). It keeps the frontend's Ubiquitous Language its
+  own rather than echoing the backend's. It also mirrors the
+  backend's already use-case-shaped Open Host Service resources
+  (`ddd/integrating-bounded-contexts.md` Principle 4), yielding a
+  clean 1:1 -- one resource -> one page module -> one route.
+
+  *Guardrails:*
+  - Genuinely shared presentation values get their own small
+    module once a second consumer appears; do not duplicate --
+    duplication drifts (`ddd/modules.md` Principle 5).
+  - This organizes presentation *shapes*, not domain *decisions*.
+    Grounding, verdict, and authority decisions stay in the
+    backend; Smart-UI rejection still holds.
+
+  This is strategic DDD -- Ubiquitous-Language-named, cohesive
+  modules at the ACL boundary -- not tactical. No Entities,
+  Aggregates, or Repositories in the frontend; those remain
+  backend-only.
+
+  *Cross-references:* `.claude/rules/architecture.md` §
+  "Frontend: Smart-UI rejection" for the concrete `lib/api/`
+  layout; `ddd/integrating-bounded-contexts.md` Principle 4
+  (use-case-shaped OHS resources); `ddd/modules.md` Principle 2
+  (cohesive concept, not mechanical bucket) and Principle 5
+  (shared value module).
 
 ## Non-commitments (for now)
 
