@@ -122,6 +122,19 @@ the rubric is the tier it should live in per the decision matrix.
    destination doc was never written. Verify the path before flagging.
 7. **Comment restates the code.** Zero added information. Recommend
    deletion. (Do not over-report this -- only when clearly noise.)
+8. **Generic info / pointer with no per-module knowledge.** The inverse
+   of types 1-4: rather than hoarding higher-tier knowledge, the comment
+   carries none specific to its file. Boilerplate identical across
+   sibling modules (the same `See <rule>` header on every file in a
+   directory), or a pointer to a layer-wide rule that `paths:` on-demand
+   loading already surfaces, adds no per-module value. Recommend
+   DELETION, not relocation -- the knowledge already lives in its proper
+   tier. Distinguish from type 6 (here the target exists; the pointer is
+   simply redundant) and type 7 (restates code, not a doc). A pointer
+   survives only when it flags non-obvious, file-specific foundational
+   knowledge or a gotcha a reader of this file needs. Per
+   `knowledge-management.md` Tier 5, "per-module knowledge, not generic
+   information."
 
 Not your job: stale/dead comments that should simply be removed as part
 of a refactor (that is `refactorer`'s `refactoring.md` scope), or the

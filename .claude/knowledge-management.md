@@ -20,7 +20,7 @@ not all at once. Use `private/learnings-index.md` to find what's relevant.
 | Service-specific architecture constraint | `.claude/rules/[service]/[service]-mental-model.md` | Full explanation unique to one service | 200-400 lines |
 | Feature-specific requirement/assumption | `private/specs/NNN-feature.md` → Assumptions section | This feature depends on X being true | 5-15 lines |
 | Experiment outcome/validation | `private/product/experiments/NNN/learnings.md` | After experiment reaches terminal status | 20-50 lines |
-| Code-level implementation detail | Inline code comment | Points to where detailed info lives | 1-3 lines |
+| Code-level implementation detail | Inline code comment | Points to file-specific, non-obvious info | 1-3 lines |
 
 ### Quick decision flow
 
@@ -176,6 +176,44 @@ lives (learnings.md, mental model, interview notes, etc.)
 # See .claude/rules/[service]/[service]-mental-model.md for full details
 ```
 
+#### The bar: per-module knowledge, not generic information
+
+A code comment earns its place only when it carries knowledge a reader of
+*this specific file* needs and would not otherwise find -- a non-obvious
+decision, a constraint, or a gotcha unique to this module.
+
+**Delete, do not keep,** a comment that contains only generic information
+or a generic pointer. "Trimming to a pointer" is not the fix; the
+knowledge already lives in its proper tier (mental model, rule shard, or
+architecture doc), and `paths:` on-demand loading already surfaces it to
+anyone editing the file.
+
+Two concrete anti-pattern shapes:
+
+- **Boilerplate identical across sibling modules.** A header like
+  `See architecture.md § X` pasted onto every file in a directory
+  carries no per-module knowledge. The layer-wide rule belongs in the
+  mental model or `architecture.md`; the inline copy is noise.
+- **A pointer that restates a project-general fact.** If the comment
+  would be equally true in every file in the codebase, it belongs in
+  a shared rule doc -- not here.
+
+**A pointer is justified** when it flags non-obvious, file-specific
+foundational knowledge or an implementation gotcha that applies only in
+this module. Pointers are not banned -- they must be specific.
+
+**Concrete example from `frontend/lib/api/`:**
+
+- Kept: a `citation.ts` docstring line "pure value module -- no
+  `server-only` guard needed because it is consumed by client
+  components." This is per-module reasoning with no equivalent in
+  sibling files.
+- Deleted: the generic "translate at the edge -- see
+  `integrating-bounded-contexts.md` Principle 5" header that had been
+  echoed on every sibling module (`citation.ts`, `jurisdiction.ts`,
+  `material.ts`). That layer-wide rule now lives in
+  `frontend-mental-model.md § Architectural commitments`.
+
 ---
 
 ## Learnings entry format template
@@ -211,6 +249,8 @@ lives (learnings.md, mental model, interview notes, etc.)
 
 - Don't repeat mental model content in learnings.md (link instead)
 - Don't put code comments that could be learnings.md entries
+- Don't echo a generic rule pointer across sibling modules -- one copy
+  in the mental model or rule shard is enough; per-file copies are noise
 
 ### ✗ Add every little thing
 
