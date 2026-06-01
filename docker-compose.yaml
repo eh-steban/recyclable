@@ -34,8 +34,7 @@ services:
       target: dev
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER:-recyclable}:${POSTGRES_PASSWORD:-recyclable_dev}@app-db:5432/${POSTGRES_DB:-recyclable}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
+      BACKEND_URL: http://app-backend:8000
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:
       # Hot reload: mount source, isolate node_modules and .next
