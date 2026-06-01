@@ -18,6 +18,10 @@ repos:
     hooks:
       - id: prettier
         files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|md)$
+        # Hook runs from the repo root; prettier reads .prettierignore
+        # only from its CWD, so point it at the frontend's own ignore
+        # file (patterns there resolve relative to frontend/).
+        args: [--write, --ignore-unknown, --ignore-path, frontend/.prettierignore]
         additional_dependencies:
           - prettier@3.3.3
 
