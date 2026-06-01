@@ -2,15 +2,8 @@
  * Material page ACL -- types, translators, and fetch helper for the
  * material detail page.
  *
- * Dependency direction: citation <- jurisdiction <- material (acyclic).
- * A material page is within a jurisdiction; this module imports from
- * jurisdiction.ts, never the reverse.
- *
  * Components import from lib/api/index.ts; this module is internal
  * to the ACL layer.
- *
- * Per architecture.md § Frontend: Smart-UI rejection and
- * ddd/integrating-bounded-contexts.md Principle 5.
  */
 
 import "server-only";

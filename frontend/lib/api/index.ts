@@ -1,15 +1,11 @@
 /**
  * Public surface of the API layer for the Presentation Context.
+ * Pages and components import ONLY from this file (the ACL barrel).
  *
- * Pages and components import ONLY from this file -- never from
- * lib/api/client.ts, lib/api/types.ts, or the concept modules
- * directly. This barrel re-exports only presentation-context types
- * and the two typed fetch helpers that return those types.
- *
- * Internal translate functions are not re-exported: pages and
- * components consume types + fetch helpers, not translators.
- *
- * Per architecture.md § Frontend: Smart-UI rejection.
+ * Per architecture.md § Frontend: Smart-UI rejection. The full rule --
+ * the import-only-from-here discipline and why translators are not
+ * re-exported -- lives in frontend-mental-model.md § Architectural
+ * commitments.
  */
 
 import "server-only";

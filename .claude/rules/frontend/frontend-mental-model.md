@@ -75,6 +75,63 @@ Both surfaces share the same database and the same grounding contract.
   (cohesive concept, not mechanical bucket) and Principle 5
   (shared value module).
 
+- **Imports inside `lib/api/` follow the page hierarchy and
+  form a DAG.** The arrow runs from narrower scope to broader:
+  `citation.ts` is a shared leaf; `jurisdiction.ts` imports
+  `citation.ts`; `material.ts` imports `jurisdiction.ts` (a
+  material page lives within a jurisdiction). The reverse is
+  never allowed. Future page modules follow the same rule --
+  import the narrower-scope modules they compose, not the
+  reverse. `index.ts` imports from all concept modules and is
+  the only public re-export surface; no concept module imports
+  from `index.ts`.
+
+  *Why:* keeping the internal import graph acyclic (a DAG) means
+  a change to a leaf -- e.g. `citation.ts` -- cannot cascade
+  back through its importers. The page hierarchy is the natural
+  dependency axis here, matching the same cohesive-concept
+  grouping that drives the module layout (`ddd/modules.md`
+  Principle 2).
+
+  *Guardrails:*
+  - If a new page module needs something from a sibling that
+    would create a cycle, extract the shared value into its own
+    leaf module rather than reversing an existing arrow.
+  - `index.ts` re-exports only; it contains no logic. Nothing
+    imports from `index.ts` except the consumers outside
+    `lib/api/`.
+
+- **`lib/api/index.ts` is the only import entry point for the
+  ACL.** Pages and components import from `lib/api` (the
+  `index.ts` barrel) -- never from `client.ts`, `types.ts`, or
+  any concept module (`citation.ts`, `jurisdiction.ts`,
+  `material.ts`) directly. The barrel re-exports only
+  presentation-context types and the typed fetch helpers that
+  return them. Translation functions (`translateCitation`,
+  `translateJurisdictionPage`, ...) are deliberately not
+  re-exported: they are implementation details of the ACL, and
+  callers consume results -- types and fetch helpers -- not the
+  mapping mechanics.
+
+  *Why:* a single entry point enforces the Published-Language
+  boundary. Consumers depend on the stable presentation
+  vocabulary, not on the internal wiring of how wire shapes are
+  translated. When an internal module is reorganized, no import
+  path outside `lib/api/` breaks. This is the concrete
+  enforcement of Smart-UI rejection and the ACL boundary
+  (`architecture.md` § "Frontend: Smart-UI rejection";
+  `ddd/integrating-bounded-contexts.md` Principle 5 --
+  translate at the edge).
+
+  *Guardrails:*
+  - `index.ts` must not re-export anything from `client.ts` or
+    `types.ts` directly -- only presentation types that have
+    been translated through a concept module.
+  - If a component or route handler needs a translation
+    function, that is a design signal: either the caller should
+    receive an already-translated value, or the translation
+    belongs in the fetch helper, not at the call site.
+
 ## Non-commitments (for now)
 
 - Component library and styling choices beyond Tailwind defaults are
