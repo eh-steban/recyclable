@@ -3,13 +3,14 @@
 import logging
 from typing import final
 
-from src.domain.knowledge_base.jurisdiction_repo import JurisdictionRepo
+from src.domain.knowledge_base.jurisdiction import Jurisdiction
 from src.domain.knowledge_base.material_normalizer import MaterialNormalizer
 from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
     Uncertain,
 )
 from src.domain.knowledge_base.rule_repo import RuleRepo
+from src.domain.knowledge_base.source import SourceDocument, SourceId
 from src.domain.knowledge_base.source_repo import SourceRepo
 from src.domain.retrieval.evaluated_answer import (
     EvaluatedAnswer,
@@ -17,22 +18,33 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.domain.retrieval.grounding_validator import GroundingValidator
-from src.domain.retrieval.location_resolver import resolve_location
-from src.domain.retrieval.prompt_composer import ask_compose_v1
+from src.domain.retrieval.prompt_composer import (
+    ask_compose_v1,
+    format_rule_context,
+)
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import RetrievalLLM
 
 logger = logging.getLogger(__name__)
+
+#: User-facing message for all VALIDATOR_REJECTED outcomes.
+_VALIDATOR_REJECTED_MSG = (
+    "The answer could not be grounded in the retrieved sources."
+)
 
 
 @final
 class RetrievalService:
     """Domain Service: composes the Sonnet user-path choreography.
 
-    Takes ports as constructor parameters (MaterialNormalizer,
-    RuleRepo, SourceRepo, RetrievalLLM, JurisdictionRepo) so that the
-    Application Service can inject concrete implementations via FastAPI
-    Depends without the domain importing infrastructure.
+    Takes ports as constructor parameters (MaterialNormalizer, RuleRepo,
+    SourceRepo, RetrievalLLM) so that the Application Service can inject
+    concrete implementations via FastAPI Depends without the domain
+    importing infrastructure.
+
+    Location resolution is the caller's responsibility: ``answer`` receives
+    the already-resolved Jurisdiction (or None for out-of-jurisdiction), so
+    the user path resolves the location exactly once per request.
     """
 
     def __init__(
@@ -41,36 +53,19 @@ class RetrievalService:
         rule_repo: RuleRepo,
         source_repo: SourceRepo,
         retrieval_llm: RetrievalLLM,
-        jurisdiction_repo: JurisdictionRepo,
     ) -> None:
         self._material_normalizer = material_normalizer
         self._rule_repo = rule_repo
         self._source_repo = source_repo
         self._retrieval_llm = retrieval_llm
-        self._jurisdiction_repo = jurisdiction_repo
         self._grounding_validator = GroundingValidator()
 
-    def answer(self, query: Query) -> EvaluatedAnswer | NoEvaluation:
-        slug = resolve_location(query.location_input)
-        if slug is None:
-            logger.info(
-                "location resolution miss: location=%r", query.location_input
-            )
-            return NoEvaluation(
-                reason=NoEvaluationReason.OUT_OF_JURISDICTION,
-                recommended_action=(
-                    f"{query.location_input!r} is not yet supported. "
-                    "Recyclable currently covers Denver only."
-                ),
-            )
-
-        # A configured slug with no knowledge-base row is a misconfig case.
-        jurisdiction = self._jurisdiction_repo.find_by_slug(slug)
+    def answer(
+        self, query: Query, jurisdiction: Jurisdiction | None
+    ) -> EvaluatedAnswer | NoEvaluation:
         if jurisdiction is None:
-            logger.warning(
-                "slug resolved but no jurisdiction row: slug=%r location=%r",
-                slug,
-                query.location_input,
+            logger.info(
+                "out of jurisdiction: location=%r", query.location_input
             )
             return NoEvaluation(
                 reason=NoEvaluationReason.OUT_OF_JURISDICTION,
@@ -132,15 +127,23 @@ class RetrievalService:
                 ),
             )
 
-        # INV-LLM-002
-        source_ids = {rule.source_document_id for rule in rules}
-        source_docs = [self._source_repo.find_by_id(sid) for sid in source_ids]
+        # INV-LLM-002: the retrieved source set is the only set of URLs the
+        # model may cite; it is built here once and reused for the rule
+        # context block and the grounding check (no extra DB call).
+        sources_by_id: dict[SourceId, SourceDocument] = {}
+        for source_id in {rule.source_document_id for rule in rules}:
+            doc = self._source_repo.find_by_id(source_id)
+            if doc is not None:
+                sources_by_id[doc.id] = doc
         retrieved_source_urls: frozenset[str] = frozenset(
-            doc.url for doc in source_docs if doc is not None
+            doc.url for doc in sources_by_id.values()
         )
 
-        messages = ask_compose_v1(query, rule_context="")
-        llm_result = self._retrieval_llm.ask(messages, system_prompt="")
+        rule_context = format_rule_context(rules, sources_by_id)
+        prompt = ask_compose_v1(query, rule_context)
+        llm_result = self._retrieval_llm.ask(
+            list(prompt.messages), prompt.system_prompt
+        )
 
         if isinstance(llm_result, NoEvaluation):
             logger.warning(
@@ -160,9 +163,7 @@ class RetrievalService:
             )
             return NoEvaluation(
                 reason=NoEvaluationReason.VALIDATOR_REJECTED,
-                recommended_action=(
-                    "The answer could not be grounded in the retrieved sources."
-                ),
+                recommended_action=_VALIDATOR_REJECTED_MSG,
             )
 
         return llm_result
@@ -175,7 +176,5 @@ class RetrievalService:
         logger.info("fallback_for_validator_rejection: query=%r", query.text)
         return NoEvaluation(
             reason=NoEvaluationReason.VALIDATOR_REJECTED,
-            recommended_action=(
-                "The answer could not be grounded in the retrieved sources."
-            ),
+            recommended_action=_VALIDATOR_REJECTED_MSG,
         )

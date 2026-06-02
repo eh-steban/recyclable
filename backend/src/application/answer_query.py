@@ -33,6 +33,7 @@ from src.domain.retrieval.evaluated_answer import (
 from src.domain.retrieval.item_verdict import NotCovered
 from src.domain.retrieval.location_resolver import resolve_location
 from src.domain.retrieval.query import Query
+from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID
 from src.domain.retrieval.retrieval_service import RetrievalService
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ def _make_record(
             retrieved_source_urls=retrieved_urls,
             recommended_action=outcome.recommended_action,
             prompt_version="ask_compose_v1",
-            model_id="claude-sonnet-4-6",
+            model_id=SONNET_MODEL_ID,
             latency_ms=latency_ms,
             created_at=created_at,
             no_evaluation_reason=None,
@@ -152,11 +153,20 @@ class AnswerQuery:
         jurisdiction: Jurisdiction | None = (
             self._jurisdiction_repo.find_by_slug(slug) if slug else None
         )
+        if slug is not None and jurisdiction is None:
+            # A configured slug with no knowledge-base row is a misconfig:
+            # the location resolved but the jurisdiction was never seeded.
+            # The user path still refuses (out-of-jurisdiction downstream).
+            logger.warning(
+                "slug resolved but no jurisdiction row: slug=%r location=%r",
+                slug,
+                command.location_input,
+            )
 
         # LLM call outside transaction boundary (repositories.md Principle 9).
         start = datetime.now(tz=UTC)
         outcome: EvaluatedAnswer | NoEvaluation = (
-            self._retrieval_service.answer(query)
+            self._retrieval_service.answer(query, jurisdiction)
         )
         end = datetime.now(tz=UTC)
         latency_ms = int((end - start).total_seconds() * 1000)

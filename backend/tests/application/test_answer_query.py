@@ -134,7 +134,9 @@ class _FakeRetrievalService:
     ) -> None:
         self._answer_result = answer_result
 
-    def answer(self, query: Query) -> EvaluatedAnswer | NoEvaluation:
+    def answer(
+        self, query: Query, jurisdiction: Jurisdiction | None
+    ) -> EvaluatedAnswer | NoEvaluation:
         return self._answer_result
 
     def fallback_for_validator_rejection(self, query: Query) -> NoEvaluation:
@@ -252,7 +254,6 @@ def _build_service(
         rule_repo=_rule_repo,
         source_repo=_source_repo,
         retrieval_llm=_llm,  # type: ignore[arg-type]
-        jurisdiction_repo=j_repo,
     )
     svc = AnswerQuery(
         retrieval_service=retrieval_svc,
@@ -413,6 +414,40 @@ def test_ooj_path_unknown_aurora() -> None:
     assert len(audit_repo._store) == 1
     saved = next(iter(audit_repo._store.values()))
     assert saved.query_location_input == "Aurora"
+    assert saved.no_evaluation_reason == NoEvaluationReason.OUT_OF_JURISDICTION
+
+
+def test_slug_resolved_but_missing_jurisdiction_row_emits_ooj() -> None:
+    """Misconfig: location resolves to DENVER_SLUG but the repo has no
+    Denver row. The application service logs the warning and still refuses
+    out-of-jurisdiction; the LLM is never called.
+    """
+    audit_repo = MemAnswerAuditRecordRepo()
+    empty_j_repo = MemJurisdictionRepo()  # Denver slug resolves, no DB row
+    retrieval_svc = RetrievalService(
+        material_normalizer=_FakeNormalizer(Uncertain()),  # type: ignore[arg-type]
+        rule_repo=MemRuleRepo(),
+        source_repo=MemSourceRepo(),
+        retrieval_llm=_NeverCalledLLM(),  # type: ignore[arg-type]
+    )
+    svc = AnswerQuery(
+        retrieval_service=retrieval_svc,
+        audit_repo=audit_repo,
+        jurisdiction_repo=empty_j_repo,
+    )
+
+    answer = svc.execute(
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver",
+        )
+    )
+
+    assert answer.short_answer == "unknown"
+    assert answer.refusal_reason == "out_of_jurisdiction"
+    assert answer.citations == []
+    assert len(audit_repo._store) == 1
+    saved = next(iter(audit_repo._store.values()))
     assert saved.no_evaluation_reason == NoEvaluationReason.OUT_OF_JURISDICTION
 
 
@@ -601,7 +636,6 @@ def test_save_raises_propagates() -> None:
         rule_repo=rule_repo,
         source_repo=source_repo,
         retrieval_llm=llm,  # type: ignore[arg-type]
-        jurisdiction_repo=j_repo,
     )
     broken_repo = _BrokenAuditRepo()
     svc = AnswerQuery(

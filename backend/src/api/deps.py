@@ -106,14 +106,12 @@ def get_retrieval_service(
     rule_repo: RuleRepo = Depends(get_rule_repo),
     source_repo: SourceRepo = Depends(get_source_repo),
     anthropic: AnthropicClient = Depends(get_anthropic_client),
-    jurisdiction_repo: JurisdictionRepo = Depends(get_jurisdiction_repo),
 ) -> RetrievalService:
     return RetrievalService(
         material_normalizer=normalizer,
         rule_repo=rule_repo,
         source_repo=source_repo,
         retrieval_llm=anthropic,
-        jurisdiction_repo=jurisdiction_repo,
     )
 
 

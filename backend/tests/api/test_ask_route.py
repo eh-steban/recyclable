@@ -452,7 +452,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
     class _FakeRetrievalService:
         """Returns NoEvaluation(OUT_OF_JURISDICTION) unconditionally."""
 
-        def answer(self, query: object) -> NoEvaluation:
+        def answer(self, query: object, jurisdiction: object) -> NoEvaluation:
             return NoEvaluation(
                 reason=NoEvaluationReason.OUT_OF_JURISDICTION,
                 recommended_action=("TestCity is not yet supported."),

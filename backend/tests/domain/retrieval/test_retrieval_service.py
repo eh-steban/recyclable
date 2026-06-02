@@ -1,6 +1,6 @@
 """Tests for RetrievalService branches on the three NormalizationResult
-variants. Includes JurisdictionRepo injection after the location-resolver
-slug-based refactor.
+variants. answer() receives an already-resolved Jurisdiction or None; the
+service never calls location resolution itself.
 """
 
 import uuid
@@ -42,15 +42,11 @@ from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
-from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
 
 
-def _make_jurisdiction(
-    slug: str = DENVER_SLUG,
-) -> tuple[Jurisdiction, JurisdictionId]:
-    jid = JurisdictionId(uuid.uuid4())
-    j = Jurisdiction(
-        id=jid,
+def _make_jurisdiction(slug: str = DENVER_SLUG) -> Jurisdiction:
+    return Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         name="City and County of Denver",
         slug=slug,
         type=JurisdictionType.CITY,
@@ -59,7 +55,6 @@ def _make_jurisdiction(
         created_at=datetime.now(tz=UTC),
         updated_at=datetime.now(tz=UTC),
     )
-    return j, jid
 
 
 def _make_material(slug: str) -> Material:
@@ -207,22 +202,35 @@ def _build_service(
     rule_repo: MemRuleRepo | None = None,
     source_repo: MemSourceRepo | None = None,
     llm: _RecordingLLM | _ConfigurableLLM | None = None,
-    jurisdiction_repo: MemJurisdictionRepo | None = None,
 ) -> RetrievalService:
-    """Assemble RetrievalService with a seeded MemJurisdictionRepo."""
-    j_repo = jurisdiction_repo or MemJurisdictionRepo()
-    if jurisdiction_repo is None:
-        # Seed Denver so OOJ tests that use location="Denver" still resolve.
-        denver, _ = _make_jurisdiction(DENVER_SLUG)
-        j_repo.save(denver)
-
+    """Assemble RetrievalService with in-memory doubles."""
     return RetrievalService(
         material_normalizer=normalizer,  # type: ignore[arg-type]
         rule_repo=rule_repo or MemRuleRepo(),
         source_repo=source_repo or MemSourceRepo(),
         retrieval_llm=llm or _RecordingLLM(),  # type: ignore[arg-type]
-        jurisdiction_repo=j_repo,
     )
+
+
+class TestOutOfJurisdiction:
+    """A None jurisdiction short-circuits to OUT_OF_JURISDICTION before any
+    material normalization or LLM call.
+    """
+
+    def test_none_jurisdiction_returns_ooj(self) -> None:
+        llm = _RecordingLLM()
+        service = _build_service(
+            normalizer=_FakeNormalizer(Uncertain()),
+            llm=llm,
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Aurora"), None
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.OUT_OF_JURISDICTION
+        assert llm.call_count == 0
 
 
 class TestAmbiguousMaterialPath:
@@ -236,7 +244,10 @@ class TestAmbiguousMaterialPath:
             llm=llm,
         )
 
-        result = service.answer(Query(text="plastic", location_input="Denver"))
+        result = service.answer(
+            Query(text="plastic", location_input="Denver"),
+            _make_jurisdiction(),
+        )
 
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.CONFLICTED
@@ -255,7 +266,8 @@ class TestUncertainMaterialPath:
         )
 
         result = service.answer(
-            Query(text="something obscure", location_input="Denver")
+            Query(text="something obscure", location_input="Denver"),
+            _make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -276,35 +288,12 @@ class TestResolvedMaterialReachesRetrievalStep:
         )
 
         result = service.answer(
-            Query(text="cardboard", location_input="Denver")
+            Query(text="cardboard", location_input="Denver"),
+            _make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.NO_EVIDENCE
-        assert llm.call_count == 0
-
-
-class TestOOJWhenJurisdictionNotInRepo:
-    """Location resolves to a slug but the repo has no matching row ->
-    NoEvaluation(OUT_OF_JURISDICTION).
-    """
-
-    def test_slug_miss_in_repo_returns_ooj(self) -> None:
-        # Empty JurisdictionRepo -- Denver slug resolves but no DB row.
-        empty_j_repo = MemJurisdictionRepo()
-        llm = _RecordingLLM()
-        service = _build_service(
-            normalizer=_FakeNormalizer(Uncertain()),
-            llm=llm,
-            jurisdiction_repo=empty_j_repo,
-        )
-
-        result = service.answer(
-            Query(text="cardboard", location_input="Denver")
-        )
-
-        assert isinstance(result, NoEvaluation)
-        assert result.reason == NoEvaluationReason.OUT_OF_JURISDICTION
         assert llm.call_count == 0
 
 
@@ -318,11 +307,8 @@ class TestRetrievedSourceUrlsFromRules:
         source_id = SourceId(uuid.uuid4())
         rule_url = "https://denvergov.org/recycling"
 
-        denver, jid = _make_jurisdiction(DENVER_SLUG)
-        j_repo = MemJurisdictionRepo()
-        j_repo.save(denver)
-
-        rule = _make_rule(jid, material.id, source_id)
+        denver = _make_jurisdiction()
+        rule = _make_rule(denver.id, material.id, source_id)
         source = _make_source(source_id, rule_url)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -336,11 +322,10 @@ class TestRetrievedSourceUrlsFromRules:
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
-            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
-            Query(text="cardboard", location_input="Denver")
+            Query(text="cardboard", location_input="Denver"), denver
         )
 
         assert result is llm_answer
@@ -349,11 +334,8 @@ class TestRetrievedSourceUrlsFromRules:
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver, jid = _make_jurisdiction(DENVER_SLUG)
-        j_repo = MemJurisdictionRepo()
-        j_repo.save(denver)
-
-        rule = _make_rule(jid, material.id, source_id)
+        denver = _make_jurisdiction()
+        rule = _make_rule(denver.id, material.id, source_id)
         source = _make_source(source_id, "https://denvergov.org/recycling")
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -369,11 +351,10 @@ class TestRetrievedSourceUrlsFromRules:
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
-            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
-            Query(text="cardboard", location_input="Denver")
+            Query(text="cardboard", location_input="Denver"), denver
         )
 
         assert isinstance(result, NoEvaluation)
@@ -407,11 +388,8 @@ class TestFallbackForValidatorRejection:
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver, jid = _make_jurisdiction(DENVER_SLUG)
-        j_repo = MemJurisdictionRepo()
-        j_repo.save(denver)
-
-        rule = _make_rule(jid, material.id, source_id)
+        denver = _make_jurisdiction()
+        rule = _make_rule(denver.id, material.id, source_id)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
             citations=(
@@ -426,11 +404,10 @@ class TestFallbackForValidatorRejection:
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={}),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
-            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
-            Query(text="cardboard", location_input="Denver")
+            Query(text="cardboard", location_input="Denver"), denver
         )
 
         assert isinstance(result, NoEvaluation)
