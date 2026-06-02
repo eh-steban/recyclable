@@ -1,13 +1,5 @@
 """AnswerQuery application service -- user-path thin task coordinator.
 
-Per architecture.md § Application services are thin task coordinators:
-  - Mint identity.
-  - Call RetrievalService.answer() -- domain delegation, outside txn.
-  - Construct AnswerAuditRecord (catches AnswerAuditRecordValidatorError
-    on validator-rejection).
-  - Persist (txn boundary: next_identity + save only).
-  - Map domain result -> wire Answer.
-
 The LLM call is outside the transaction boundary per
 repositories.md Principle 9.
 """
@@ -29,16 +21,17 @@ from src.domain.audit.answer_audit_record import (
 )
 from src.domain.audit.answer_audit_record_repo import AnswerAuditRecordRepo
 from src.domain.exceptions import AnswerAuditRecordValidationError
-from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.jurisdiction import (
+    Jurisdiction,
+    JurisdictionId,
+)
+from src.domain.knowledge_base.jurisdiction_repo import JurisdictionRepo
 from src.domain.retrieval.evaluated_answer import (
     EvaluatedAnswer,
     NoEvaluation,
 )
 from src.domain.retrieval.item_verdict import NotCovered
-from src.domain.retrieval.location_resolver import (
-    ResolvedJurisdiction,
-    resolve_location,
-)
+from src.domain.retrieval.location_resolver import resolve_location
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_service import RetrievalService
 
@@ -63,6 +56,7 @@ def _make_record(
     outcome: EvaluatedAnswer | NoEvaluation,
     latency_ms: int,
     created_at: datetime,
+    jurisdiction: Jurisdiction | None,
 ) -> AnswerAuditRecord:
     """Translate EvaluatedAnswer | NoEvaluation into an AnswerAuditRecord.
 
@@ -72,14 +66,13 @@ def _make_record(
 
     The NotCovered sentinel makes the construction-time validator pass
     (NotCovered is not definitive; no citations are required).
+
+    jurisdiction is the resolved Jurisdiction entity (or None for OOJ).
+    The OOJ sentinel _OOJ_JURISDICTION_ID is used when jurisdiction is None;
+    the repo save path maps that sentinel to NULL (existing behaviour).
     """
-    resolved: ResolvedJurisdiction | None = resolve_location(
-        command.location_input
-    )
     jurisdiction_id = (
-        resolved.jurisdiction_id
-        if resolved is not None
-        else _OOJ_JURISDICTION_ID
+        jurisdiction.id if jurisdiction is not None else _OOJ_JURISDICTION_ID
     )
 
     if isinstance(outcome, EvaluatedAnswer):
@@ -139,30 +132,28 @@ class AnswerQuery:
         self,
         retrieval_service: RetrievalService,
         audit_repo: AnswerAuditRecordRepo,
+        jurisdiction_repo: JurisdictionRepo,
     ) -> None:
         self._retrieval_service = retrieval_service
         self._audit_repo = audit_repo
+        self._jurisdiction_repo = jurisdiction_repo
 
     def execute(self, command: AnswerQueryCommand) -> Answer:
-        """Run the ask flow and return a wire Answer.
-
-        Sequence:
-          1. Mint audit_record_id.
-          2. Call RetrievalService.answer() -- LLM I/O outside txn.
-          3. Construct AnswerAuditRecord; catch construction-time AARVE.
-          4. Persist (next_identity + save are the txn boundary).
-          5. Map domain -> wire Answer.
-        """
+        """Run the ask flow and return a wire Answer."""
         query = Query(
             text=command.query_text,
             location_input=command.location_input,
         )
 
-        # Step 1: mint identity before any I/O.
+        # Mint identity before any I/O (available on all paths).
         record_id = self._audit_repo.next_identity()
 
-        # Step 2: LLM call outside transaction boundary
-        # (repositories.md Principle 9).
+        slug = resolve_location(command.location_input)
+        jurisdiction: Jurisdiction | None = (
+            self._jurisdiction_repo.find_by_slug(slug) if slug else None
+        )
+
+        # LLM call outside transaction boundary (repositories.md Principle 9).
         start = datetime.now(tz=UTC)
         outcome: EvaluatedAnswer | NoEvaluation = (
             self._retrieval_service.answer(query)
@@ -177,10 +168,11 @@ class AnswerQuery:
             latency_ms,
         )
 
-        # Step 3: Construct AnswerAuditRecord; catch construction-time
-        # validator (last-line defense after GroundingValidator).
+        # Last-line defense after GroundingValidator.
         try:
-            record = _make_record(record_id, command, outcome, latency_ms, end)
+            record = _make_record(
+                record_id, command, outcome, latency_ms, end, jurisdiction
+            )
         except AnswerAuditRecordValidationError as exc:
             _msg = (
                 "construction-time validator rejected"
@@ -191,13 +183,13 @@ class AnswerQuery:
             outcome = self._retrieval_service.fallback_for_validator_rejection(
                 query
             )
-            record = _make_record(record_id, command, outcome, latency_ms, end)
+            record = _make_record(
+                record_id, command, outcome, latency_ms, end, jurisdiction
+            )
 
-        # Step 4: Persist.
         self._audit_repo.save(record)
 
-        # Step 5: Map to wire.
-        return self._to_wire(record_id.value, command, outcome)
+        return self._to_wire(record_id.value, command, outcome, jurisdiction)
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -208,19 +200,18 @@ class AnswerQuery:
         record_id_value: uuid.UUID,
         command: AnswerQueryCommand,
         outcome: EvaluatedAnswer | NoEvaluation,
+        jurisdiction: Jurisdiction | None,
     ) -> Answer:
         """Map domain outcome to wire Answer."""
-        resolved: ResolvedJurisdiction | None = resolve_location(
-            command.location_input
-        )
-
         if isinstance(outcome, EvaluatedAnswer):
             jid = (
-                resolved.jurisdiction_id
-                if resolved is not None
+                jurisdiction.id
+                if jurisdiction is not None
                 else _OOJ_JURISDICTION_ID
             )
-            jurisdiction_name = resolved.name if resolved is not None else ""
+            jurisdiction_name = (
+                jurisdiction.name if jurisdiction is not None else ""
+            )
             return evaluated_answer_to_wire(
                 outcome,
                 record_id_value,
@@ -233,9 +224,9 @@ class AnswerQuery:
                 record_id_value,
                 command.location_input,
                 jurisdiction_id=(
-                    resolved.jurisdiction_id if resolved is not None else None
+                    jurisdiction.id if jurisdiction is not None else None
                 ),
                 jurisdiction_name=(
-                    resolved.name if resolved is not None else None
+                    jurisdiction.name if jurisdiction is not None else None
                 ),
             )

@@ -56,7 +56,7 @@ from src.domain.retrieval.item_verdict import (
     Conflicted,
     ItemVerdict,
 )
-from src.domain.retrieval.location_resolver import DENVER_JURISDICTION_ID
+from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
@@ -155,25 +155,26 @@ def _make_jurisdiction_id() -> JurisdictionId:
     return JurisdictionId(uuid.uuid4())
 
 
+def _make_denver_jurisdiction() -> Jurisdiction:
+    """Mint Denver with a generated UUID -- NOT the sentinel 0001 UUID."""
+    return Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
+        name="City and County of Denver",
+        slug=DENVER_SLUG,
+        type=JurisdictionType.CITY,
+        country="US",
+        supported_status=SupportedStatus.SUPPORTED,
+        created_at=datetime.now(tz=UTC),
+        updated_at=datetime.now(tz=UTC),
+    )
+
+
 def _make_material(slug: str = "cardboard") -> Material:
     return Material(
         id=MaterialId(uuid.uuid4()),
         canonical_name=slug.replace("-", " ").title(),
         slug=slug,
         category=MaterialCategory.PAPER,
-    )
-
-
-def _make_source(jid: JurisdictionId) -> SourceDocument:
-    return SourceDocument(
-        id=SourceId(uuid.uuid4()),
-        jurisdiction_id=jid,
-        url="https://denvergov.org/recycling",
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
     )
 
 
@@ -223,32 +224,42 @@ def _build_service(
     rule_repo: MemRuleRepo | None = None,
     source_repo: MemSourceRepo | None = None,
     audit_repo: MemAnswerAuditRecordRepo | None = None,
+    jurisdiction: Jurisdiction | None = None,
 ) -> tuple[
     AnswerQuery,
     MemAnswerAuditRecordRepo,
+    Jurisdiction,
 ]:
-    """Assemble AnswerQuery with overridable doubles."""
+    """Assemble AnswerQuery with overridable doubles.
+
+    Returns (svc, audit_repo, denver_jurisdiction) so callers can assert
+    on the jurisdiction's generated id.
+    """
     _rule_repo = rule_repo or MemRuleRepo()
     _source_repo = source_repo or MemSourceRepo()
     _audit_repo = audit_repo or MemAnswerAuditRecordRepo()
 
-    # Default: Denver resolves (location "Denver, CO" hardcoded to
-    # Denver in LocationResolver); normalizer returns Uncertain unless
-    # overridden.
     _llm: _FakeLLM | _NeverCalledLLM = llm or _NeverCalledLLM()
     _normalizer = normalizer or _FakeNormalizer(Uncertain())
+
+    # Seed a generated-UUID Denver jurisdiction in the in-memory repo.
+    _jurisdiction = jurisdiction or _make_denver_jurisdiction()
+    j_repo = MemJurisdictionRepo()
+    j_repo.save(_jurisdiction)
 
     retrieval_svc = RetrievalService(
         material_normalizer=_normalizer,  # type: ignore[arg-type]
         rule_repo=_rule_repo,
         source_repo=_source_repo,
         retrieval_llm=_llm,  # type: ignore[arg-type]
+        jurisdiction_repo=j_repo,
     )
     svc = AnswerQuery(
         retrieval_service=retrieval_svc,
         audit_repo=_audit_repo,
+        jurisdiction_repo=j_repo,
     )
-    return svc, _audit_repo
+    return svc, _audit_repo, _jurisdiction
 
 
 # ===========================================================================
@@ -265,15 +276,15 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
     verdict = Accepted()
     llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
 
-    # Use DENVER_JURISDICTION_ID -- must match resolve_location("Denver, CO").
-    jid = DENVER_JURISDICTION_ID
+    # Build Denver with a GENERATED id (not the 0001 sentinel).
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
     mat = _make_material("cardboard")
-    src = _make_source(jid)
-
+    src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
     src_doc = SourceDocument(
-        id=src.id,
+        id=src_id,
         jurisdiction_id=jid,
         url=source_url,
         title="Denver Recycling Guide",
@@ -283,15 +294,16 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
         source_text_hash="abc123",
     )
     source_repo.save(src_doc)
-    rule = _make_rule(jid, mat.id, src.id)
+    rule = _make_rule(jid, mat.id, src_id)
     rule_repo.save(rule)
 
     normalizer = _FakeNormalizer(Resolved(material=mat))
-    svc, audit_repo = _build_service(
+    svc, audit_repo, _ = _build_service(
         normalizer=normalizer,
         llm=llm,
         rule_repo=rule_repo,
         source_repo=source_repo,
+        jurisdiction=denver,
     )
 
     answer = svc.execute(
@@ -311,6 +323,68 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
 
 
 # ===========================================================================
+# --- id is sourced from the repo row, not hardcoded ---
+# ===========================================================================
+
+
+def test_wire_jurisdiction_id_comes_from_repo_not_hardcoded() -> None:
+    """The wire Answer.jurisdiction.id must be the jurisdiction's
+    application-generated UUID from the repo row, NOT the old hardcoded
+    sentinel 00000000-0000-0000-0000-000000000001.
+
+    Proves the id is no longer hardcoded by minting a fresh UUID, seeding
+    it in the in-memory repo, and asserting the wire response carries it.
+    """
+    source_url = "https://denvergov.org/recycling"
+    citation = _make_citation(source_url)
+    llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
+
+    denver = _make_denver_jurisdiction()  # fresh UUID
+    jid = denver.id
+    mat = _make_material("cardboard")
+    src_id = SourceId(uuid.uuid4())
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
+    src_doc = SourceDocument(
+        id=src_id,
+        jurisdiction_id=jid,
+        url=source_url,
+        title="Denver Recycling Guide",
+        authority_level=1,
+        fetched_at=datetime.now(tz=UTC),
+        source_text="Cardboard is accepted curbside.",
+        source_text_hash="abc123",
+    )
+    source_repo.save(src_doc)
+    rule_repo.save(_make_rule(jid, mat.id, src_id))
+
+    normalizer = _FakeNormalizer(Resolved(material=mat))
+    svc, audit_repo, _ = _build_service(
+        normalizer=normalizer,
+        llm=llm,
+        rule_repo=rule_repo,
+        source_repo=source_repo,
+        jurisdiction=denver,
+    )
+
+    answer = svc.execute(
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        )
+    )
+
+    # Wire id must equal the generated UUID, not any hardcoded sentinel.
+    assert answer.jurisdiction.id == str(jid.value)
+    # The old sentinel 0001 must NOT be present.
+    assert answer.jurisdiction.id != "00000000-0000-0000-0000-000000000001"
+
+    # Audit record must carry the same generated id.
+    saved = next(iter(audit_repo._store.values()))
+    assert saved.jurisdiction_id == jid
+
+
+# ===========================================================================
 # --- OOJ path ---
 # ===========================================================================
 
@@ -321,7 +395,7 @@ def test_ooj_path_unknown_aurora() -> None:
     persists one row with outcome_kind='no_evaluation',
     no_evaluation_reason='OUT_OF_JURISDICTION'. LLM not called.
     """
-    svc, audit_repo = _build_service(llm=_NeverCalledLLM())
+    svc, audit_repo, _ = _build_service(llm=_NeverCalledLLM())
 
     answer = svc.execute(
         AnswerQueryCommand(
@@ -355,7 +429,7 @@ def test_ambiguous_material_path() -> None:
     cand2 = _make_material("hdpe-jug")
     normalizer = _FakeNormalizer(Ambiguous(candidates=(cand1, cand2)))
 
-    svc, audit_repo = _build_service(
+    svc, audit_repo, _ = _build_service(
         normalizer=normalizer,
         llm=_NeverCalledLLM(),
     )
@@ -389,7 +463,7 @@ def test_uncertain_material_path() -> None:
     """
     normalizer = _FakeNormalizer(Uncertain())
 
-    svc, audit_repo = _build_service(
+    svc, audit_repo, _ = _build_service(
         normalizer=normalizer,
         llm=_NeverCalledLLM(),
     )
@@ -433,8 +507,8 @@ def test_validator_rejected_path() -> None:
         )
     )
 
-    # Use DENVER_JURISDICTION_ID so rule lookup succeeds for "Denver, CO".
-    jid = DENVER_JURISDICTION_ID
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
@@ -453,11 +527,12 @@ def test_validator_rejected_path() -> None:
     rule_repo.save(_make_rule(jid, mat.id, src_id))
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
-    svc, audit_repo = _build_service(
+    svc, audit_repo, _ = _build_service(
         normalizer=normalizer,
         llm=llm,
         rule_repo=rule_repo,
         source_repo=source_repo,
+        jurisdiction=denver,
     )
 
     answer = svc.execute(
@@ -499,8 +574,8 @@ def test_save_raises_propagates() -> None:
     citation = _make_citation(source_url)
     llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
 
-    # Use DENVER_JURISDICTION_ID so rule lookup succeeds for "Denver, CO".
-    jid = DENVER_JURISDICTION_ID
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
@@ -519,16 +594,20 @@ def test_save_raises_propagates() -> None:
     rule_repo.save(_make_rule(jid, mat.id, src_id))
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
+    j_repo = MemJurisdictionRepo()
+    j_repo.save(denver)
     retrieval_svc = RetrievalService(
         material_normalizer=normalizer,  # type: ignore[arg-type]
         rule_repo=rule_repo,
         source_repo=source_repo,
         retrieval_llm=llm,  # type: ignore[arg-type]
+        jurisdiction_repo=j_repo,
     )
     broken_repo = _BrokenAuditRepo()
     svc = AnswerQuery(
         retrieval_service=retrieval_svc,
         audit_repo=broken_repo,  # type: ignore[arg-type]
+        jurisdiction_repo=j_repo,
     )
 
     with pytest.raises(RuntimeError, match="DB write failed"):
@@ -557,8 +636,8 @@ def test_llm_rejected_path() -> None:
         )
     )
 
-    # Use DENVER_JURISDICTION_ID so rule lookup succeeds for "Denver, CO".
-    jid = DENVER_JURISDICTION_ID
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
@@ -577,11 +656,12 @@ def test_llm_rejected_path() -> None:
     rule_repo.save(_make_rule(jid, mat.id, src_id))
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
-    svc, audit_repo = _build_service(
+    svc, audit_repo, _ = _build_service(
         normalizer=normalizer,
         llm=llm,
         rule_repo=rule_repo,
         source_repo=source_repo,
+        jurisdiction=denver,
     )
 
     answer = svc.execute(
@@ -749,11 +829,15 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
         )
     )
     audit_repo = MemAnswerAuditRecordRepo()
+    denver = _make_denver_jurisdiction()
+    j_repo = MemJurisdictionRepo()
+    j_repo.save(denver)
     svc = AnswerQuery(
         # RetrievalService is @final; subclassing is forbidden;
         # fake substitution test-only.
         retrieval_service=fake_svc,  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         audit_repo=audit_repo,
+        jurisdiction_repo=j_repo,
     )
 
     answer = svc.execute(
@@ -810,20 +894,20 @@ def test_no_evidence_mapper_produces_unknown_with_no_evidence_refusal() -> None:
 # ===========================================================================
 
 
-def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
-    """The wire jurisdiction.name must come from ResolvedJurisdiction.name,
-    not from a hardcoded literal.
+def test_jurisdiction_name_from_repo_not_hardcoded() -> None:
+    """The wire jurisdiction.name must come from the Jurisdiction entity
+    fetched from the repo, not from a hardcoded literal.
 
-    resolve_location returns a ResolvedJurisdiction carrying the canonical
-    display name from the Denver alias table ("City and County of Denver"),
-    which must reach the wire response unchanged.
+    The repo is seeded with "City and County of Denver" which must reach
+    the wire response unchanged.
     """
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
     verdict = Accepted()
     llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
 
-    jid = DENVER_JURISDICTION_ID
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
     mat = _make_material("cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
@@ -842,11 +926,12 @@ def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
     rule_repo.save(_make_rule(jid, mat.id, src_id))
 
     normalizer = _FakeNormalizer(Resolved(material=mat))
-    svc, _ = _build_service(
+    svc, _, _ = _build_service(
         normalizer=normalizer,
         llm=llm,
         rule_repo=rule_repo,
         source_repo=source_repo,
+        jurisdiction=denver,
     )
 
     answer = svc.execute(
@@ -857,6 +942,6 @@ def test_jurisdiction_name_from_resolver_not_hardcoded() -> None:
     )
 
     # The canonical name must be "City and County of Denver" -- sourced from
-    # the DENVER ResolvedJurisdiction constant, not a hardcoded "Denver".
+    # the Jurisdiction entity in the repo, not any hardcoded string.
     assert answer.jurisdiction.name == "City and County of Denver"
     assert answer.jurisdiction.id is not None

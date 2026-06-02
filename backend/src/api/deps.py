@@ -2,8 +2,7 @@
 
 Each function is a FastAPI `Depends` callable that constructs and returns
 an application or domain service wired with concrete infrastructure.
-Return types are domain Protocols (DIP) -- see architecture.md § Layers
-+ DIP. Tests inject fakes via `app.dependency_overrides`.
+Tests substitute fakes via `app.dependency_overrides`.
 """
 
 from collections.abc import Generator
@@ -107,12 +106,14 @@ def get_retrieval_service(
     rule_repo: RuleRepo = Depends(get_rule_repo),
     source_repo: SourceRepo = Depends(get_source_repo),
     anthropic: AnthropicClient = Depends(get_anthropic_client),
+    jurisdiction_repo: JurisdictionRepo = Depends(get_jurisdiction_repo),
 ) -> RetrievalService:
     return RetrievalService(
         material_normalizer=normalizer,
         rule_repo=rule_repo,
         source_repo=source_repo,
         retrieval_llm=anthropic,
+        jurisdiction_repo=jurisdiction_repo,
     )
 
 
@@ -124,11 +125,13 @@ def get_retrieval_service(
 def get_answer_query(
     retrieval_service: RetrievalService = Depends(get_retrieval_service),
     audit_repo: AnswerAuditRecordRepo = Depends(get_audit_repo),
+    jurisdiction_repo: JurisdictionRepo = Depends(get_jurisdiction_repo),
 ) -> AnswerQuery:
     """Provide the AnswerQuery application service."""
     return AnswerQuery(
         retrieval_service=retrieval_service,
         audit_repo=audit_repo,
+        jurisdiction_repo=jurisdiction_repo,
     )
 
 

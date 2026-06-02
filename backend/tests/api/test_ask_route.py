@@ -44,6 +44,7 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.main import app
+from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
 
 # ---------------------------------------------------------------------------
 # Fake application services (port doubles)
@@ -485,6 +486,9 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
         # fake substitution is test-only.
         retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         audit_repo=MemAuditRepo(),  # type: ignore[arg-type]
+        # "TestCity" resolves to None, so find_by_slug is never reached;
+        # an empty repo is sufficient for the OOJ wire path.
+        jurisdiction_repo=MemJurisdictionRepo(),
     )
 
     def _override() -> AnswerQuery:

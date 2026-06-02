@@ -1,12 +1,18 @@
 """Tests for RetrievalService branches on the three NormalizationResult
-variants.
+variants. Includes JurisdictionRepo injection after the location-resolver
+slug-based refactor.
 """
 
 import uuid
 from datetime import UTC, datetime
 from typing import final
 
-from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.jurisdiction import (
+    Jurisdiction,
+    JurisdictionId,
+    JurisdictionType,
+    SupportedStatus,
+)
 from src.domain.knowledge_base.material import (
     Material,
     MaterialCategory,
@@ -32,9 +38,28 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.domain.retrieval.item_verdict import Accepted
+from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
+from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
+
+
+def _make_jurisdiction(
+    slug: str = DENVER_SLUG,
+) -> tuple[Jurisdiction, JurisdictionId]:
+    jid = JurisdictionId(uuid.uuid4())
+    j = Jurisdiction(
+        id=jid,
+        name="City and County of Denver",
+        slug=slug,
+        type=JurisdictionType.CITY,
+        country="US",
+        supported_status=SupportedStatus.SUPPORTED,
+        created_at=datetime.now(tz=UTC),
+        updated_at=datetime.now(tz=UTC),
+    )
+    return j, jid
 
 
 def _make_material(slug: str) -> Material:
@@ -46,10 +71,14 @@ def _make_material(slug: str) -> Material:
     )
 
 
-def _make_rule(material_id: MaterialId, source_id: SourceId) -> Rule:
+def _make_rule(
+    jurisdiction_id: JurisdictionId,
+    material_id: MaterialId,
+    source_id: SourceId,
+) -> Rule:
     return Rule(
         id=RuleId(uuid.uuid4()),
-        jurisdiction_id=JurisdictionId(uuid.uuid4()),
+        jurisdiction_id=jurisdiction_id,
         material_id=material_id,
         disposition=Disposition.CURBSIDE_RECYCLE,
         accepted_status=AcceptedStatus.ACCEPTED,
@@ -172,19 +201,39 @@ class _ConfigurableLLM:
         return self._response
 
 
+def _build_service(
+    *,
+    normalizer: _FakeNormalizer,
+    rule_repo: MemRuleRepo | None = None,
+    source_repo: MemSourceRepo | None = None,
+    llm: _RecordingLLM | _ConfigurableLLM | None = None,
+    jurisdiction_repo: MemJurisdictionRepo | None = None,
+) -> RetrievalService:
+    """Assemble RetrievalService with a seeded MemJurisdictionRepo."""
+    j_repo = jurisdiction_repo or MemJurisdictionRepo()
+    if jurisdiction_repo is None:
+        # Seed Denver so OOJ tests that use location="Denver" still resolve.
+        denver, _ = _make_jurisdiction(DENVER_SLUG)
+        j_repo.save(denver)
+
+    return RetrievalService(
+        material_normalizer=normalizer,  # type: ignore[arg-type]
+        rule_repo=rule_repo or MemRuleRepo(),
+        source_repo=source_repo or MemSourceRepo(),
+        retrieval_llm=llm or _RecordingLLM(),  # type: ignore[arg-type]
+        jurisdiction_repo=j_repo,
+    )
+
+
 class TestAmbiguousMaterialPath:
     """`Ambiguous(candidates)` -> `NoEvaluation(reason=CONFLICTED)`."""
 
     def test_returns_no_evaluation_with_conflicted_reason(self) -> None:
         candidates = (_make_material("pet-bottle"), _make_material("hdpe-jug"))
         llm = _RecordingLLM()
-        service = RetrievalService(
-            material_normalizer=_FakeNormalizer(
-                Ambiguous(candidates=candidates)
-            ),
-            rule_repo=MemRuleRepo(),
-            source_repo=MemSourceRepo(),
-            retrieval_llm=llm,
+        service = _build_service(
+            normalizer=_FakeNormalizer(Ambiguous(candidates=candidates)),
+            llm=llm,
         )
 
         result = service.answer(Query(text="plastic", location_input="Denver"))
@@ -200,11 +249,9 @@ class TestUncertainMaterialPath:
 
     def test_returns_no_evaluation_with_uncertain_reason(self) -> None:
         llm = _RecordingLLM()
-        service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Uncertain()),
-            rule_repo=MemRuleRepo(),
-            source_repo=MemSourceRepo(),
-            retrieval_llm=llm,
+        service = _build_service(
+            normalizer=_FakeNormalizer(Uncertain()),
+            llm=llm,
         )
 
         result = service.answer(
@@ -223,11 +270,9 @@ class TestResolvedMaterialReachesRetrievalStep:
     def test_resolved_proceeds_past_normalizer_step(self) -> None:
         material = _make_material("cardboard")
         llm = _RecordingLLM()
-        service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),
-            rule_repo=MemRuleRepo(),
-            source_repo=MemSourceRepo(),
-            retrieval_llm=llm,
+        service = _build_service(
+            normalizer=_FakeNormalizer(Resolved(material=material)),
+            llm=llm,
         )
 
         result = service.answer(
@@ -239,15 +284,45 @@ class TestResolvedMaterialReachesRetrievalStep:
         assert llm.call_count == 0
 
 
+class TestOOJWhenJurisdictionNotInRepo:
+    """Location resolves to a slug but the repo has no matching row ->
+    NoEvaluation(OUT_OF_JURISDICTION).
+    """
+
+    def test_slug_miss_in_repo_returns_ooj(self) -> None:
+        # Empty JurisdictionRepo -- Denver slug resolves but no DB row.
+        empty_j_repo = MemJurisdictionRepo()
+        llm = _RecordingLLM()
+        service = _build_service(
+            normalizer=_FakeNormalizer(Uncertain()),
+            llm=llm,
+            jurisdiction_repo=empty_j_repo,
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver")
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.OUT_OF_JURISDICTION
+        assert llm.call_count == 0
+
+
 class TestRetrievedSourceUrlsFromRules:
     """retrieved_source_urls is built from each Rule's source_document_id
-    via SourceRepo.find_by_id, then passed to the GroundingValidator."""
+    via SourceRepo.find_by_id, then passed to the GroundingValidator.
+    """
 
     def test_grounded_citation_url_returns_evaluated_answer(self) -> None:
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
         rule_url = "https://denvergov.org/recycling"
-        rule = _make_rule(material.id, source_id)
+
+        denver, jid = _make_jurisdiction(DENVER_SLUG)
+        j_repo = MemJurisdictionRepo()
+        j_repo.save(denver)
+
+        rule = _make_rule(jid, material.id, source_id)
         source = _make_source(source_id, rule_url)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -257,10 +332,11 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
@@ -272,7 +348,12 @@ class TestRetrievedSourceUrlsFromRules:
     def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
-        rule = _make_rule(material.id, source_id)
+
+        denver, jid = _make_jurisdiction(DENVER_SLUG)
+        j_repo = MemJurisdictionRepo()
+        j_repo.save(denver)
+
+        rule = _make_rule(jid, material.id, source_id)
         source = _make_source(source_id, "https://denvergov.org/recycling")
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -284,10 +365,11 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
@@ -306,11 +388,8 @@ class TestFallbackForValidatorRejection:
         NoEvaluation(reason=VALIDATOR_REJECTED) with a non-empty
         recommended_action matching the spec-pinned grounding-failure text.
         """
-        service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Uncertain()),
-            rule_repo=MemRuleRepo(),
-            source_repo=MemSourceRepo(),
-            retrieval_llm=_RecordingLLM(),
+        service = _build_service(
+            normalizer=_FakeNormalizer(Uncertain()),
         )
         query = Query(text="cardboard", location_input="Denver")
 
@@ -323,10 +402,16 @@ class TestFallbackForValidatorRejection:
     def test_source_repo_miss_excludes_url_from_set(self) -> None:
         """A Rule whose source_document_id has no SourceDocument in the
         repo contributes no URL to retrieved_source_urls. The LLM that
-        cites a URL not in the set should be rejected."""
+        cites a URL not in the set should be rejected.
+        """
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
-        rule = _make_rule(material.id, source_id)
+
+        denver, jid = _make_jurisdiction(DENVER_SLUG)
+        j_repo = MemJurisdictionRepo()
+        j_repo.save(denver)
+
+        rule = _make_rule(jid, material.id, source_id)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
             citations=(
@@ -337,10 +422,11 @@ class TestFallbackForValidatorRejection:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            jurisdiction_repo=j_repo,
         )
 
         result = service.answer(
