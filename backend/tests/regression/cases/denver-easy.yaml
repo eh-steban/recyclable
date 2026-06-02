@@ -66,6 +66,7 @@
 
 - query: Can I recycle aluminum cans in Aurora?
   jurisdiction: denver
+  location: Aurora
   expected_status: unknown
   expected_disposition: unknown
   must_cite_source: false
@@ -74,6 +75,7 @@
 
 - query: Where do I take electronics for recycling in Boulder?
   jurisdiction: denver
+  location: Boulder
   expected_status: unknown
   expected_disposition: unknown
   must_cite_source: false
