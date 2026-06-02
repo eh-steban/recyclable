@@ -37,7 +37,7 @@ from src.domain.retrieval.item_verdict import (
     NotCovered,
     Refused,
 )
-from src.domain.retrieval.retrieval_llm import LLMMessage
+from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID, LLMMessage
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,8 @@ logger = logging.getLogger(__name__)
 # Pinned model IDs (INV-LLM-005)
 # ---------------------------------------------------------------------------
 
-SONNET_MODEL_ID = "claude-sonnet-4-6"
+# SONNET_MODEL_ID (user path) is imported from the domain port, its single
+# source of truth; HAIKU_MODEL_ID (normalizer fallback) is pinned locally.
 HAIKU_MODEL_ID = "claude-haiku-4-5-20251001"
 
 # ---------------------------------------------------------------------------

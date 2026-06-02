@@ -21,9 +21,9 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluation,
     NoEvaluationReason,
 )
+from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID
 from src.infra.external.anthropic_client import (
     HAIKU_MODEL_ID,
-    SONNET_MODEL_ID,
     AnthropicClient,
 )
 
