@@ -57,12 +57,16 @@ def _get_audit_row(
     return row
 
 
-# Denver cases (no `location` field) reach the deferred Sonnet prompt
-# composition and currently return 'unknown' -- marked pending (xfail) until
-# that lands. OOJ cases (Aurora / Boulder) short-circuit before the LLM and
-# pass. See private/specs/01-sonnet-user-path.md (Sonnet answer composition).
-_PENDING_PROMPT = pytest.mark.xfail(
-    reason="Sonnet prompt composition deferred",
+# Denver cases drive the full live Sonnet path and are non-gating
+# xfail(strict=False): the live smoke eval is nondeterministic. The Haiku
+# material-normalizer fallback can return Ambiguous for some full-sentence
+# queries (notably "corrugated", "styrofoam"), and the conditional verdict is
+# LLM judgment, so a case may XPASS or XFAIL run to run. Deterministic coverage
+# of prompt composition, grounding, and refusal lives in the domain/application
+# unit tests. The OOJ cases (with an explicit location) short-circuit before the
+# LLM and stay hard assertions.
+_LIVE_NONDETERMINISTIC = pytest.mark.xfail(
+    reason="live smoke eval is nondeterministic (normalizer fallback + LLM)",
     strict=False,
 )
 
@@ -73,7 +77,7 @@ _PENDING_PROMPT = pytest.mark.xfail(
         pytest.param(
             case,
             case_id,
-            marks=([] if case.get("location") else [_PENDING_PROMPT]),
+            marks=([] if case.get("location") else [_LIVE_NONDETERMINISTIC]),
         )
         for case, case_id in zip(_RAW_CASES, _CASE_IDS, strict=True)
     ],
@@ -193,7 +197,7 @@ async def test_case(
     latency_ms_values.append(latency)
 
 
-@_PENDING_PROMPT  # needs all 8 cases to append latency; denver cases pending
+@_LIVE_NONDETERMINISTIC  # needs all 8 latencies; denver cases are non-gating
 def test_latency_aggregate(latency_ms_values: list[int]) -> None:
     """Assert p50 < 3000 ms and p95 < 6000 ms across all 8 cases.
 
