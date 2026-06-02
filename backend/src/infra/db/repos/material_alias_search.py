@@ -9,7 +9,7 @@ Implements the MaterialAliasSearch port from
 src/domain/knowledge_base/material_normalizer.py.
 
 Runs the per-material max trigram similarity query against
-material_aliases using the pg_trgm similarity() function.
+material_aliases using the pg_trgm word_similarity() function.
 """
 
 import logging
@@ -45,9 +45,11 @@ class PgMaterialAliasSearch:
         Requires pg_trgm extension (migration 0004).
         """
         logger.debug("PgMaterialAliasSearch.search: query=%r", query_text)
-        # similarity() is a pg_trgm function; SQLAlchemy's func wrapper
-        # delegates to the database which requires the extension loaded.
-        sim_col = func.similarity(MaterialAliasORM.alias, query_text)
+        # word_similarity (not similarity): the alias is a short phrase and
+        # query_text is a full sentence, so we score the alias against its
+        # best-matching extent of the query rather than the whole query --
+        # plain similarity() dilutes below the normalizer trust threshold.
+        sim_col = func.word_similarity(MaterialAliasORM.alias, query_text)
         max_sim = func.max(sim_col).label("max_sim")
         stmt = (
             select(

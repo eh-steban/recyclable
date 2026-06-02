@@ -23,6 +23,9 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from src.domain.knowledge_base.material import MaterialCategory, MaterialId
+from src.domain.knowledge_base.material_normalizer import (
+    TRIGRAM_SIMILARITY_THRESHOLD,
+)
 from src.infra.db.models.material_alias import MaterialAliasORM
 from src.infra.db.repos.material_alias_search import PgMaterialAliasSearch
 
@@ -102,6 +105,32 @@ def test_search_returns_ordered_by_similarity_desc(
 
 
 @pytest.mark.integration
+def test_search_matches_alias_embedded_in_natural_language_query(
+    db_session: Session,
+) -> None:
+    """A short alias must clear the trust threshold against a full question.
+
+    Real queries embed the material phrase in a sentence ("Can I recycle
+    aluminum cans in Denver?"). Plain similarity() dilutes a short alias
+    against the long query well below the normalizer's trust threshold,
+    sending every query to the Haiku fallback; word_similarity()
+    (best-extent match) is required so the trigram step resolves.
+    """
+    mat = _insert_material(db_session, "Aluminum Cans")
+    _insert_alias(db_session, mat, "aluminum can")
+
+    adapter = PgMaterialAliasSearch(db_session)
+    results = adapter.search("Can I recycle aluminum cans in Denver?")
+
+    scores = {mid: sim for mid, sim in results}
+    assert mat in scores, "alias did not match the natural-language query"
+    assert scores[mat] >= TRIGRAM_SIMILARITY_THRESHOLD, (
+        f"score {scores[mat]:.3f} below trust threshold "
+        f"{TRIGRAM_SIMILARITY_THRESHOLD}"
+    )
+
+
+@pytest.mark.integration
 def test_search_excludes_zero_similarity(
     db_session: Session,
 ) -> None:
@@ -148,7 +177,7 @@ def test_search_collapses_multi_alias_to_max(
     # Calculate individual alias similarities for comparison.
     alias_sims_stmt = select(
         MaterialAliasORM.alias,
-        func.similarity(MaterialAliasORM.alias, "cardboard").label("sim"),
+        func.word_similarity(MaterialAliasORM.alias, "cardboard").label("sim"),
     ).where(MaterialAliasORM.material_id == mat_a.value)
     alias_rows = db_session.execute(alias_sims_stmt).all()
     max_alias_sim = max(float(row[1]) for row in alias_rows)
