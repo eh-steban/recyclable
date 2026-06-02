@@ -24,7 +24,8 @@ from src.domain.exceptions import (
 )
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
-from src.domain.retrieval.item_verdict import Accepted
+from src.domain.retrieval.evaluated_answer import NoEvaluationReason
+from src.domain.retrieval.item_verdict import Accepted, NotCovered
 from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
 
 # ---------------------------------------------------------------------------
@@ -106,6 +107,45 @@ def test_save_and_find_roundtrip(db_session: Session) -> None:
     assert loaded.citations[0].title == record.citations[0].title
     # retrieved_source_urls roundtrip via validator_findings JSONB.
     assert loaded.retrieved_source_urls == record.retrieved_source_urls
+
+
+def test_save_out_of_jurisdiction_record_persists_as_null(
+    db_session: Session,
+) -> None:
+    """An OOJ record (all-zero sentinel jurisdiction_id) saves and reloads.
+
+    The sentinel ``uuid.UUID(int=0)`` is not a real jurisdiction row, so
+    writing it into the FK column violates
+    ``fk_answer_audit_records_jurisdiction_id``. The save path must store
+    NULL -- mirroring the load path's NULL -> sentinel convention -- so the
+    out-of-jurisdiction user path (Aurora / Boulder) can record an audit
+    row. Regression for the OOJ foreign-key failure.
+    """
+    ooj = JurisdictionId(uuid.UUID(int=0))
+    record = AnswerAuditRecord(
+        id=AnswerAuditRecordId(uuid.uuid4()),
+        query_text="Can I recycle glass in Aurora?",
+        query_location_input="Aurora",
+        jurisdiction_id=ooj,
+        verdict=NotCovered(),
+        citations=(),
+        retrieved_source_urls=frozenset(),
+        recommended_action="Aurora is not covered yet.",
+        prompt_version="no_evaluation",
+        model_id="none",
+        latency_ms=0,
+        created_at=datetime.now(UTC),
+        no_evaluation_reason=NoEvaluationReason.OUT_OF_JURISDICTION,
+    )
+    repo = PgAnswerAuditRecordRepo(db_session)
+
+    # Must not raise: previously wrote the sentinel into the FK column,
+    # producing an IntegrityError mistranslated as DuplicateAggregateError.
+    repo.save(record)
+
+    loaded = repo.find_by_id(record.id)
+    assert loaded is not None
+    assert loaded.jurisdiction_id == ooj
 
 
 def test_find_by_id_returns_none_for_unknown(db_session: Session) -> None:

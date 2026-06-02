@@ -44,6 +44,12 @@ from src.infra.db.repos._exceptions import translate_repo_exceptions
 
 logger = logging.getLogger(__name__)
 
+#: All-zero sentinel for "no real jurisdiction resolved" (out-of-
+#: jurisdiction). Persisted as NULL -- the sentinel is never a real
+#: jurisdiction row, so it cannot satisfy the FK -- and re-materialised on
+#: load. See .claude/rules/backend/backend-mental-model.md (OOJ sentinel).
+_OOJ_SENTINEL = uuid.UUID(int=0)
+
 
 # ---------------------------------------------------------------------------
 # Verdict mapping
@@ -123,9 +129,6 @@ class PgAnswerAuditRecordRepo:
             record.id,
             record.verdict,
         )
-        # outcome_kind/no_evaluation_reason come from the aggregate's
-        # no_evaluation_reason field (set by the application service on
-        # NoEvaluation paths; None for evaluated outcomes).
         no_eval_reason: str | None = None
         outcome_kind: str = "evaluated"
 
@@ -145,16 +148,21 @@ class PgAnswerAuditRecordRepo:
             "retrieved_source_urls": sorted(record.retrieved_source_urls),
         }
 
-        # Persist Accepted.conditions so round-trips are faithful.
         conditions_json: list[str] | None = None
         if isinstance(record.verdict, Accepted) and record.verdict.conditions:
             conditions_json = list(record.verdict.conditions)
+
+        jurisdiction_col = (
+            None
+            if record.jurisdiction_id.value == _OOJ_SENTINEL
+            else record.jurisdiction_id.value
+        )
 
         orm_row = AnswerAuditRecordORM(
             id=record.id.value,
             query_text=record.query_text,
             query_location_input=record.query_location_input,
-            jurisdiction_id=record.jurisdiction_id.value,
+            jurisdiction_id=jurisdiction_col,
             verdict=_verdict_to_wire(record),
             outcome_kind=outcome_kind,
             no_evaluation_reason=no_eval_reason,
@@ -205,15 +213,12 @@ class PgAnswerAuditRecordRepo:
         )
         retrieved_source_urls = frozenset(str(u) for u in retrieved_urls_raw)
 
-        # Read conditions JSONB column (may be None for old rows).
         raw_conditions = cast(
             list[Any] | None, getattr(row, "conditions", None)
         )
 
-        # Reconstruct verdict from wire string + conditions.
         verdict = _wire_to_verdict(row.verdict, raw_conditions)
 
-        # Ensure created_at is timezone-aware (Postgres returns tz-aware).
         created_at: datetime = row.created_at
         if created_at.tzinfo is None:
             created_at = created_at.replace(tzinfo=dt.UTC)
@@ -224,7 +229,7 @@ class PgAnswerAuditRecordRepo:
         jid = (
             row.jurisdiction_id
             if row.jurisdiction_id is not None
-            else (uuid.UUID(int=0))
+            else _OOJ_SENTINEL
         )
 
         return AnswerAuditRecord(
