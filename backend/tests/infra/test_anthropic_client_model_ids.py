@@ -82,7 +82,7 @@ def test_classify_uses_haiku_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(anthropic, "Anthropic", lambda **kwargs: fake_sdk)
 
     client = AnthropicClient(api_key="test")
-    client.classify(query_text="cardboard box", known_material_ids=[])
+    client.classify(query_text="cardboard box", known_materials=[])
 
     call_kwargs = messages_spy.create.call_args
     assert call_kwargs is not None, "messages.create was not called"

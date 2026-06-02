@@ -86,13 +86,15 @@ class MaterialNormalizerLLM(Protocol):
     def classify(
         self,
         query_text: str,
-        known_material_ids: list[MaterialId],
+        known_materials: list[Material],
     ) -> list[tuple[MaterialId, float]]:
-        """Classify query_text against known material slugs.
+        """Classify query_text against the known materials.
 
-        Returns ranked (material_id, confidence) pairs in descending
-        confidence order. The MaterialNormalizerService maps the ranked
-        list to the NormalizationResult sum using the thresholds above.
+        The materials carry their canonical names and categories so the
+        classifier can match semantically (a bare id list gives it
+        nothing to reason about). Returns ranked (material_id, confidence)
+        pairs in descending confidence order, including only the materials
+        the query plausibly refers to -- an empty list when none fit.
         """
         ...
 
@@ -150,8 +152,8 @@ class MaterialNormalizerService:
             top_sim,
             TRIGRAM_SIMILARITY_THRESHOLD,
         )
-        known_ids = self._material_lookup.all_material_ids()
-        ranked = self._llm.classify(query_text, known_ids)
+        known_materials = self._material_lookup.all_materials()
+        ranked = self._llm.classify(query_text, known_materials)
         result = self._resolve_llm(ranked)
         logger.debug("MaterialNormalizer llm result=%s", type(result).__name__)
         return result

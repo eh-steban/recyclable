@@ -1,5 +1,5 @@
 # Denver-easy seed -- materials with aliases.
-# 6 accepted + 2 rejected = 8 materials total.
+# 6 accepted + 2 conditional + 2 rejected = 10 materials total.
 
 - slug: aluminum-cans
   canonical_name: Aluminum beverage can
@@ -9,6 +9,18 @@
     - soda can
     - beer can
 
+- slug: tin-steel-cans
+  canonical_name: Tin or steel can
+  category: metal
+  aliases:
+    - tin can
+    - steel can
+    - food can
+    - soup can
+    - pet food can
+    - cat food can
+    - vegetable can
+
 - slug: corrugated-cardboard
   canonical_name: Corrugated cardboard box
   category: paper
@@ -16,6 +28,14 @@
     - cardboard box
     - shipping box
     - moving box
+
+- slug: pizza-box
+  canonical_name: Pizza box
+  category: paper
+  aliases:
+    - pizza box
+    - pizza boxes
+    - greasy pizza box
 
 - slug: glass-bottles
   canonical_name: Glass beverage bottle

@@ -124,11 +124,11 @@ class PgMaterialRepo:
             for row in rows
         ]
 
-    def all_material_ids(self) -> list[MaterialId]:
-        logger.debug("all_material_ids")
-        stmt = select(MaterialORM.id)
-        raw_ids = self._session.execute(stmt).scalars().all()
-        return [MaterialId(mid) for mid in raw_ids]
+    def all_materials(self) -> list[Material]:
+        logger.debug("all_materials")
+        stmt = select(MaterialORM)
+        rows = self._session.execute(stmt).scalars().all()
+        return [self._to_domain(row) for row in rows]
 
     # ------------------------------------------------------------------
     # Private helpers

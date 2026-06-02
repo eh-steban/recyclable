@@ -23,7 +23,7 @@ from typing import Any, Final, cast, final
 import anthropic
 from anthropic.types import Message, MessageParam
 
-from src.domain.knowledge_base.material import MaterialId
+from src.domain.knowledge_base.material import Material, MaterialId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import (
     EvaluatedAnswer,
@@ -294,29 +294,46 @@ class AnthropicClient:
     def classify(
         self,
         query_text: str,
-        known_material_ids: list[MaterialId],
+        known_materials: list[Material],
     ) -> list[tuple[MaterialId, float]]:
-        """Call Haiku to classify query_text against known material IDs.
+        """Call Haiku to classify query_text against the known materials.
 
-        Returns ranked (material_id, confidence) pairs. Returns [] on
-        any parse failure (domain normalizer treats [] as Uncertain).
+        Returns ranked (material_id, confidence) pairs for the materials
+        the query plausibly refers to. Returns [] when no material fits
+        or on any parse failure (the domain normalizer treats [] as
+        Uncertain).
         """
         logger.info(
             "classify: calling Haiku model=%s query=%r candidates=%d",
             HAIKU_MODEL_ID,
             query_text[:60],
-            len(known_material_ids),
+            len(known_materials),
         )
-        id_strs = [str(mid) for mid in known_material_ids]
+        catalog = [
+            {
+                "material_id": str(m.id),
+                "name": m.canonical_name,
+                "category": str(m.category),
+            }
+            for m in known_materials
+        ]
         system_text = (
-            "You are a recycling material classifier. "
-            "Given a user query, rank the provided material IDs by "
-            "relevance (0.0-1.0 confidence). "
-            "Return a JSON array: "
-            '[{"material_id": "<uuid>", "confidence": 0.9}, ...]'
+            "You are a recycling material classifier. You are given a "
+            "user's query and a catalog of known materials, each with a "
+            "material_id, name, and category. Identify which catalog "
+            "materials the query refers to and score each by how "
+            "confidently the query refers to it (0.0-1.0). Include ONLY "
+            "materials the query plausibly refers to -- omit unrelated "
+            "ones. If the query does not refer to any material in the "
+            "catalog, return an empty array. "
+            "Return only a JSON array: "
+            '[{"material_id": "<id>", "confidence": 0.9}, ...]'
         )
+        # User text is delimited from the instructions (INV-LLM-004),
+        # matching the <user_query> convention of the Sonnet ask path.
         user_msg = (
-            f"Query: {query_text}\nKnown material IDs: {json.dumps(id_strs)}"
+            f"<user_query>{query_text}</user_query>\n"
+            f"Catalog: {json.dumps(catalog)}"
         )
 
         try:
@@ -339,12 +356,12 @@ class AnthropicClient:
             logger.error("classify: error calling Haiku: %s", exc)
             return []
 
-        return self._parse_classify_response(response, known_material_ids)
+        return self._parse_classify_response(response, known_materials)
 
     def _parse_classify_response(
         self,
         response: Message,
-        known_material_ids: list[MaterialId],
+        known_materials: list[Material],
     ) -> list[tuple[MaterialId, float]]:
         """Parse Haiku classify response into (MaterialId, float) pairs."""
         try:
@@ -352,7 +369,7 @@ class AnthropicClient:
             if text is None:
                 return []
             items: list[dict[str, Any]] = json.loads(_extract_json(text))
-            id_map = {str(mid): mid for mid in known_material_ids}
+            id_map = {str(m.id): m.id for m in known_materials}
             results: list[tuple[MaterialId, float]] = []
             for item in items:
                 mid_str = item.get("material_id", "")

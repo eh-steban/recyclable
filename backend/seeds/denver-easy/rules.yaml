@@ -18,6 +18,20 @@
     - Empty and rinse the can
   confidence: high
 
+- slug: denver-tin-steel-cans
+  jurisdiction: denver-co-us
+  material: tin-steel-cans
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: accepted
+  source_quote: >-
+    Tin and steel cans, like soup, fruit, vegetable, and pet food cans
+  preparation_steps:
+    - Empty and rinse the can
+    - Ensure the can is free of food residue
+  confidence: high
+
 - slug: denver-corrugated-cardboard
   jurisdiction: denver-co-us
   material: corrugated-cardboard
@@ -29,6 +43,24 @@
   preparation_steps:
     - Flatten box before placing in cart
     - Cut to no larger than 2 ft x 2 ft for shipping boxes
+  confidence: high
+
+- slug: denver-pizza-box
+  jurisdiction: denver-co-us
+  material: pizza-box
+  source_document: >-
+    https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
+  disposition: curbside_recycle
+  accepted_status: conditional
+  source_quote: >-
+    Non-greasy pizza boxes (recycle the clean part and discard the greasy
+    or soiled portion)
+  preparation_steps:
+    - Recycle only the clean part of the box
+    - Discard greasy or soiled portions in the trash
+    - Remove all food and small plastic items
+  warnings:
+    - Greasy or food-soiled cardboard is not accepted
   confidence: high
 
 - slug: denver-glass-bottles

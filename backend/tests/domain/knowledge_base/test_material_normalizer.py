@@ -71,16 +71,16 @@ class FakeMaterialNormalizerLLM:
         self._result: list[tuple[MaterialId, float]] = result or []
         self.call_count = 0
         self.last_query: str | None = None
-        self.last_known_ids: list[MaterialId] | None = None
+        self.last_known_materials: list[Material] | None = None
 
     def classify(
         self,
         query_text: str,
-        known_material_ids: list[MaterialId],
+        known_materials: list[Material],
     ) -> list[tuple[MaterialId, float]]:
         self.call_count += 1
         self.last_query = query_text
-        self.last_known_ids = list(known_material_ids)
+        self.last_known_materials = list(known_materials)
         return list(self._result)
 
 
@@ -664,16 +664,17 @@ class TestLLMConfidenceThresholdBoundary:
 
 
 # ===========================================================================
-# LLM -- classify called with full material ID set
+# LLM -- classify called with full material set
 # ===========================================================================
 
 
-class TestLLMClassifyCalledWithAllIds:
-    """Step 2 calls llm.classify with the full set from all_material_ids()."""
+class TestLLMClassifyCalledWithAllMaterials:
+    """Step 2 calls llm.classify with the full set from all_materials()."""
 
-    def test_llm_classify_receives_all_material_ids(self) -> None:
+    def test_llm_classify_receives_all_materials(self) -> None:
         """llm.classify is called with the full list returned by
-        material_lookup.all_material_ids(), not a subset."""
+        material_lookup.all_materials(), not a subset, and the materials
+        carry their names so the classifier can match semantically."""
         mat_a = _mat(_MAT_A_ID, "Material A")
         mat_b = _mat(_MAT_B_ID, "Material B")
         mat_c = _mat(_MAT_C_ID, "Material C")
@@ -687,7 +688,12 @@ class TestLLMClassifyCalledWithAllIds:
         _ = svc.normalize("unknown query")
 
         assert llm.call_count == 1
-        assert llm.last_known_ids is not None
-        passed_values = {mid.value for mid in llm.last_known_ids}
+        assert llm.last_known_materials is not None
+        passed_values = {m.id.value for m in llm.last_known_materials}
         expected = {_MAT_A_ID.value, _MAT_B_ID.value, _MAT_C_ID.value}
         assert passed_values == expected
+        assert {m.canonical_name for m in llm.last_known_materials} == {
+            "Material A",
+            "Material B",
+            "Material C",
+        }

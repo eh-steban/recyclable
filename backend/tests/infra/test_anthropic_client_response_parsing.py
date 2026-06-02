@@ -17,7 +17,11 @@ import uuid
 import anthropic
 import pytest
 
-from src.domain.knowledge_base.material import MaterialId
+from src.domain.knowledge_base.material import (
+    Material,
+    MaterialCategory,
+    MaterialId,
+)
 from src.domain.retrieval.evaluated_answer import EvaluatedAnswer, NoEvaluation
 from src.domain.retrieval.item_verdict import Accepted
 from src.infra.external.anthropic_client import AnthropicClient
@@ -62,6 +66,16 @@ _FENCED_ASK = (
 )
 
 
+def _mat(mid: MaterialId) -> Material:
+    """Minimal Material for classify() tests -- only the id is asserted on."""
+    return Material(
+        id=mid,
+        canonical_name="Aluminum can",
+        slug="aluminum-can",
+        category=MaterialCategory.METAL,
+    )
+
+
 def test_classify_parses_fenced_json_with_trailing_prose(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -70,7 +84,7 @@ def test_classify_parses_fenced_json_with_trailing_prose(
     client = _client_returning(_FENCED_CLASSIFY, monkeypatch)
 
     result = client.classify(
-        query_text="aluminum cans", known_material_ids=[mid]
+        query_text="aluminum cans", known_materials=[_mat(mid)]
     )
 
     assert result == [(mid, 0.85)]
@@ -102,7 +116,7 @@ def test_classify_still_parses_bare_json_array(
     )
     client = _client_returning(bare, monkeypatch)
 
-    result = client.classify(query_text="x", known_material_ids=[mid])
+    result = client.classify(query_text="x", known_materials=[_mat(mid)])
 
     assert result == [(mid, 0.5)]
 
@@ -127,7 +141,7 @@ def test_classify_degrades_to_empty_on_prose_only(
     mid = MaterialId(uuid.UUID("33333333-3333-3333-3333-333333333333"))
     client = _client_returning("Unsure which material you mean.", monkeypatch)
 
-    result = client.classify(query_text="x", known_material_ids=[mid])
+    result = client.classify(query_text="x", known_materials=[_mat(mid)])
 
     assert result == []
 

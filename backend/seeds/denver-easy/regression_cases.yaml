@@ -1,13 +1,21 @@
-# Denver-easy eval cases -- 8 cases covering the required distribution.
-# Distribution: 3 accepted, 2 rejected, 1 conditional, 2 out-of-jurisdiction.
+# Denver-easy eval cases -- 10 cases covering the required distribution.
+# Distribution: 4 accepted, 2 rejected, 2 conditional, 2 out-of-jurisdiction.
 # Out-of-jurisdiction cases use jurisdiction=denver-co-us (the system under
 # test) with refusal_required=true; the query text names a non-Denver location.
 
-# --- Accepted (3 cases) ---
+# --- Accepted (4 cases) ---
 
 - query: Can I recycle aluminum cans in Denver?
   jurisdiction: denver-co-us
   material: aluminum-cans
+  expected_status: accepted
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+
+- query: Can I recycle pet food cans in Denver?
+  jurisdiction: denver-co-us
+  material: tin-steel-cans
   expected_status: accepted
   expected_disposition: curbside_recycle
   must_cite_source: true
@@ -47,7 +55,7 @@
   must_cite_source: true
   refusal_required: false
 
-# --- Conditional (1 case) ---
+# --- Conditional (2 cases) ---
 
 - query: Can I recycle milk jugs in Denver?
   jurisdiction: denver-co-us
@@ -59,6 +67,17 @@
   notes: >-
     Accepted but requires rinsing if residue remains; conditional on
     container being empty and free of food residue.
+
+- query: Can I recycle a pizza box in Denver?
+  jurisdiction: denver-co-us
+  material: pizza-box
+  expected_status: conditional
+  expected_disposition: curbside_recycle
+  must_cite_source: true
+  refusal_required: false
+  notes: >-
+    Non-greasy pizza boxes are accepted; conditional on removing food
+    and discarding the greasy or soiled portion.
 
 # --- Out-of-jurisdiction (2 cases) ---
 # jurisdiction=denver-co-us because that is the system under test.
