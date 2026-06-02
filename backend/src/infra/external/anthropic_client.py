@@ -109,6 +109,21 @@ def _first_text_block(response: Message) -> str | None:
     return None
 
 
+def _extract_json(text: str) -> str:
+    """Extract a JSON payload from an LLM text block.
+
+    Claude commonly wraps JSON in a ```json ... ``` fence and may append
+    prose after the closing fence. Return the fenced contents when a fence
+    is present; otherwise return the stripped text unchanged so a bare JSON
+    body still parses.
+    """
+    stripped = text.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", stripped, re.DOTALL)
+    if fence is not None:
+        return fence.group(1).strip()
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # AnthropicClient
 # ---------------------------------------------------------------------------
@@ -216,7 +231,7 @@ class AnthropicClient:
                     reason=NoEvaluationReason.VALIDATOR_REJECTED
                 )
 
-            payload: dict[str, Any] = json.loads(text)
+            payload: dict[str, Any] = json.loads(_extract_json(text))
 
             # Extract mandatory fields; fall back to NoEvaluation on error.
             verdict_str: str = payload.get("verdict", "")
@@ -335,7 +350,7 @@ class AnthropicClient:
             text = _first_text_block(response)
             if text is None:
                 return []
-            items: list[dict[str, Any]] = json.loads(text)
+            items: list[dict[str, Any]] = json.loads(_extract_json(text))
             id_map = {str(mid): mid for mid in known_material_ids}
             results: list[tuple[MaterialId, float]] = []
             for item in items:
