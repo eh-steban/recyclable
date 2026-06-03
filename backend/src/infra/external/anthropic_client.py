@@ -49,6 +49,10 @@ logger = logging.getLogger(__name__)
 # source of truth; HAIKU_MODEL_ID (normalizer fallback) is pinned locally.
 HAIKU_MODEL_ID = "claude-haiku-4-5-20251001"
 
+# Versioned name of the Haiku classify prompt, logged per call so traces
+# map back to the exact prompt wording (llm rules: prompt name + version).
+MATERIAL_NORMALIZE_PROMPT_VERSION = "material_normalize_v1"
+
 # ---------------------------------------------------------------------------
 # Destructive-tool guard
 # ---------------------------------------------------------------------------
@@ -304,8 +308,9 @@ class AnthropicClient:
         Uncertain).
         """
         logger.info(
-            "classify: calling Haiku model=%s query=%r candidates=%d",
+            "classify: Haiku model=%s prompt=%s query=%r candidates=%d",
             HAIKU_MODEL_ID,
+            MATERIAL_NORMALIZE_PROMPT_VERSION,
             query_text[:60],
             len(known_materials),
         )
@@ -329,11 +334,12 @@ class AnthropicClient:
             "Return only a JSON array: "
             '[{"material_id": "<id>", "confidence": 0.9}, ...]'
         )
-        # User text is delimited from the instructions (INV-LLM-004),
-        # matching the <user_query> convention of the Sonnet ask path.
+        # User query and catalog are each delimited (INV-LLM-004), matching
+        # the <user_query> convention of the ask path, so a crafted query
+        # cannot forge catalog entries by escaping its tag.
         user_msg = (
             f"<user_query>{query_text}</user_query>\n"
-            f"Catalog: {json.dumps(catalog)}"
+            f"<catalog>{json.dumps(catalog)}</catalog>"
         )
 
         try:

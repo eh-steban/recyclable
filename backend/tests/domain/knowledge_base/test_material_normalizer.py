@@ -673,8 +673,8 @@ class TestLLMClassifyCalledWithAllMaterials:
 
     def test_llm_classify_receives_all_materials(self) -> None:
         """llm.classify is called with the full list returned by
-        material_lookup.all_materials(), not a subset, and the materials
-        carry their names so the classifier can match semantically."""
+        material_lookup.all_materials(), not a subset, including each
+        material's canonical name."""
         mat_a = _mat(_MAT_A_ID, "Material A")
         mat_b = _mat(_MAT_B_ID, "Material B")
         mat_c = _mat(_MAT_C_ID, "Material C")
