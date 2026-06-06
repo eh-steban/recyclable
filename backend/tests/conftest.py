@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
 from tests._fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
 from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
@@ -103,11 +104,24 @@ def provision_test_db() -> None:
 def db_engine(provision_test_db: None) -> Generator[Engine]:
     """Session-scoped SQLAlchemy Engine connected to the test database.
 
+    ``NullPool``: every connection is opened fresh and closed on return,
+    so no pooled backend lingers holding locks between tests. That
+    lingering is what let one test's idle connection deadlock against a
+    later test's ``TRUNCATE ... CASCADE`` or a migration test's DDL, which
+    in turn left the schema half-dropped for everything that followed. The
+    per-connection ``lock_timeout`` bounds any residual contention so a
+    blocked statement fails fast with a clear error instead of hanging the
+    suite.
+
     Skips all dependent tests if the test DB is unreachable after
     provisioning.
     """
     try:
-        engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+        engine = create_engine(
+            TEST_DATABASE_URL,
+            poolclass=NullPool,
+            connect_args={"options": "-c lock_timeout=5000"},
+        )
         with engine.connect():
             pass
     except OperationalError as exc:
