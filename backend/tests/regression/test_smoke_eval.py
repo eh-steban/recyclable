@@ -10,6 +10,7 @@ targets here (p50 < 3 s, p95 < 6 s) are set to cover the cold path.
 """
 
 import math
+import os
 import uuid
 from pathlib import Path
 from typing import Any, cast
@@ -20,6 +21,18 @@ import yaml
 from sqlalchemy.orm import Session
 
 from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
+
+# This harness makes real, billable Sonnet + Haiku calls, so it is opt-in.
+# Set RUN_LIVE_EVALS=1 (with ANTHROPIC_API_KEY) to run it; the default
+# pytest run covers the same /ask pipeline offline via the fake LLM in
+# test_ask_offline.py.
+if os.environ.get("RUN_LIVE_EVALS") != "1" or not os.environ.get(
+    "ANTHROPIC_API_KEY"
+):
+    pytest.skip(
+        "live Sonnet eval -- set RUN_LIVE_EVALS=1 (with ANTHROPIC_API_KEY)",
+        allow_module_level=True,
+    )
 
 _CASES_FILE = Path(__file__).parent / "cases" / "denver-easy.yaml"
 

@@ -1,10 +1,12 @@
-"""Smoke-eval conftest: calls the real Sonnet API and real test Postgres.
+"""Regression-suite fixtures: seeded test DB + in-process FastAPI app.
 
-ANTHROPIC_API_KEY must be set; if absent the module is skipped. DB
+These fixtures seed denver-easy and expose an ASGI client over the app.
+They make no LLM call themselves: the offline pipeline tests
+(test_ask_offline.py) inject a fake LLM and run by default, while the live
+Sonnet smoke eval (test_smoke_eval.py) is opt-in behind RUN_LIVE_EVALS. DB
 connectivity skips are handled by provision_test_db (root conftest).
 """
 
-import os
 from collections.abc import AsyncGenerator, Generator
 
 import httpx
@@ -15,16 +17,6 @@ from sqlalchemy.orm import Session
 from src.api.deps import get_db
 from src.cli.seed import run_seed
 from src.main import app
-
-# ---------------------------------------------------------------------------
-# Skip when ANTHROPIC_API_KEY is absent.
-# ---------------------------------------------------------------------------
-
-if not os.environ.get("ANTHROPIC_API_KEY"):
-    pytest.skip(
-        "ANTHROPIC_API_KEY not set -- smoke-eval requires live Sonnet",
-        allow_module_level=True,
-    )
 
 
 @pytest.fixture(scope="session")
