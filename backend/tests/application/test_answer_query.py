@@ -585,13 +585,11 @@ def test_validator_rejected_path() -> None:
 
 
 def test_ungrounded_citation_is_refused() -> None:
-    """An Accepted verdict citing a URL outside the retrieved source set is
+    """Accepted verdict citing a URL absent from the retrieved source set is
     refused by the GroundingValidator (INV-LLM-002): short_answer='unknown',
-    citations=[], persisted reason VALIDATOR_REJECTED.
-
-    Distinct from test_validator_rejected_path (empty citations): the
-    citation is present here, but its URL is not among the retrieved
-    sources -- the URL-membership check, not the missing-citation check.
+    citations=[], persisted reason VALIDATOR_REJECTED. Distinct from
+    test_validator_rejected_path: here the citation exists but its URL
+    fails the membership check.
     """
     retrieved_url = "https://denvergov.org/recycling"
     unretrieved_url = "https://not-a-retrieved-source.example/made-up"
