@@ -104,14 +104,10 @@ def provision_test_db() -> None:
 def db_engine(provision_test_db: None) -> Generator[Engine]:
     """Session-scoped SQLAlchemy Engine connected to the test database.
 
-    ``NullPool``: every connection is opened fresh and closed on return,
-    so no pooled backend lingers holding locks between tests. That
-    lingering is what let one test's idle connection deadlock against a
-    later test's ``TRUNCATE ... CASCADE`` or a migration test's DDL, which
-    in turn left the schema half-dropped for everything that followed. The
-    per-connection ``lock_timeout`` bounds any residual contention so a
-    blocked statement fails fast with a clear error instead of hanging the
-    suite.
+    ``NullPool`` + per-connection ``lock_timeout`` are load-bearing: they
+    keep a lingering pooled connection from deadlocking against a later
+    test's ``TRUNCATE``/DDL. Don't remove either. (See this commit for the
+    failure mode.)
 
     Skips all dependent tests if the test DB is unreachable after
     provisioning.

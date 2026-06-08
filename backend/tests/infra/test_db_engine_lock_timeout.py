@@ -1,12 +1,7 @@
 """The shared test Engine enforces a lock_timeout on every connection.
 
-With ``NullPool`` a contended lock can no longer wait forever on a
-lingering pooled connection, but a genuinely blocked statement could still
-hang the suite. The ``lock_timeout`` bounds that wait so the statement
-fails fast with a clear error. This asserts the timeout is actually in
-effect on a live session -- the value the server reports, not the engine
-config -- so the test fails if the connect-time option is dropped or
-silently ignored.
+Asserts the server-reported value, not the engine config, so the test
+catches a connect-time option that was dropped or silently ignored.
 """
 
 import pytest
