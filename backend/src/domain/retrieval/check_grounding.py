@@ -27,13 +27,16 @@ def check_grounding(
        - every citation.url is a member of retrieved_source_urls
          (INV-LLM-002).
     2. If the verdict is non-definitive (NotCovered):
-       - no citations constraint applies.
+       - citations must be empty. NotCovered means no evidence exists, so
+         a citation would lend an unverifiable answer false authority
+         (INV-PROD-001).
 
     Returns False on any violation; does not raise.
     """
     if not is_definitive(verdict):
-        # NotCovered: no citation requirement; grounding is trivially OK.
-        return True
+        # NotCovered claims no evidence, so it must carry no citations --
+        # a citation on an "I can't verify this" answer is a grounding leak.
+        return not citations
 
     # Definitive verdict: must have at least one citation (INV-PROD-001).
     if not citations:

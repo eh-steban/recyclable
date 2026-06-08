@@ -70,6 +70,17 @@ class GroundingValidator:
                 )
             )
 
+        if not is_definitive(verdict) and citations:
+            violations.append(
+                GroundingViolation(
+                    code="INV-PROD-001",
+                    message=(
+                        "Non-definitive verdict carries citations; "
+                        "NotCovered claims no evidence and must not cite."
+                    ),
+                )
+            )
+
         for citation in citations:
             if citation.url not in retrieved_source_urls:
                 violations.append(

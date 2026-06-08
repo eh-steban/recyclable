@@ -35,6 +35,12 @@ def validate_answer_audit_record(
             + " definitive answer must cite a source."
         )
 
+    if not is_definitive(verdict) and citations:
+        violations.append(
+            "Non-definitive verdict carries citations (INV-PROD-001):"
+            + " NotCovered claims no evidence and must not cite."
+        )
+
     for citation in citations:
         if citation.url not in retrieved_source_urls:
             violations.append(

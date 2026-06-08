@@ -55,6 +55,7 @@ from src.domain.retrieval.item_verdict import (
     Accepted,
     Conflicted,
     ItemVerdict,
+    NotCovered,
 )
 from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
@@ -608,6 +609,63 @@ def test_ungrounded_citation_is_refused() -> None:
         id=src_id,
         jurisdiction_id=jid,
         url=retrieved_url,  # the only retrieved source URL
+        title="Denver Recycling Guide",
+        authority_level=1,
+        fetched_at=datetime.now(tz=UTC),
+        source_text="Cardboard is accepted curbside.",
+        source_text_hash="abc123",
+    )
+    source_repo.save(src_doc)
+    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    normalizer = _FakeNormalizer(Resolved(material=mat))
+
+    svc, audit_repo, _ = _build_service(
+        normalizer=normalizer,
+        llm=llm,
+        rule_repo=rule_repo,
+        source_repo=source_repo,
+        jurisdiction=denver,
+    )
+
+    answer = svc.execute(
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        )
+    )
+
+    assert answer.short_answer == "unknown"
+    assert answer.citations == []
+    assert len(audit_repo._store) == 1
+    saved = next(iter(audit_repo._store.values()))
+    assert saved.no_evaluation_reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+
+def test_not_covered_with_citations_is_refused() -> None:
+    """A NotCovered verdict carrying citations is refused -- citations on an
+    "I can't verify this" answer would lend it false authority. The pipeline
+    returns short_answer='unknown', citations=[], VALIDATOR_REJECTED.
+    """
+    source_url = "https://denvergov.org/recycling"
+    llm = _FakeLLM(
+        EvaluatedAnswer(
+            verdict=NotCovered(),
+            citations=(_make_citation(source_url),),
+            recommended_action="No matching rule found.",
+            confidence="low",
+        )
+    )
+
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
+    mat = _make_material("cardboard")
+    src_id = SourceId(uuid.uuid4())
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
+    src_doc = SourceDocument(
+        id=src_id,
+        jurisdiction_id=jid,
+        url=source_url,
         title="Denver Recycling Guide",
         authority_level=1,
         fetched_at=datetime.now(tz=UTC),
