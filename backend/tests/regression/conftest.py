@@ -19,14 +19,12 @@ from src.cli.seed import run_seed
 from src.main import app
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def regression_db_session(db_engine: Engine) -> Generator[Session]:
-    """Seed denver-easy, install DB override, yield session, roll back.
+    """Per-test seeded session + ``get_db`` override, rolled back on teardown.
 
-    Rows are never committed; the outer transaction is rolled back on
-    teardown, leaving recyclable_test clean.  The ``get_db`` override
-    is set here so it lives for the full session rather than being
-    installed and popped for every function-scoped ``asgi_client``.
+    Function-scoped on purpose: a session-scoped transaction here deadlocks
+    migration DDL. Do not widen -- see .claude/rules/backend/testing.md.
     """
     conn = db_engine.connect()
     trans = conn.begin()
@@ -35,8 +33,8 @@ def regression_db_session(db_engine: Engine) -> Generator[Session]:
     def _get_test_db() -> Generator[Session]:
         yield session
 
-    app.dependency_overrides[get_db] = _get_test_db
     try:
+        app.dependency_overrides[get_db] = _get_test_db
         run_seed("denver-easy", session)
         session.flush()
         yield session

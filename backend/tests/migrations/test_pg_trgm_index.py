@@ -32,7 +32,10 @@ def alembic_cfg(db_url: str) -> Config:
 
 @pytest.fixture(scope="module")
 def engine(db_url: str, alembic_cfg: Config) -> Generator[Engine]:
-    eng = create_engine(db_url)
+    # lock_timeout so blocked DDL fails fast instead of hanging the suite.
+    eng = create_engine(
+        db_url, connect_args={"options": "-c lock_timeout=5000"}
+    )
     yield eng
     # Restore the test DB to head so non-migration tests that run after
     # this module always see a fully migrated schema.

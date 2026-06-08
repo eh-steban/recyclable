@@ -88,7 +88,10 @@ def alembic_cfg(db_url: str) -> Config:
 
 @pytest.fixture(scope="module")
 def engine(db_url: str, alembic_cfg: Config) -> Generator[Engine]:
-    eng = create_engine(db_url)
+    # lock_timeout so blocked DDL fails fast instead of hanging the suite.
+    eng = create_engine(
+        db_url, connect_args={"options": "-c lock_timeout=5000"}
+    )
     command.upgrade(alembic_cfg, "head")
     yield eng
     # Ensure the test DB is at head on teardown (it should already be, but
