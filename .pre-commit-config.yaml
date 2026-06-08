@@ -18,6 +18,10 @@ repos:
     hooks:
       - id: prettier
         files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|md)$
+        # Hook runs from the repo root; prettier reads .prettierignore
+        # only from its CWD, so point it at the frontend's own ignore
+        # file (patterns there resolve relative to frontend/).
+        args: [--write, --ignore-unknown, --ignore-path, frontend/.prettierignore]
         additional_dependencies:
           - prettier@3.3.3
 
@@ -39,6 +43,17 @@ repos:
 
   - repo: local
     hooks:
+      # Whole-tree check; warnings are now zero (see pyproject.toml
+      # [tool.basedpyright] for the two globally-disabled rules and the
+      # rationale for each). The diff-scoped approach is retired now that
+      # the warning backlog is cleared.
+      - id: basedpyright
+        name: basedpyright (backend type check)
+        entry: bash -c 'cd backend && uv run basedpyright'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
       - id: check-commit-msg
         name: project commit message rules
         entry: bin/check-commit-msg

@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+# wt -- repo-agnostic multi-worktree manager (docker-claude-template)
+#
+# Generalized from dashjump-gg's scripts/wt. Key differences:
+#   - Repo is resolved from the CURRENT DIRECTORY, not the script's
+#     location, so one copy works for any repo it is dropped into.
+#   - Submodules are read from .gitmodules and each is branched to
+#     match the worktree branch (no hardcoded "private/").
+#   - The Docker stack is OPTIONAL. A repo with no compose file, or
+#     WT_STACK=0, gets pure git-worktree + submodule isolation. This
+#     is the right mode for docs-only / non-service work.
+#   - Everything repo-specific lives in an optional `.wt.conf` at the
+#     repo root (sourced bash). See scripts/wt.conf.example.
+#
+# Usage: wt <command> [args]   (run from anywhere inside the repo)
+#   create <name> [branch]   worktree off the base branch; branch
+#                            defaults to feature/<name>
+#   list                     list worktrees (+ ports/stack if enabled)
+#   start  <name>            (re)start the stack (stack mode only)
+#   stop   <name>            stop the stack (stack mode only)
+#   sync   <name>            rebase worktree + submodule branches onto
+#                            the base branch (+ migrate, stack mode)
+#   remove <name>            tear down + remove worktree and branches
+
+set -euo pipefail
+
+# --- Locate the target repo from the invocation cwd ------------------
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "$REPO_ROOT" ]]; then
+  echo "Error: not inside a git repository." >&2
+  exit 1
+fi
+PARENT_DIR="$(dirname "$REPO_ROOT")"
+REPO_NAME="$(basename "$REPO_ROOT")"
+
+# --- Defaults (override in <repo>/.wt.conf) --------------------------
+WT_STACK=1                       # 1 = manage a docker compose stack
+WT_COMPOSE_FILE="docker-compose.yaml"
+WT_OVERRIDE_EXAMPLE="docker-compose.override.yaml.example"
+WT_SERVICES=()                   # services for default (non-full) up
+WT_FULL_SERVICES=()              # services for `--full` (empty = all)
+WT_DB_SERVICE=""                 # service to await + migrate
+WT_DB_READY_CMD=""               # eval'd in DB svc; 0 = ready
+WT_MIGRATE_CMD=""                # eval'd in DB/app svc on fresh DB
+declare -A WT_PORT_VARS=()       # ENV_VAR -> base port
+WT_PORT_STEP=10
+WT_BASE_BRANCH=""                # empty = auto-detect
+WT_ENV_SETUP=""                  # name of a hook fn in .wt.conf
+
+[[ -f "${REPO_ROOT}/.wt.conf" ]] && source "${REPO_ROOT}/.wt.conf"
+
+# Auto-detect the base/integration branch if not set: origin/HEAD,
+# else `main` if it exists, else the repo's current branch.
+if [[ -z "$WT_BASE_BRANCH" ]]; then
+  WT_BASE_BRANCH="$(git -C "$REPO_ROOT" symbolic-ref --quiet \
+    refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||')"
+  if [[ -z "$WT_BASE_BRANCH" ]]; then
+    if git -C "$REPO_ROOT" show-ref --verify --quiet refs/heads/main; then
+      WT_BASE_BRANCH="main"
+    else
+      WT_BASE_BRANCH="$(git -C "$REPO_ROOT" rev-parse \
+        --abbrev-ref HEAD)"
+    fi
+  fi
+fi
+
+stack_enabled() {
+  [[ "$WT_STACK" == "1" && -f "${REPO_ROOT}/${WT_COMPOSE_FILE}" ]]
+}
+
+# Submodule paths, in .gitmodules order. Empty if none.
+submodule_paths() {
+  [[ -f "${REPO_ROOT}/.gitmodules" ]] || return 0
+  git -C "$REPO_ROOT" config --file .gitmodules \
+    --get-regexp '^submodule\..*\.path$' | awk '{print $2}'
+}
+
+dc() {
+  local dir="$1"; shift
+  docker compose \
+    --file "${REPO_ROOT}/${WT_COMPOSE_FILE}" \
+    --file "${dir}/docker-compose.override.yaml" \
+    --project-directory "$dir" \
+    --env-file "${dir}/.env" \
+    "$@"
+}
+
+validate_branch_name() {
+  local b="$1"
+  if [[ "$b" =~ ^release/[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]] \
+    || [[ "$b" =~ ^(feature|feat|fix|bugfix|hotfix|chore)/[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+    return 0
+  fi
+  echo "Warning: '$b' is not conventional-branch format" \
+       "(<type>/<desc>, e.g. feature/my-work)."
+}
+
+next_slot() {
+  local slot=1 anchor_var anchor_base
+  # Anchor on the first configured port var; if none, slots are unused.
+  for anchor_var in "${!WT_PORT_VARS[@]}"; do
+    anchor_base="${WT_PORT_VARS[$anchor_var]}"; break
+  done
+  [[ -z "${anchor_var:-}" ]] && { echo 1; return; }
+  while :; do
+    local target=$(( anchor_base + slot * WT_PORT_STEP )) taken=false
+    for ef in "${PARENT_DIR}/${REPO_NAME}"-*/.env; do
+      [[ -f "$ef" ]] || continue
+      [[ "$(grep "^${anchor_var}=" "$ef" 2>/dev/null | cut -d= -f2)" \
+        == "$target" ]] && { taken=true; break; }
+    done
+    $taken || break
+    (( slot++ ))
+  done
+  echo "$slot"
+}
+
+worktree_dir() { echo "${PARENT_DIR}/${REPO_NAME}-$1"; }
+
+# --- Submodule branch helpers ---------------------------------------
+# Branch every submodule in the worktree to match the parent branch,
+# so submodule commits stay on a real branch (not detached HEAD) and
+# remain isolated per-worktree until merged.
+branch_submodules() {
+  local dir="$1" branch="$2" sm
+  git -C "$dir" submodule update --init --recursive >/dev/null
+  while IFS= read -r sm; do
+    [[ -n "$sm" ]] || continue
+    if git -C "${dir}/${sm}" show-ref --verify --quiet \
+        "refs/heads/${branch}"; then
+      git -C "${dir}/${sm}" switch "$branch"
+    else
+      git -C "${dir}/${sm}" switch -c "$branch"
+    fi
+    echo "  submodule ${sm}: on ${branch}"
+  done < <(submodule_paths)
+}
+
+# --- Commands --------------------------------------------------------
+cmd_create() {
+  local name="${1:?Usage: wt create <name> [branch]}"; shift || true
+  local branch="${1:-feature/${name}}"
+  validate_branch_name "$branch"
+
+  local dir; dir="$(worktree_dir "$name")"
+  [[ -e "$dir" ]] && { echo "Error: $dir already exists"; exit 1; }
+
+  git -C "$REPO_ROOT" worktree add "$dir" -b "$branch" \
+    "$WT_BASE_BRANCH"
+  echo "Worktree: $dir  (branch $branch off $WT_BASE_BRANCH)"
+
+  branch_submodules "$dir" "$branch"
+
+  if stack_enabled; then
+    local slot; slot="$(next_slot)"
+    _write_env "$dir" "$name" "$slot"
+    [[ -f "${REPO_ROOT}/${WT_OVERRIDE_EXAMPLE}" ]] && \
+      cp "${REPO_ROOT}/${WT_OVERRIDE_EXAMPLE}" \
+         "${dir}/docker-compose.override.yaml"
+    echo "Stack slot $slot"
+    cmd_start "$name"
+  else
+    echo "Stack disabled -- git/submodule worktree only."
+  fi
+}
+
+_write_env() {
+  local dir="$1" name="$2" slot="$3"
+  [[ -f "${REPO_ROOT}/.env.example" ]] && \
+    grep -vE "^(COMPOSE_PROJECT_NAME|$(IFS='|'; \
+      echo "${!WT_PORT_VARS[*]}"))=" \
+      "${REPO_ROOT}/.env.example" > "${dir}/.env" 2>/dev/null || \
+    : > "${dir}/.env"
+  {
+    echo ""
+    echo "# Worktree isolation (written by scripts/wt)"
+    echo "COMPOSE_PROJECT_NAME=${REPO_NAME}-${name}"
+    local v
+    for v in "${!WT_PORT_VARS[@]}"; do
+      echo "${v}=$(( WT_PORT_VARS[$v] + slot * WT_PORT_STEP ))"
+    done
+  } >> "${dir}/.env"
+  # Repo-specific secrets / extra env (backend/.env, etc.)
+  [[ -n "$WT_ENV_SETUP" ]] && "$WT_ENV_SETUP" "$dir" "$name" "$slot"
+}
+
+cmd_list() {
+  while IFS= read -r dir; do
+    if [[ "$dir" == "$REPO_ROOT" ]]; then
+      echo "(main)  $dir"
+      continue
+    fi
+    local n="${dir#${PARENT_DIR}/${REPO_NAME}-}"
+    local line="$n  ->  $dir"
+    if [[ -f "${dir}/.env" ]]; then
+      local proj
+      proj="$(grep "^COMPOSE_PROJECT_NAME=" "${dir}/.env" \
+        2>/dev/null | cut -d= -f2)"
+      if [[ -n "$proj" ]]; then
+        local up
+        up="$(docker ps --filter \
+          "label=com.docker.compose.project=${proj}" \
+          --format '{{.Names}}' 2>/dev/null | wc -l)"
+        (( up > 0 )) && line+="  (stack: ${up} up)" \
+          || line+="  (stack: down)"
+      fi
+    fi
+    echo "$line"
+  done < <(git -C "$REPO_ROOT" worktree list --porcelain \
+    | awk '/^worktree /{print $2}')
+}
+
+cmd_start() {
+  stack_enabled || { echo "Stack disabled."; return; }
+  local name="${1:?Usage: wt start <name>}"
+  local dir; dir="$(worktree_dir "$name")"
+  [[ -d "$dir" ]] || { echo "Error: no worktree $dir"; exit 1; }
+
+  if [[ -n "$WT_DB_SERVICE" ]]; then
+    dc "$dir" up -d --no-deps "$WT_DB_SERVICE"
+    if [[ -n "$WT_DB_READY_CMD" ]]; then
+      echo -n "Waiting for ${WT_DB_SERVICE}"
+      until dc "$dir" exec -T "$WT_DB_SERVICE" \
+          sh -c "$WT_DB_READY_CMD" >/dev/null 2>&1; do
+        echo -n "."; sleep 1
+      done
+      echo " ready"
+    fi
+    [[ -n "$WT_MIGRATE_CMD" ]] && \
+      dc "$dir" exec -T "$WT_DB_SERVICE" sh -c "$WT_MIGRATE_CMD" \
+        || true
+  fi
+
+  if (( ${#WT_SERVICES[@]} )); then
+    dc "$dir" up -d --no-deps "${WT_SERVICES[@]}"
+  else
+    dc "$dir" up -d
+  fi
+}
+
+cmd_stop() {
+  stack_enabled || { echo "Stack disabled."; return; }
+  local name="${1:?Usage: wt stop <name>}"
+  dc "$(worktree_dir "$name")" down
+}
+
+cmd_sync() {
+  local name="${1:?Usage: wt sync <name>}"
+  local dir sm; dir="$(worktree_dir "$name")"
+  echo "Rebasing onto ${WT_BASE_BRANCH}..."
+  git -C "$dir" rebase "$WT_BASE_BRANCH"
+  while IFS= read -r sm; do
+    [[ -n "$sm" ]] || continue
+    local sb
+    sb="$(git -C "${dir}/${sm}" rev-parse --abbrev-ref HEAD \
+      2>/dev/null || echo "")"
+    if [[ -n "$sb" && "$sb" != "HEAD" \
+        && "$sb" != "$WT_BASE_BRANCH" ]]; then
+      echo "Rebasing submodule ${sm}/${sb} onto ${WT_BASE_BRANCH}..."
+      git -C "${dir}/${sm}" rebase "$WT_BASE_BRANCH" || true
+    fi
+  done < <(submodule_paths)
+  if stack_enabled && [[ -n "$WT_DB_SERVICE" \
+      && -n "$WT_MIGRATE_CMD" ]]; then
+    dc "$dir" exec -T "$WT_DB_SERVICE" sh -c "$WT_MIGRATE_CMD" || true
+  fi
+  echo "Sync complete."
+}
+
+cmd_remove() {
+  local name="${1:?Usage: wt remove <name>}"
+  local dir sm; dir="$(worktree_dir "$name")"
+  [[ "$dir" -ef "$REPO_ROOT" ]] && {
+    echo "Error: refusing to remove the main repository"; exit 1; }
+
+  local branch
+  branch="$(git -C "$REPO_ROOT" worktree list --porcelain \
+    | grep -A3 "^worktree ${dir}$" | awk '/^branch /{print $2}' \
+    | sed 's|refs/heads/||')" || branch=""
+
+  stack_enabled && dc "$dir" down --volumes 2>/dev/null || true
+
+  # Delete per-worktree submodule branches that match; warn if unmerged.
+  if [[ -n "$branch" ]]; then
+    while IFS= read -r sm; do
+      [[ -n "$sm" ]] || continue
+      local sb
+      sb="$(git -C "${dir}/${sm}" rev-parse --abbrev-ref HEAD \
+        2>/dev/null || echo "")"
+      if [[ "$sb" == "$branch" ]]; then
+        git -C "${REPO_ROOT}/${sm}" branch -d "$branch" 2>/dev/null \
+          || echo "Note: submodule ${sm} branch '$branch' has" \
+                  "unmerged commits -- merge into" \
+                  "${sm}/${WT_BASE_BRANCH}, then: git -C ${sm}" \
+                  "branch -D $branch"
+      fi
+    done < <(submodule_paths)
+  fi
+
+  # Bind mounts can leave root-owned artifacts; rm -rf, fall back to sudo.
+  rm -rf "$dir" 2>/dev/null || sudo rm -rf "$dir"
+  git -C "$REPO_ROOT" worktree prune
+  if [[ -n "$branch" ]]; then
+    git -C "$REPO_ROOT" branch -d "$branch" 2>/dev/null \
+      || echo "Note: branch '$branch' has unmerged/unpushed" \
+              "commits -- delete manually: git branch -D $branch"
+  fi
+  echo "Removed: $name"
+}
+
+usage() {
+  sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+CMD="${1:-}"; shift || true
+case "$CMD" in
+  create) cmd_create "$@" ;;
+  list)   cmd_list ;;
+  start)  cmd_start "$@" ;;
+  stop)   cmd_stop "$@" ;;
+  sync)   cmd_sync "$@" ;;
+  remove) cmd_remove "$@" ;;
+  ""|-h|--help|help) usage; [[ -z "$CMD" ]] && exit 1 || exit 0 ;;
+  *) echo "Unknown command: $CMD"; usage; exit 1 ;;
+esac

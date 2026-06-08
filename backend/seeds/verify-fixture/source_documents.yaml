@@ -1,7 +1,7 @@
 # Synthetic source documents for verifier happy-path test.
 # Two authority_level=1 docs to satisfy the acceptance query.
 - id: 00000000-0002-0000-0000-000000000091
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   url: https://synthetic.example.com/recycling-guide
   title: Synthetic Recycling Guide
   authority_level: 1
@@ -16,7 +16,7 @@
     accepted in curbside. It requires hazardous waste drop-off.
 
 - id: 00000000-0002-0000-0000-000000000092
-  jurisdiction: denver
+  jurisdiction: denver-co-us
   url: https://synthetic.example.com/materials-policy
   title: Synthetic Materials Policy
   authority_level: 2

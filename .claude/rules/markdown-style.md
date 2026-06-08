@@ -109,8 +109,9 @@ the actual numbering ("lazy numbering"). Reserve explicit sequential
 numbers only for short, stable ordered lists where the numbers themselves
 carry meaning.
 
-Nest with four-space indentation. Avoid nesting deeper than two levels;
-restructure the content instead.
+Nest with two-space indentation (matches the `.markdownlint.json`
+default for MD007). Avoid nesting deeper than two levels; restructure
+the content instead.
 
 ### Links
 
@@ -173,16 +174,16 @@ result = retriever.query(jurisdiction="denver", material="cardboard")
 
 Do not use indented code blocks. Do not leave the language tag blank.
 
-**Nesting code in lists:** indent the fence by four spaces to align with
+**Nesting code in lists:** indent the fence by two spaces to align with
 the list item content, not the bullet.
 
-```markdown
+````markdown
 - Run the ingestion job:
 
-    ```bash
-    python -m app.cli ingest --source <url>
-    ```
-```
+  ```bash
+  python -m app.cli ingest --source <url>
+  ```
+````
 
 **Line length in code blocks:** the 80-column cap applies to code lines
 where the language permits breaking. Use line-continuation characters

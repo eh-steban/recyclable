@@ -8,15 +8,13 @@ We test both conditions:
 2. Every ``updated_at`` value is byte-identical before and after the second run.
 """
 
-from __future__ import annotations
-
 from typing import cast
 
 import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from app.cli.seed import run_seed
+from src.cli.seed import run_seed
 
 # Row snapshot: (id_text, updated_at_value)
 _RowSnapshot = tuple[str, object]

@@ -2,7 +2,7 @@
 name = "recyclable-backend"
 version = "0.1.0"
 description = "Recycling Law Assistant -- research worker"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
@@ -13,16 +13,16 @@ dependencies = [
     "fastapi>=0.111,<1.0",
     "uvicorn[standard]>=0.29,<1.0",
     "python-dotenv>=1.0,<2.0",
+    "anthropic>=0.102.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.2,<9.0",
-    "pytest-asyncio>=0.23,<1.0",
+    "pytest-asyncio>=1.0,<2.0",
     "pytest-postgresql>=6.0,<7.0",
     "pytest-cov>=5.0,<6.0",
     "ruff>=0.4,<1.0",
-    "mypy>=1.10,<2.0",
 ]
 
 [tool.uv]
@@ -30,6 +30,7 @@ package = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["."]
 python_files = ["test_*.py"]
@@ -41,15 +42,38 @@ markers = [
 
 [tool.ruff]
 line-length = 80
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "PLC0415"]
+# B008: FastAPI's canonical DI pattern uses Depends() in default args.
+ignore = ["B008"]
 
-[tool.mypy]
-python_version = "3.13"
-strict = true
-ignore_missing_imports = true
+[tool.basedpyright]
+# Root + tests + migrations are all part of the analysis surface.
+include = ["src", "tests", "migrations"]
+# pytest sets pythonpath=["."] so `import src.*` resolves from the backend/
+# root. Mirror that here so basedpyright sees the same import graph.
+extraPaths = ["."]
+# FastAPI's canonical DI pattern uses Depends(), Query(), Header(), etc.
+# in parameter default expressions; this is unavoidable and idiomatic.
+reportCallInDefaultInitializer = "none"
+[[tool.basedpyright.executionEnvironments]]
+# Tests legitimately reach into private/protected internals to verify
+# behavior (e.g. repo._store, _check_boot_config), and pytest assertion
+# helpers / discarded results make reportUnusedCallResult near-pure
+# noise here. Scope both relaxations to tests/** only; src/** keeps
+# reportPrivateUsage AND reportUnusedCallResult enabled so a dropped
+# domain-finder result in src/ still fails the checker.
+root = "tests"
+reportPrivateUsage = "none"
+reportUnusedCallResult = "none"
+# Pytest fixture injection uses parameter names to match fixtures; the
+# parameter value is never read directly.  Suppress for tests/.
+reportUnusedParameter = "none"
+# Dynamic driver access (e.g. getattr for psycopg driver_connection) is
+# intentional in test helpers; suppress reportAny for tests/.
+reportAny = "none"
 
 [dependency-groups]
 dev = [

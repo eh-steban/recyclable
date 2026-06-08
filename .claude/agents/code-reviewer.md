@@ -96,8 +96,9 @@ Apply when the diff touches:
   `backend/src/domain/`).
 - A Bounded Context boundary (HTTP API surface, ingestion adapter,
   generated client wrapper, prompt-input boundary).
-- A new long parameter list (≥4 args), or a new noun in code, schema,
-  or prompt.
+- A new long parameter list (≥4 args), or a new domain noun in code,
+  schema, or prompt -- flag any noun that isn't already in the
+  Ubiquitous Language for its bounded context.
 
 When a finding cites a DDD principle, name the shard and Principle
 number explicitly -- e.g. "violates `aggregates.md` Principle 1
@@ -105,7 +106,10 @@ number explicitly -- e.g. "violates `aggregates.md` Principle 1
 `integrating-bounded-contexts.md` Principle 3 (Published Language,
 not shared classes)". Do not flag vague "this isn't very DDD"
 feedback. The hub is at `.claude/rules/ddd/principles-hub.md`; load
-applicable shards via the `paths:` discovery above.
+applicable shards via the `paths:` discovery above. Load
+`foundations.md` explicitly (no `paths:` glob) when a finding involves
+Ubiquitous-Language drift or anemic-model symptoms -- those are Ch. 1
+framings, not chapter-shard principles.
 
 ### 8. Knowledge management
 

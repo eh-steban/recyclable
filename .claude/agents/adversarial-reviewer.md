@@ -160,7 +160,11 @@ output. Map each finding to the relevant OWASP LLM ID.
 Apply when the diff touches a domain layer, a Bounded Context
 boundary, an event consumer, or a long-running process. Every
 finding cites the relevant shard + Principle number alongside any
-matching `INV-*` ID.
+matching `INV-*` ID. Load `foundations.md` explicitly (no `paths:`
+glob) when an attack exploits an anemic-model gap (invariant
+enforcement living in a service script the attacker can bypass) or
+Ubiquitous-Language drift (a hostile noun that crosses a boundary
+without translation).
 
 - **Aggregate-boundary violations under concurrency.** Can two
   Aggregates be mutated in one transaction? Can a hot path bypass

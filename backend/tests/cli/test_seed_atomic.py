@@ -5,8 +5,6 @@ to raise after jurisdictions and materials have been written.  The
 transaction must roll back, leaving all tables empty.
 """
 
-from __future__ import annotations
-
 import pathlib
 from typing import cast
 
@@ -86,8 +84,8 @@ def test_mid_load_failure_rolls_back_all_rows(
 ) -> None:
     """Injecting a failure during rule upsert leaves no rows in any table."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
-    import app.infra.db.repositories.rule_repo as rule_repo_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
+    import src.infra.db.repos.rule_repo as rule_repo_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -98,14 +96,14 @@ def test_mid_load_failure_rolls_back_all_rows(
 
     # Inject failure: rule upsert raises RuntimeError.
     def boom(
-        _self: rule_repo_module.SqlRuleRepository,
+        _self: rule_repo_module.PgRuleRepo,
         _rule: object,
     ) -> None:
         raise RuntimeError("injected mid-load failure")
 
-    monkeypatch.setattr(rule_repo_module.SqlRuleRepository, "upsert", boom)
+    monkeypatch.setattr(rule_repo_module.PgRuleRepo, "save", boom)
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with (
         pytest.raises(RuntimeError, match="injected mid-load failure"),

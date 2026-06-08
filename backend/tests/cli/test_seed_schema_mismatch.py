@@ -5,8 +5,6 @@ functions.  We also include integration tests that confirm zero rows
 are written when the parse raises.
 """
 
-from __future__ import annotations
-
 import pathlib
 from typing import cast
 
@@ -15,14 +13,14 @@ import yaml
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from app.domain.exceptions import EntityNotFoundError, SeedSchemaError
+from src.domain.exceptions import EntityNotFoundError, SeedSchemaError
 
 # ---- Pure-domain parse tests (no DB) ----
 
 
 def test_jurisdiction_wrong_type_raises_seed_schema_error() -> None:
     """An invalid ``type`` value should raise ``SeedSchemaError``."""
-    from app.cli._seed_parse import parse_jurisdictions  # noqa: PLC0415
+    from src.cli._seed_parse import parse_jurisdictions  # noqa: PLC0415
 
     bad_data = [
         {
@@ -39,7 +37,7 @@ def test_jurisdiction_wrong_type_raises_seed_schema_error() -> None:
 
 def test_jurisdiction_top_level_not_list_raises() -> None:
     """A dict at top level instead of a list raises ``SeedSchemaError``."""
-    from app.cli._seed_parse import parse_jurisdictions  # noqa: PLC0415
+    from src.cli._seed_parse import parse_jurisdictions  # noqa: PLC0415
 
     with pytest.raises(SeedSchemaError):
         _ = parse_jurisdictions({"slug": "test"}, "test-dataset")
@@ -47,7 +45,7 @@ def test_jurisdiction_top_level_not_list_raises() -> None:
 
 def test_material_invalid_category_raises() -> None:
     """An invalid ``category`` should raise ``SeedSchemaError``."""
-    from app.cli._seed_parse import parse_materials  # noqa: PLC0415
+    from src.cli._seed_parse import parse_materials  # noqa: PLC0415
 
     bad_data = [
         {
@@ -62,7 +60,7 @@ def test_material_invalid_category_raises() -> None:
 
 def test_rule_missing_jurisdiction_raises() -> None:
     """A rule without a ``jurisdiction`` field raises ``SeedSchemaError``."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
 
     bad_rule = [
         {
@@ -81,35 +79,50 @@ def test_rule_missing_jurisdiction_raises() -> None:
 
 def test_rule_invalid_disposition_raises() -> None:
     """A rule with an invalid ``disposition`` raises ``SeedSchemaError``."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from app.domain.models.jurisdiction import (  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
-    from app.domain.models.material import (  # noqa: PLC0415
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
+        MaterialId,
     )
-    from app.domain.models.source_document import (  # noqa: PLC0415
+    from src.domain.knowledge_base.source import (  # noqa: PLC0415
         SourceDocument,
+        SourceId,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j",
         name="J",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m", canonical_name="M", category=MaterialCategory.METAL
+        id=MaterialId(uuid.uuid4()),
+        slug="m",
+        canonical_name="M",
+        category=MaterialCategory.METAL,
     )
     doc = SourceDocument(
+        id=SourceId(uuid.uuid4()),
         jurisdiction_id=jur.id,
         url="https://example.com",
         title="T",
         authority_level=1,
+        fetched_at=now,
         source_text="Valid source text with the quote here.",
         source_text_hash="x",
     )
@@ -136,35 +149,50 @@ def test_rule_invalid_disposition_raises() -> None:
 
 def test_rules_invalid_enum_raises_seed_schema_error() -> None:
     """A rule with a bad ``accepted_status`` enum raises SeedSchemaError."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from app.domain.models.jurisdiction import (  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
-    from app.domain.models.material import (  # noqa: PLC0415
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
+        MaterialId,
     )
-    from app.domain.models.source_document import (  # noqa: PLC0415
+    from src.domain.knowledge_base.source import (  # noqa: PLC0415
         SourceDocument,
+        SourceId,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j2",
         name="J2",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m2", canonical_name="M2", category=MaterialCategory.PAPER
+        id=MaterialId(uuid.uuid4()),
+        slug="m2",
+        canonical_name="M2",
+        category=MaterialCategory.PAPER,
     )
     doc = SourceDocument(
+        id=SourceId(uuid.uuid4()),
         jurisdiction_id=jur.id,
         url="https://example.com/doc2",
         title="Doc2",
         authority_level=1,
+        fetched_at=now,
         source_text="Some text with a valid quote inside it.",
         source_text_hash="y",
     )
@@ -191,7 +219,7 @@ def test_rules_invalid_enum_raises_seed_schema_error() -> None:
 
 def test_rule_unknown_jurisdiction_slug_raises_entity_not_found() -> None:
     """Unknown jurisdiction slug in a rule raises EntityNotFoundError."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
 
     bad_rule = [
         {
@@ -210,19 +238,27 @@ def test_rule_unknown_jurisdiction_slug_raises_entity_not_found() -> None:
 
 def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
     """Unknown material slug in a rule raises EntityNotFoundError."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from app.domain.models.jurisdiction import (  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j3",
         name="J3",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     bad_rule = [
         {
@@ -241,26 +277,38 @@ def test_rule_unknown_material_slug_raises_entity_not_found() -> None:
 
 def test_rule_unknown_source_document_raises_entity_not_found() -> None:
     """Unknown source_document URL in a rule raises EntityNotFoundError."""
-    from app.cli._seed_parse import parse_rules  # noqa: PLC0415
-    from app.domain.models.jurisdiction import (  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from src.cli._seed_parse import parse_rules  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
-    from app.domain.models.material import (  # noqa: PLC0415
+    from src.domain.knowledge_base.material import (  # noqa: PLC0415
         Material,
         MaterialCategory,
+        MaterialId,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j4",
         name="J4",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     mat = Material(
-        slug="m4", canonical_name="M4", category=MaterialCategory.METAL
+        id=MaterialId(uuid.uuid4()),
+        slug="m4",
+        canonical_name="M4",
+        category=MaterialCategory.METAL,
     )
     bad_rule = [
         {
@@ -280,7 +328,7 @@ def test_rule_unknown_source_document_raises_entity_not_found() -> None:
 
 def test_parse_source_documents_missing_jurisdiction_raises() -> None:
     """Missing ``jurisdiction`` in source document raises SeedSchemaError."""
-    from app.cli._seed_parse import parse_source_documents  # noqa: PLC0415
+    from src.cli._seed_parse import parse_source_documents  # noqa: PLC0415
 
     bad_data = [
         {
@@ -302,7 +350,7 @@ def test_regression_cases_unknown_jurisdiction_raises_entity_not_found() -> (
 
     Not SeedSchemaError -- a missing entity, not a schema problem.
     """
-    from app.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
+    from src.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
 
     bad_data = [
         {
@@ -320,19 +368,27 @@ def test_regression_cases_unknown_jurisdiction_raises_entity_not_found() -> (
 
 def test_regression_cases_unknown_material_raises_entity_not_found() -> None:
     """Unknown material slug in a regression case raises EntityNotFoundError."""
-    from app.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
-    from app.domain.models.jurisdiction import (  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from src.cli._seed_parse import parse_regression_cases  # noqa: PLC0415
+    from src.domain.knowledge_base.jurisdiction import (  # noqa: PLC0415
         Jurisdiction,
+        JurisdictionId,
         JurisdictionType,
         SupportedStatus,
     )
 
+    now = datetime.now(UTC)
     jur = Jurisdiction(
+        id=JurisdictionId(uuid.uuid4()),
         slug="j5",
         name="J5",
         type=JurisdictionType.CITY,
         country="US",
         supported_status=SupportedStatus.SUPPORTED,
+        created_at=now,
+        updated_at=now,
     )
     bad_data = [
         {
@@ -359,7 +415,7 @@ def test_path_traversal_exits_nonzero(
 ) -> None:
     """A --dataset value that escapes seeds_root causes sys.exit(1)."""
     _ = monkeypatch  # unused but kept for fixture symmetry
-    from app.cli._seed_parse import validate_dataset_path  # noqa: PLC0415
+    from src.cli._seed_parse import validate_dataset_path  # noqa: PLC0415
 
     seeds_root = tmp_path / "seeds"
     seeds_root.mkdir()
@@ -384,7 +440,7 @@ def test_schema_error_before_db_write(
 ) -> None:
     """Malformed jurisdiction.yaml raises SeedSchemaError before DB write."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -411,7 +467,7 @@ def test_schema_error_before_db_write(
     for fname in ("source_documents.yaml", "materials.yaml", "rules.yaml"):
         _ = (dataset_dir / fname).write_text(yaml.dump([]), encoding="utf-8")
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with (
         pytest.raises(SeedSchemaError),
@@ -449,7 +505,7 @@ def test_rules_schema_error_leaves_all_tables_empty(
 ) -> None:
     """Malformed rules.yaml (bad enum) rolls back all tables, not just rules."""
     _ = clean_db  # injected for DB truncation side effect
-    import app.cli.seed as seed_module  # noqa: PLC0415
+    import src.cli.seed as seed_module  # noqa: PLC0415
 
     monkeypatch.setattr(seed_module, "_SEEDS_ROOT", tmp_path)
 
@@ -514,7 +570,7 @@ def test_rules_schema_error_leaves_all_tables_empty(
         encoding="utf-8",
     )
 
-    from app.cli.seed import run_seed  # noqa: PLC0415
+    from src.cli.seed import run_seed  # noqa: PLC0415
 
     with (
         pytest.raises(SeedSchemaError),

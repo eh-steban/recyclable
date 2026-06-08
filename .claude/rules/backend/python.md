@@ -6,19 +6,42 @@ paths:
 
 ## General
 
-- Python 3.11+
+- Python 3.14+
 - Use type hints everywhere
 - Prefer `dataclass(frozen=True)` for immutable domain models
 - Use Pydantic models for API validation and DTOs
 - Formatting: 80-col line limit, enforced by `ruff format`. See
   `.claude/rules/formatting.md`.
 
+## Imports
+
+**All imports live at the top of the module**, outside any class or
+function body. Enforced by ruff `PLC0415` (`import` should be at the
+top-level of a file).
+
+The narrow exceptions, each requiring a `# noqa: PLC0415` plus a
+one-line comment explaining why:
+
+- **CLI / plugin subcommand dispatch** -- a top-level entry point
+  that loads exactly one of several heavy subcommand modules per
+  invocation. Example: `src/cli/__main__.py` lazy-loads `seed.py`
+  vs `verify.py`.
+- **Genuine circular-import workarounds** -- the import must live
+  inside the function because the modules cannot be both fully
+  loaded at module-import time. State the cycle in the noqa comment.
+- **Optional heavy dependency** -- the function is only called when
+  the dependency is present, and importing it at module top would
+  block startup. State which dependency.
+
+"It felt convenient" and "I want to scope the import to the test"
+are not exceptions. Lift the import.
+
 ## Naming Conventions
 
 | Type | Convention | Example |
 | ------ | ------------ | --------- |
-| Files | snake_case | `create_order.py`, `user_repository.py` |
-| Classes | PascalCase | `UserRepository`, `OrderService` |
+| Files | snake_case | `create_order.py`, `user_repo.py` |
+| Classes | PascalCase | `UserRepo`, `OrderService` |
 | Functions | snake_case | `calculate_total_price` |
 | Constants | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
 
@@ -70,7 +93,7 @@ class OrderItem:
 Use constructor injection for infrastructure concerns:
 
 ```python
-class OrderRepository:
+class OrderRepo:
     def __init__(self, db: Database):
         self.db = db
 ```

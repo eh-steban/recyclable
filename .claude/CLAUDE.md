@@ -73,21 +73,6 @@ recyclable/
 └── private/               # Strategy, experiments, specs (gitignored)
 ```
 
-## Hosting target
-
-- **Frontend:** Vercel (Next.js native; SSG + edge caching, event-driven
-  revalidation on ingestion-apply).
-- **Backend:** Railway (Python, Dockerfile build). Deploys two processes
-  from one image: FastAPI HTTP service (uvicorn) and the async ingestion
-  worker. The HTTP service is reachable from Vercel via private network
-  or authenticated public URL; the worker is internal-only.
-- **Database:** Neon Postgres (serverless, branching for evals). Only the
-  backend connects.
-
-Local Docker Compose is a dev-parity shape, not the deployment topology.
-The `frontend/Dockerfile` exists for parity testing; Vercel builds Next.js
-itself.
-
 ## Key principles
 
 - **Grounded answers only:** every definitive claim cites a source. The
@@ -113,72 +98,18 @@ itself.
 - **Fail fast:** detect errors at boundaries (HTTP request, ingestion
   source, LLM response), refuse to answer on missing evidence.
 
-## Service details
+## Standards and rules
 
-See `.claude/rules/` for detailed standards:
+Detailed standards live under `.claude/rules/` -- one file or shard per
+topic (backend, frontend, llm, infra, ddd, error-handling, observability,
+contracts, refactoring, validation, doc-ownership, etc.). Most shards
+declare a `paths:` frontmatter glob and load on demand when an agent
+edits a matching file; see any agent file's "Loading rules on demand"
+section for the mechanism.
 
-- `frontend/CLAUDE.md` -- Next.js App Router, route shape, SSG +
-  revalidation, components
-- `backend/CLAUDE.md` -- Python DDD layers, ingestion worker structure
-- `llm/CLAUDE.md` -- Claude SDK usage: model selection, prompt caching,
-  tool design, evals
-- `data-model.md` -- Recycling knowledge base schema (jurisdictions,
-  materials, rules, sources, facilities, traces)
-
-## Coding standards
-
-See `.claude/rules/` for detailed standards:
-
-- `backend/` -- Python, DDD architecture, testing
-- `frontend/` -- Next.js, TypeScript, testing
-- `llm/` -- Claude API conventions, prompt versioning, tool schemas,
-  eval harness
-- `contracts.md` -- Interservice contract ownership and contract-first rule
-- `doc-ownership.md` -- Which agent owns which docs/dirs (canonical)
-- `refactoring.md` -- What counts as a refactor; allowed transformations
-  and forbidden-by-default categories; loaded by the refactorer agent
-- `validation.md` -- Evidence shape for plan validation (command, exit
-  code, output excerpt, why this validates); plans link here, do not
-  duplicate the discipline
-
-Git standards live in `.claude/docs/infra/git.md`.
-
-## Infrastructure
-
-See `.claude/rules/infra/` for infrastructure and deployment:
-
-- `containers.md` -- Docker images, multi-stage builds, optimization
-- `docker-compose.md` -- Local development, networking, volumes
-- `devcontainer.md` -- Unified development environment setup
-
-## Error handling & observability
-
-- `error-handling.md` -- Cross-service error philosophy, sensitive data rules
-- `observability.md` -- Logging standards, log levels
-- `backend/error-handling.md` -- Python exception hierarchy
-- `backend/observability.md` -- Python logging setup
-- `frontend/error-handling.md` -- Error types, Error Boundaries
-- `llm/CLAUDE.md` -- LLM call failures, retry policy, trace logging
-
-## Agents
-
-Specialized subagents for autonomous work:
-
-- `backend-python` -- Python worker: ingestion, extraction, domain services,
-  eval harness, tests
-- `frontend-react` -- Next.js App Router: pages, server components, route
-  handlers, client components, tests
-- `spec-writer` -- Specs, experiment katas, strategy docs, learnings
-  consolidation
-- `refactorer` -- Behavior-preserving cleanup of recently changed code
-  (reads `.claude/rules/refactoring.md`)
-- `code-reviewer` -- Security, convention, logic, and test coverage review
-  (read-only)
-- `adversarial-reviewer` -- Red-team review for invariant violations,
-  auth/data boundaries, LLM grounding/injection, ingestion-time
-  hostile input, and operational failure modes (read-only, opus)
-- `test-auditor` -- Periodic test suite audit across all services (read-only)
-- `e2e-testing` -- End-to-end tests spanning Next.js UI + worker + DB
+Git standards live separately at `.claude/docs/infra/git.md`.
+Worktrees: use `scripts/wt` (it branches the `private/` submodule to
+match) -- see that file's `### Worktrees and the private submodule`.
 
 ## Workflow
 
@@ -194,22 +125,6 @@ Product Kata-driven development.
   cite IDs in plans, reviews, and audits when a change touches one
 - Machine-switch state: `private/CONTEXT.md` (read at session start only)
 
-### Active experiments
-
-- `01-grounded-retrieval` -- Sonnet user path with cited answers (Denver MVP)
-- `02-agentic-ingestion` -- Opus research workflow for autonomous source
-  extraction
-
-### Knowledge management
-
-- Before starting work, check `private/learnings-index.md` for relevant
-  cross-project learnings
-- Full knowledge management rules: `.claude/knowledge-management.md`
-- Service mental models: `.claude/rules/[service]/[service]-mental-model.md`
-- If you discover a cross-project pattern, append to the `## Drafts` section
-  of `private/learnings.md`
-- Run `/consolidate-learnings` weekly to promote drafts (spec-writer agent)
-
 ### Shared file ownership
 
 See `.claude/rules/doc-ownership.md` for the canonical table of which agent
@@ -218,64 +133,27 @@ file.
 
 ### Honesty and stop conditions (all agents)
 
-Applies to every agent in this repo. Service agents add specifics in their
-own files.
-
-- **Verify, don't invent.** If a symbol, file, API, or fact is needed and
-  you cannot find it via Read/Grep or user-provided context, stop and ask --
-  do not fabricate it. This is the single biggest hallucination source.
+- **Verify, don't invent.** If a symbol, file, or API is not found via
+  Read/Grep, stop and ask. Do not fabricate it.
 - **Stop after 3 failed attempts on the same root error.** Surface the
-  failing output, your current hypothesis, and what you tried. Do not keep
-  mutating code hoping it works.
-- **Don't fix unrelated breakage to make CI green.** If something fails for
-  reasons outside your change, pause and report.
-- **Don't soften findings to be agreeable.** If a review/audit/spec turns up
-  a real issue, restate the evidence when pushed back on -- don't downgrade
-  severity to keep the peace. If pushback contains new evidence, update; if
-  it doesn't, hold.
-- **"Type-checks pass" is not "it works."** State what you actually verified
-  (tests run, UI loaded in browser, query executed) versus what you only
-  inferred.
-- **Empty findings are valid output.** If a review/audit has nothing to flag,
-  say so. Do not pad to look thorough.
+  output, your hypothesis, and what you tried.
+- **Don't fix unrelated breakage to make CI green.** Pause and report.
+- **Don't soften findings under pushback.** Hold the evidence unless the
+  pushback contains new evidence.
+- **Type-checks passing is not "it works."** State what you actually
+  ran (tests, UI in browser, query) vs. what you inferred.
+- **Empty findings are valid output.** Don't pad to look thorough.
 
-### Definition of done
+### Review gates (before marking work done)
 
-- Tests written and passing for new/changed code
-- Observability: logging instrumented per service conventions
-- Security: no sensitive data exposed, inputs validated at system boundaries
-- Conventions: follows relevant `.claude/rules/[service]/CLAUDE.md` patterns
-- Grounding (LLM-touching code only): every assistant answer in tests carries
-  a citation; refusal path tested
+1. Run `test-auditor` against changed services.
+2. Run `code-reviewer` against the unstaged diff.
+3. If the diff adds or changes comments or docstrings, run
+   `comment-reviewer` against the diff.
+4. Fix issues before reporting done.
 
-**Review gates:**
-
-1. Run `test-auditor` agent against changed services
-2. Run `code-reviewer` agent against the unstaged diff
-3. Fix issues before marking work complete
-
-For quick-fixes (typos, config changes, one-line edits): self-review is
-sufficient.
-
-**Plan review gate:** after writing/revising a spec or kata, run `spec-writer`
-agent to review.
-
-### Development principles
-
-- NEVER build without a linked experiment defining the outcome we're targeting
-- Specs require task shards -- atomic units a subagent can execute
-  independently
-- Each experiment step must be ≤ 1 week
-- Use `/kata-check` weekly to review experiment progress
-- Use `/quick-fix` for bugs and small changes (skip experiment/spec ceremony)
-
-### Before starting any feature work
-
-1. Check `private/product/experiments/` for the active experiment
-2. Read the current experiment's `kata.md` -- what step are we on?
-3. If building: find the spec in `private/specs/` with task shards
-4. Work from a single task shard -- don't load the full spec into context
-5. After completing a shard: run the "Verify before proceeding" check
+Quick-fixes (typos, config changes, one-line edits) self-review only.
+For specs and katas, run `spec-writer` instead.
 
 ### Context budgets
 

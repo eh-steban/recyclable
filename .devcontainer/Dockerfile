@@ -26,11 +26,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
 # === Python (customize version as needed) ===
 RUN add-apt-repository ppa:deadsnakes/ppa \
     && apt-get install -y \
-        python3.13 \
-        python3.13-venv \
-        python3.13-dev \
+        python3.14 \
+        python3.14-venv \
+        python3.14-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1 \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.14 1 \
     && python3 -m ensurepip --upgrade
 
 # === Create development user ===

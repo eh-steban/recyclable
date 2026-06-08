@@ -1,10 +1,17 @@
+---
+paths:
+  - ".claude/**/*.md"
+  - "private/**/*.md"
+  - "**/CLAUDE.md"
+---
+
 # Documentation Ownership
 
 Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-05-06
+**Last reconciled:** 2026-05-15
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a
@@ -19,12 +26,22 @@ ownership or interservice contract ownership (see `contracts.md` for that).
 Every file under `.claude/` and `private/` falls into one of four
 ownership classes:
 
-| Class | Who writes | Auto-apply? |
-| --- | --- | --- |
-| **Spec-writer owned** | Only the `spec-writer` agent (or its tools: `/consolidate-learnings`, `/kata-check`) | Yes, after user approval |
-| **Service agent owned** | Only the named service agent (`backend-python`, `frontend-react`, etc.) | Yes, within that service's scope |
-| **Append-only by service agents** | Service agents may append to a specific section; `spec-writer` curates | Append: yes. Promote: spec-writer only |
-| **Owner-only** | The human project owner (architectural / workflow decisions) | No -- flag as "owner review needed" |
+- **Spec-writer owned**
+  - *Who writes:* only the `spec-writer` agent (or its tools:
+    `/consolidate-learnings`, `/kata-check`).
+  - *Auto-apply:* yes, after user approval.
+- **Service agent owned**
+  - *Who writes:* only the named service agent (`backend-python`,
+    `frontend-react`, etc.).
+  - *Auto-apply:* yes, within that service's scope.
+- **Append-only by service agents**
+  - *Who writes:* service agents may append to a specific section;
+    `spec-writer` curates.
+  - *Auto-apply:* append yes; promote spec-writer only.
+- **Owner-only**
+  - *Who writes:* the human project owner (architectural / workflow
+    decisions).
+  - *Auto-apply:* no -- flag as "owner review needed".
 
 If a file is not listed, treat it as **shared** -- any agent may edit,
 with normal review gates.
@@ -33,28 +50,48 @@ with normal review gates.
 
 ## Spec-writer owned
 
-| File / Pattern | Notes |
-| --- | --- |
-| `private/product/strategy/vision.md` | Strategic direction |
-| `private/product/strategy/current-options.md` | Active bets and outcomes |
-| `private/product/strategy/parking-lot.md` | Spec-writer governs promotion / removal. Service agents may **append** new entries (see Append-only table below). |
-| `private/product/experiments/*/kata.md` | Product Kata experiment files |
-| `private/product/experiments/*/learnings.md` | Experiment outcome writeups |
-| `private/specs/*.md` | Feature specs and task shards |
-| `private/templates/katas/*.md` | Kata template scaffolded by `/new-experiment` |
-| `private/learnings.md` (above `## Drafts`) | Promoted, vetted learnings only |
-| `private/learnings-index.md` | Updated only during `/consolidate-learnings` |
-| `private/CONTEXT.md` | Written by `/switch-machine`, read by owner at session start |
-| `private/invariants.md` | Non-negotiable system truths. Promotion / removal / renumbering requires owner approval. Lives in `private/` (not `.claude/rules/`) because invariants encode proprietary product decisions that should not appear in the eventually-public repo tree. |
-| `.claude/rules/**/*.md` | Service rules, mental models, this file. Each rule declares its scope via a `paths:` glob list in frontmatter; service agents use this to decide which rules to read for a given task (see `.claude/agents/<agent>.md` "Loading rules on demand"). When adding or moving a rule, keep `paths:` accurate -- stale globs cause agents to load the wrong rules or miss relevant ones. |
-| `.claude/knowledge-management.md` | Knowledge system process doc |
+- `private/product/strategy/vision.md` -- strategic direction.
+- `private/product/strategy/current-options.md` -- active bets and
+  outcomes.
+- `private/product/strategy/parking-lot.md` -- spec-writer governs
+  promotion / removal. Service agents may **append** new entries (see
+  Append-only section below).
+- `private/product/experiments/*/kata.md` -- Product Kata experiment
+  files.
+- `private/product/experiments/*/learnings.md` -- experiment outcome
+  writeups.
+- `private/specs/*.md` -- feature specs and task shards.
+- `private/templates/katas/*.md` -- Kata template scaffolded by
+  `/new-experiment`.
+- `private/learnings.md` (above `## Drafts`) -- promoted, vetted
+  learnings only.
+- `private/learnings-index.md` -- updated only during
+  `/consolidate-learnings`.
+- `private/CONTEXT.md` -- written by `/switch-machine`, read by owner
+  at session start.
+- `private/invariants.md` -- non-negotiable system truths. Promotion,
+  removal, or renumbering requires owner approval. Lives in `private/`
+  (not `.claude/rules/`) because invariants encode proprietary product
+  decisions that should not appear in the eventually-public repo tree.
+- `.claude/rules/**/*.md` -- service rules, mental models, this file.
+  Each rule declares its scope via a `paths:` glob list in frontmatter;
+  service agents use this to decide which rules to read for a given
+  task (see `.claude/agents/<agent>.md` "Loading rules on demand").
+  When adding or moving a rule, keep `paths:` accurate -- stale globs
+  cause agents to load the wrong rules or miss relevant ones.
+- `.claude/knowledge-management.md` -- knowledge system process doc.
 
 ## Append-only by service agents
 
-| File | Section | Format |
-| --- | --- | --- |
-| `private/learnings.md` | `## Drafts` only | `### [Draft] [Topic] -- [agent: name, date: YYYY-MM-DD]` |
-| `private/product/strategy/parking-lot.md` | Any of the categorized sections (Jurisdictions, Materials, Source documents, Other) | `- [Label] -- one-line description. Source: [pointer]. Found: YYYY-MM-DD.` |
+- `private/learnings.md`
+  - *Section:* `## Drafts` only.
+  - *Format:*
+    `### [Draft] [Topic] -- [agent: name, date: YYYY-MM-DD]`.
+- `private/product/strategy/parking-lot.md`
+  - *Section:* any of the categorized sections (Jurisdictions,
+    Materials, Source documents, Other).
+  - *Format:*
+    `- [Label] -- one-line description. Source: [pointer]. Found: YYYY-MM-DD.`
 
 Service agents may NOT touch any other section of `learnings.md`, the
 index, the rules tree, or strategy files (other than appending to
@@ -67,11 +104,11 @@ is the only agent that removes or promotes parking-lot entries.
 Each service agent owns its own service directory's documentation.
 The agent name maps to the directory:
 
-| Agent | Owns |
-| --- | --- |
-| `backend-python` | `backend/**/*.md` (except `backend/CLAUDE.md` -- that's owner-only) |
-| `frontend-react` | `frontend/**/*.md` (except `frontend/CLAUDE.md` -- owner-only) |
-| `e2e-testing` | `e2e/**/*.md` if present |
+- `backend-python` -- owns `backend/**/*.md` (except `backend/CLAUDE.md`,
+  which is owner-only).
+- `frontend-react` -- owns `frontend/**/*.md` (except
+  `frontend/CLAUDE.md`, which is owner-only).
+- `e2e-testing` -- owns `e2e/**/*.md` if present.
 
 ## Owner-only (flag, do not auto-apply)
 
@@ -93,10 +130,9 @@ not apply.
 
 ## Shared / no single owner
 
-| File / Pattern | Access pattern |
-| --- | --- |
-| `private/plans/` | Written by Claude's plan feature |
-| Anything not listed above under `private/` or `.claude/` | Shared; normal review gates apply |
+- `private/plans/` -- written by Claude's plan feature.
+- Anything not listed above under `private/` or `.claude/` -- shared;
+  normal review gates apply.
 
 ---
 

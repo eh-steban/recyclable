@@ -4,7 +4,7 @@
 # Stages: base (uv + python) -> dev (hot reload) | runner (Railway prod).
 
 # ---------- base ----------
-FROM python:3.13-slim AS base
+FROM python:3.14-slim AS base
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # ---------- runner (prod / Railway) ----------
 FROM base AS runner
@@ -54,5 +54,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD curl --fail http://localhost:${PORT}/health || exit 1
 
-# Single-process start. Override with `python -m app.cli ...` for one-off jobs.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# Single-process start. Override with `python -m src.cli ...` for one-off jobs.
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT}"]

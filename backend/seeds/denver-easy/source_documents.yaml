@@ -2,7 +2,7 @@
 # source_text_hash is computed by the loader -- do not author by hand.
 # Fetched 2026-05-02 from denvergov.org.
 
-- jurisdiction: denver
+- jurisdiction: denver-co-us
   url: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Accepted-for-Recycling
   title: Accepted for Recycling - City and County of Denver
@@ -64,7 +64,7 @@
     Good Stuff Flyer Download the "Don't Waste the Good Stuff" Flyer to learn
     more about what does, and doesn't go in Denver's recycling and compost.
 
-- jurisdiction: denver
+- jurisdiction: denver-co-us
   url: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle/Recycling-Service
   title: Recycling Service - City and County of Denver
@@ -129,7 +129,7 @@
     Composting Ordinance page to learn more about commercial recycling and
     composting in Denver.
 
-- jurisdiction: denver
+- jurisdiction: denver-co-us
   url: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Recycle
   title: Recycle - City and County of Denver
@@ -149,7 +149,7 @@
     Hazardous Waste Household hazardous waste collection service, free paint
     recycling, appliance collection, electronics recycling.
 
-- jurisdiction: denver
+- jurisdiction: denver-co-us
   url: >-
     https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Recycle-Compost-Trash/Trash-Recycle-Compost-Schedules-and-Reminders
   title: >-

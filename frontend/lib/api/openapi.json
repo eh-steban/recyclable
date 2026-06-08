@@ -1,0 +1,629 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Recyclable Backend",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/ask": {
+      "post": {
+        "summary": "Ask",
+        "description": "Answer a recycling question grounded in jurisdiction rules.\n\nReturns HTTP 200 for all retrieval outcomes including refusals.\nReturns HTTP 400 with error='query_too_long' when query exceeds\n500 characters.",
+        "operationId": "ask_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Answer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "query_too_long -- query exceeds 500 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pages/jurisdiction/{slug}": {
+      "get": {
+        "summary": "Get Jurisdiction Page",
+        "description": "Return the SEO jurisdiction landing page or 404 on slug miss.",
+        "operationId": "get_jurisdiction_page_pages_jurisdiction__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JurisdictionPageWire"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found -- no jurisdiction for this slug",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pages/jurisdiction/{j_slug}/material/{m_slug}": {
+      "get": {
+        "summary": "Get Material Page",
+        "description": "Return the SEO material detail page or 404 on slug miss.",
+        "operationId": "get_material_page_pages_jurisdiction__j_slug__material__m_slug__get",
+        "parameters": [
+          {
+            "name": "j_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "J Slug"
+            }
+          },
+          {
+            "name": "m_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "M Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialPageWire"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found -- no jurisdiction or material for these slugs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Answer": {
+        "properties": {
+          "audit_record_id": {
+            "type": "string",
+            "title": "Audit Record Id"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationWire"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "clarifying_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarifying Question"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence"
+          },
+          "do_not_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Do Not Do"
+          },
+          "dropoff_options": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityWire"
+            },
+            "type": "array",
+            "title": "Dropoff Options"
+          },
+          "jurisdiction": {
+            "$ref": "#/components/schemas/JurisdictionRefWire"
+          },
+          "preparation_steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Preparation Steps"
+          },
+          "recommended_action": {
+            "type": "string",
+            "title": "Recommended Action"
+          },
+          "refusal_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal Reason"
+          },
+          "short_answer": {
+            "type": "string",
+            "title": "Short Answer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audit_record_id",
+          "citations",
+          "clarifying_question",
+          "confidence",
+          "do_not_do",
+          "dropoff_options",
+          "jurisdiction",
+          "preparation_steps",
+          "recommended_action",
+          "refusal_reason",
+          "short_answer"
+        ],
+        "title": "Answer",
+        "description": "POST /ask response body per answer.md § Response.\n\nHTTP 200 for all retrieval outcomes including refusals."
+      },
+      "AskRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Free-text user question, max 500 chars"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "City name, 'Denver, CO', or ZIP"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "location"
+        ],
+        "title": "AskRequest",
+        "description": "POST /ask request body per answer.md § Request."
+      },
+      "CitationWire": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "url"
+        ],
+        "title": "CitationWire",
+        "description": "A source citation in the wire response.\n\nquote is optional -- omitted when no source quote is available.\nPer answer.md § Citation."
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEnvelope",
+        "description": "Typed error envelope for application-level errors.\n\nAll non-2xx application errors use this shape:\n  { \"error\": \"<machine_code>\" }\n\nKnown codes per answer.md § Known error codes:\n  query_too_long  -- 400, POST /ask, query > 500 chars\n  not_found       -- 404, page routes, slug miss\n  internal_error  -- 500, all routes, unhandled server error"
+      },
+      "FacilityWire": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address"
+        ],
+        "title": "FacilityWire",
+        "description": "A dropoff facility.\n\nAlways [] in Step 2. Shape defined so consumers can type the\nfield ahead of Step 3."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JurisdictionPageWire": {
+        "properties": {
+          "jurisdiction": {
+            "$ref": "#/components/schemas/JurisdictionWire"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialSummaryWire"
+            },
+            "type": "array",
+            "title": "Materials"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jurisdiction",
+          "materials"
+        ],
+        "title": "JurisdictionPageWire",
+        "description": "Response body for GET /pages/jurisdiction/{slug}."
+      },
+      "JurisdictionRefWire": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "JurisdictionRefWire",
+        "description": "A resolved jurisdiction reference. id is always a non-empty UUID."
+      },
+      "JurisdictionWire": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "title": "JurisdictionWire",
+        "description": "Jurisdiction shape for SEO pages.\n\nRicher than JurisdictionRefWire from answer.md: includes slug for\nin-page link construction."
+      },
+      "MaterialDetailWire": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "canonical_name"
+        ],
+        "title": "MaterialDetailWire",
+        "description": "Material identity block for the material page."
+      },
+      "MaterialPageWire": {
+        "properties": {
+          "jurisdiction": {
+            "$ref": "#/components/schemas/JurisdictionWire"
+          },
+          "material": {
+            "$ref": "#/components/schemas/MaterialDetailWire"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/RuleWire"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationWire"
+            },
+            "type": "array",
+            "title": "Citations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jurisdiction",
+          "material",
+          "rule",
+          "citations"
+        ],
+        "title": "MaterialPageWire",
+        "description": "Response body for GET /pages/jurisdiction/{j}/material/{m}."
+      },
+      "MaterialSummaryWire": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "accepted_status": {
+            "type": "string",
+            "title": "Accepted Status"
+          },
+          "needs_preparation": {
+            "type": "boolean",
+            "title": "Needs Preparation"
+          },
+          "citation": {
+            "$ref": "#/components/schemas/CitationWire"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "canonical_name",
+          "accepted_status",
+          "needs_preparation",
+          "citation"
+        ],
+        "title": "MaterialSummaryWire",
+        "description": "List element in JurisdictionPage.materials."
+      },
+      "RuleWire": {
+        "properties": {
+          "disposition": {
+            "type": "string",
+            "title": "Disposition"
+          },
+          "accepted_status": {
+            "type": "string",
+            "title": "Accepted Status"
+          },
+          "preparation_steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Preparation Steps"
+          },
+          "exceptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exceptions"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "disposition",
+          "accepted_status",
+          "preparation_steps",
+          "exceptions",
+          "warnings"
+        ],
+        "title": "RuleWire",
+        "description": "Rule block for the material page.\n\nShaped to the page's use case, not to the full rules row."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

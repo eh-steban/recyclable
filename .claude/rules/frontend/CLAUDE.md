@@ -49,7 +49,8 @@ frontend/
 │       └── feedback/route.ts            # Proxies feedback to backend
 │
 ├── components/                          # Feature-grouped components
-│   ├── answer-card/
+│   ├── material-row.tsx                 # single-file leaf -- flat, no dir/barrel
+│   ├── answer-card/                     # multi-file feature -- dir + index barrel
 │   │   ├── index.ts
 │   │   ├── answer-card.tsx              # 'use client' if interactive
 │   │   └── types.ts
@@ -59,8 +60,11 @@ frontend/
 ├── lib/                                 # Pure utilities + clients
 │   ├── api/                             # Backend HTTP client (server-only by default)
 │   │   ├── client.ts                    # Generated OpenAPI client (do not hand-edit)
-│   │   ├── types.ts                     # Generated request/response types
-│   │   └── index.ts                     # Hand-written wrappers + error normalization
+│   │   ├── types.ts                     # Generated wire types (do not hand-edit)
+│   │   ├── citation.ts                  # Shared presentation value (Citation)
+│   │   ├── jurisdiction.ts              # Jurisdiction-page types + translate + fetch
+│   │   ├── material.ts                  # Material-page types + translate + fetch
+│   │   └── index.ts                     # Thin public surface (re-exports)
 │   └── utils/                           # Cross-cutting utilities
 │
 ├── tests/                               # Mirrors app/ + components/ + lib/

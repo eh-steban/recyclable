@@ -2,27 +2,18 @@
 
 All tests in this package require a live Postgres connection.  If the
 database is unreachable the tests are skipped (not failed) via the
-``db_session`` fixture.
+``db_engine`` fixture from the root conftest.
 
 Each test that needs a clean slate calls the ``clean_db`` fixture, which
 truncates the relevant tables inside a savepoint-protected block.  This
 avoids the cost of a full migration round-trip per test.
 """
 
-from __future__ import annotations
-
-import os
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
-
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql+psycopg://recyclable:recyclable_dev@localhost:5432/recyclable",
-)
 
 # Tables listed in FK-safe truncation order (children before parents).
 _TRUNCATE_TABLES = [
@@ -34,22 +25,6 @@ _TRUNCATE_TABLES = [
     "materials",
     "jurisdictions",
 ]
-
-
-@pytest.fixture(scope="session")
-def db_engine() -> Generator[Engine]:
-    """Create a session-scoped engine, skipping if Postgres is unreachable."""
-    try:
-        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-        with engine.connect():
-            pass
-    except OperationalError as exc:
-        pytest.skip(
-            f"Postgres unreachable at {DATABASE_URL}: {exc}",
-            allow_module_level=True,
-        )
-    yield engine
-    engine.dispose()
 
 
 @pytest.fixture()

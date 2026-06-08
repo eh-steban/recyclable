@@ -214,7 +214,7 @@ AnswerQuery (Application Service in application/answer_query.py)
 RetrievalService (Domain Service in domain/retrieval/)
   resolve location (LocationResolver)
   normalize material (MaterialNormalizer)
-  retrieve rules (RuleRetriever, uses RuleRepository port)
+  retrieve rules (RuleRetriever, uses RuleRepo port)
   compose prompt (PromptComposer)
   call LLM (RetrievalLLM port)
   validate grounding (GroundingValidator Specification)
@@ -465,7 +465,7 @@ Service hands modified Entities back to the repo explicitly.
 
 ```python
 # domain/knowledge_base/rule_repo.py
-class RuleRepository(Protocol):
+class RuleRepo(Protocol):
     def next_identity(self) -> RuleId: ...
     def save(self, rule: Rule) -> None: ...
     def find_by_id(self, rule_id: RuleId) -> Rule | None: ...
@@ -489,6 +489,11 @@ The Protocol lives next to its Aggregate
 receive the Protocol via FastAPI `Depends` and never import the
 concrete class. The domain layer never imports `sqlalchemy`. Per
 `ddd/repositories.md` Principle 4 + the layering rules above.
+
+FastAPI dependency-provider functions in `deps.py` annotate their
+return type as the domain Protocol (the port), not the concrete
+implementation -- this is the DIP return-side complement to the
+interface-in-domain, implementation-in-infra rule above.
 
 ### Persistence exceptions translate at the boundary
 
@@ -580,15 +585,27 @@ wire types in that wrapper.
 ```text
 frontend/lib/api/
 ├── client.ts        # generated OpenAPI client (wire types)
-├── types.ts         # generated request/response types
-├── translate.ts     # wire <-> presentation-context types
-└── index.ts         # exposes only presentation-context types
+├── types.ts         # generated wire types (request/response)
+├── citation.ts      # shared presentation value (Citation)
+├── jurisdiction.ts  # jurisdiction-page types + translate + fetch
+├── material.ts      # material-page types + translate + fetch
+└── index.ts         # thin public surface (presentation types only)
 ```
 
-For MVP the translation is largely identity (presentation types
-alias wire types one-to-one). The seam is the point: when the
-wire shape diverges from what the UI wants to render, the
-translation absorbs the change and components do not move.
+The translation renames wire fields to the Presentation Context's
+terms (snake_case -> camelCase) and is organized by page concept --
+one module per user-facing page, mirroring the Open Host Service's
+use-case-shaped resources (`ddd/integrating-bounded-contexts.md`
+Principle 4) and grouping by cohesive concept rather than a
+mechanical "all types" bucket (`ddd/modules.md` Principle 2). The
+seam is the point: when the wire shape diverges from what a page
+renders, that page's module absorbs the change and components do
+not move. Shared presentation values (e.g. `Citation`) get their
+own module once a second page consumes them (`ddd/modules.md`
+Principle 5). The durable form of this principle -- the why,
+when, and guardrails -- lives in
+`.claude/rules/frontend/frontend-mental-model.md`
+(Architectural commitments).
 
 ## Synchronous default, async across different lifecycles
 
