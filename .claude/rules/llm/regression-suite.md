@@ -95,30 +95,72 @@ Product (post-launch):
 
 ## Running
 
+The suite has two tiers with different cost profiles.
+
+**Offline tier (default -- free, no key required)**
+
 ```bash
-# Backend (full suite)
-cd backend && pytest tests/regression -v
+# All regression tests (offline fake-LLM path)
+docker compose exec app-backend pytest tests/regression -v
 
-# Single jurisdiction
-cd backend && pytest tests/regression -k denver
-
-# CI mode (no LLM calls; verifies fixtures and validator only)
-cd backend && pytest tests/regression --no-llm
-
-# Against deployed instance
-cd backend && pytest tests/regression \
-  --target https://recyclable.vercel.app
+# Single jurisdiction filter
+docker compose exec app-backend pytest tests/regression -k denver
 ```
+
+The default `pytest` run is fully offline. `test_ask_offline.py` exercises
+the complete `/ask` pipeline -- retrieval, grounding, audit write, wire
+mapping -- using `FakeAnthropicClient` (`tests/_fakes/anthropic_client.py`)
+injected via FastAPI dependency override. No API key, no network, no cost.
+The out-of-jurisdiction refusal path and the grounding-validator rejection
+path both have deterministic hard assertions here.
+
+**Live eval tier (opt-in -- billable Sonnet + Haiku calls)**
+
+```bash
+RUN_LIVE_EVALS=1 ANTHROPIC_API_KEY=<key> \
+  docker compose exec app-backend pytest tests/regression/test_smoke_eval.py -v
+```
+
+The live smoke eval (`test_smoke_eval.py`) is gated by the `RUN_LIVE_EVALS`
+env var. Without it (or without `ANTHROPIC_API_KEY`) the module skips at
+collection time. When enabled, it drives 8 cases from
+`tests/regression/cases/denver-easy.yaml` against real Sonnet + Haiku:
+
+- **6 Denver cases** (3 accepted, 2 rejected, 1 conditional) are marked
+  `xfail(strict=False)` because the live normalizer fallback and LLM
+  verdict are nondeterministic. These are non-gating -- they may XPASS or
+  XFAIL run to run.
+- **2 out-of-jurisdiction cases** (Aurora, Boulder) carry an explicit
+  `location` field in the YAML. These short-circuit before the model and
+  are hard assertions.
 
 ## Cost controls
 
-LLM calls in the regression suite cost real money. Guardrails:
+LLM calls in the live eval tier cost real money. Guardrails:
 
-- Default: run only changed-jurisdiction cases on local pre-commit.
-- Full suite: required on PR, runs in CI with a budget-capped API key.
+- The offline tier runs by default and is completely free. Deterministic
+  coverage of prompt composition, grounding, and refusal lives there.
+- The live eval tier is opt-in behind `RUN_LIVE_EVALS=1`. Run it before
+  promoting a change that touches the retrieval prompt, grounding
+  validator, or normalizer.
 - Cache prompt prefixes between cases in the same run.
-- A `--no-llm` mode runs everything except the model call (validator,
-  retrieval, schema checks) -- catches most regressions for free.
+
+There is no CI test gate today. `.github/workflows/` contains only
+`commit-msg.yml` and `gitleaks.yml`. A CI job running the offline tier
+is the intended next step, but it does not exist yet -- do not treat
+"runs in CI" claims as current fact.
+
+## Latency targets
+
+The spec targets p50 < 3 s / p95 < 6 s end-to-end. These are measured in
+the live eval only. The `test_latency_aggregate` test asserts them but is
+also marked `xfail(strict=False)` (it depends on all 8 Denver cases
+completing) and therefore non-gating.
+
+As of 2026-06-08, measured cold-cache p50 = 4231 ms / p95 = 7467 ms --
+both targets are NOT met. Latency optimization is deferred; see
+`private/CONTEXT.md` backlog. The latency assertion stays non-gating until
+the work is addressed.
 
 ## Promotion rules
 
