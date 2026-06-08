@@ -584,6 +584,64 @@ def test_validator_rejected_path() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.VALIDATOR_REJECTED
 
 
+def test_ungrounded_citation_is_refused() -> None:
+    """An Accepted verdict citing a URL outside the retrieved source set is
+    refused by the GroundingValidator (INV-LLM-002): short_answer='unknown',
+    citations=[], persisted reason VALIDATOR_REJECTED.
+
+    Distinct from test_validator_rejected_path (empty citations): the
+    citation is present here, but its URL is not among the retrieved
+    sources -- the URL-membership check, not the missing-citation check.
+    """
+    retrieved_url = "https://denvergov.org/recycling"
+    unretrieved_url = "https://not-a-retrieved-source.example/made-up"
+    # LLM cites a URL the retrieval set does not contain.
+    llm = _FakeLLM(
+        _make_evaluated_answer(Accepted(), (_make_citation(unretrieved_url),))
+    )
+
+    denver = _make_denver_jurisdiction()
+    jid = denver.id
+    mat = _make_material("cardboard")
+    src_id = SourceId(uuid.uuid4())
+    rule_repo = MemRuleRepo()
+    source_repo = MemSourceRepo()
+    src_doc = SourceDocument(
+        id=src_id,
+        jurisdiction_id=jid,
+        url=retrieved_url,  # the only retrieved source URL
+        title="Denver Recycling Guide",
+        authority_level=1,
+        fetched_at=datetime.now(tz=UTC),
+        source_text="Cardboard is accepted curbside.",
+        source_text_hash="abc123",
+    )
+    source_repo.save(src_doc)
+    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    normalizer = _FakeNormalizer(Resolved(material=mat))
+
+    svc, audit_repo, _ = _build_service(
+        normalizer=normalizer,
+        llm=llm,
+        rule_repo=rule_repo,
+        source_repo=source_repo,
+        jurisdiction=denver,
+    )
+
+    answer = svc.execute(
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        )
+    )
+
+    assert answer.short_answer == "unknown"
+    assert answer.citations == []
+    assert len(audit_repo._store) == 1
+    saved = next(iter(audit_repo._store.values()))
+    assert saved.no_evaluation_reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+
 # ===========================================================================
 # --- repo.save raises ---
 # ===========================================================================
