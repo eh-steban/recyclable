@@ -82,6 +82,8 @@ async def test_grounded_accept_returns_cited_yes(
 ) -> None:
     """An accepted verdict citing a retrieved source becomes a cited 'yes'."""
 
+    grounded_url: dict[str, str] = {}
+
     def _ask(
         _messages: list[LLMMessage], system_prompt: str
     ) -> EvaluatedAnswer:
@@ -89,6 +91,7 @@ async def test_grounded_accept_returns_cited_yes(
         # is in the retrieved-source set by construction.
         match = re.search(r"https?://[^\s\"'<>)\]]+", system_prompt)
         assert match is not None, "expected a source URL in the prompt"
+        grounded_url["value"] = match.group(0)
         return EvaluatedAnswer(
             verdict=Accepted(),
             citations=(Citation(title="Denver Recycling", url=match.group(0)),),
@@ -110,7 +113,13 @@ async def test_grounded_accept_returns_cited_yes(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["short_answer"] == "yes", body
-    assert len(body["citations"]) > 0, "a grounded accept must cite a source"
+    # The grounded citation must survive to the wire unchanged -- the
+    # pipeline surfaces the source the model cited, it does not drop or
+    # rewrite it.
+    wire_urls = [c["url"] for c in body["citations"]]
+    assert grounded_url["value"] in wire_urls, (
+        f"grounded URL {grounded_url['value']!r} missing from {wire_urls}"
+    )
 
     row = _audit_row(regression_db_session, body["audit_record_id"])
     assert row.verdict == "yes"

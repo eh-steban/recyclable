@@ -14,10 +14,12 @@ grounded by construction).
 """
 
 from collections.abc import Callable
+from typing import override
 
 from src.domain.knowledge_base.material import Material, MaterialId
+from src.domain.knowledge_base.material_normalizer import MaterialNormalizerLLM
 from src.domain.retrieval.evaluated_answer import EvaluatedAnswer, NoEvaluation
-from src.domain.retrieval.retrieval_llm import LLMMessage
+from src.domain.retrieval.retrieval_llm import LLMMessage, RetrievalLLM
 
 AskResult = EvaluatedAnswer | NoEvaluation
 AskHandler = Callable[[list[LLMMessage], str], AskResult]
@@ -25,8 +27,12 @@ ClassifyRanking = list[tuple[MaterialId, float]]
 ClassifyHandler = Callable[[str, list[Material]], ClassifyRanking]
 
 
-class FakeAnthropicClient:
+class FakeAnthropicClient(RetrievalLLM, MaterialNormalizerLLM):
     """Configurable stand-in for AnthropicClient (both LLM ports).
+
+    Declares both Protocols it stands in for so the type checker flags any
+    signature drift between this fake and the real ports -- the FastAPI
+    dependency override that installs it is not itself type-checked.
 
     Records every call so a test can assert what the pipeline sent (and,
     for the out-of-jurisdiction path, that the model was never called).
@@ -44,12 +50,14 @@ class FakeAnthropicClient:
         self.ask_calls: list[tuple[list[LLMMessage], str]] = []
         self.classify_calls: list[tuple[str, list[Material]]] = []
 
+    @override
     def ask(self, messages: list[LLMMessage], system_prompt: str) -> AskResult:
         self.ask_calls.append((messages, system_prompt))
         if callable(self._ask_result):
             return self._ask_result(messages, system_prompt)
         return self._ask_result
 
+    @override
     def classify(
         self, query_text: str, known_materials: list[Material]
     ) -> ClassifyRanking:
