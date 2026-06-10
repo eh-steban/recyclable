@@ -74,8 +74,6 @@ from tests._fakes.source_repo import MemSourceRepo
 
 @final
 class _FakeLLM:
-    """Returns a pre-configured EvaluatedAnswer or NoEvaluation."""
-
     def __init__(self, result: EvaluatedAnswer | NoEvaluation) -> None:
         self._result = result
         self.call_count = 0
@@ -91,8 +89,6 @@ class _FakeLLM:
 
 @final
 class _NeverCalledLLM:
-    """Raises if called -- used for OOJ / ambiguous / uncertain paths."""
-
     def ask(
         self,
         messages: list[LLMMessage],
@@ -122,10 +118,7 @@ class _FakeNormalizer:
 
 @final
 class _FakeRetrievalService:
-    """Returns a pre-configured outcome from answer(); also provides
-    a fixed fallback_for_validator_rejection result.
-
-    Used to exercise the construction-time validator fallback path
+    """Used to exercise the construction-time validator fallback path
     (the path that only fires when the GroundingValidator is bypassed).
     """
 
@@ -159,7 +152,6 @@ def _make_jurisdiction_id() -> JurisdictionId:
 
 
 def _make_denver_jurisdiction() -> Jurisdiction:
-    """Mint Denver with a generated UUID -- NOT the sentinel 0001 UUID."""
     return Jurisdiction(
         id=JurisdictionId(uuid.uuid4()),
         name="City and County of Denver",
@@ -324,19 +316,7 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
     assert audit_repo.find_by_id(saved_id) is not None
 
 
-# ===========================================================================
-# --- id is sourced from the repo row, not hardcoded ---
-# ===========================================================================
-
-
 def test_wire_jurisdiction_id_comes_from_repo_not_hardcoded() -> None:
-    """The wire Answer.jurisdiction.id must be the jurisdiction's
-    application-generated UUID from the repo row, NOT the old hardcoded
-    sentinel 00000000-0000-0000-0000-000000000001.
-
-    Proves the id is no longer hardcoded by minting a fresh UUID, seeding
-    it in the in-memory repo, and asserting the wire response carries it.
-    """
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
     llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
@@ -386,17 +366,7 @@ def test_wire_jurisdiction_id_comes_from_repo_not_hardcoded() -> None:
     assert saved.jurisdiction_id == jid
 
 
-# ===========================================================================
-# --- OOJ path ---
-# ===========================================================================
-
-
 def test_ooj_path_unknown_aurora() -> None:
-    """OOJ: location='Aurora' -> short_answer='unknown', confidence='low',
-    recommended_action matching spec-pinned refusal text, citations=[],
-    persists one row with outcome_kind='no_evaluation',
-    no_evaluation_reason='OUT_OF_JURISDICTION'. LLM not called.
-    """
     svc, audit_repo, _ = _build_service(llm=_NeverCalledLLM())
 
     answer = svc.execute(
@@ -419,10 +389,6 @@ def test_ooj_path_unknown_aurora() -> None:
 
 
 def test_slug_resolved_but_missing_jurisdiction_row_emits_ooj() -> None:
-    """Misconfig: location resolves to DENVER_SLUG but the repo has no
-    Denver row. The application service logs the warning and still refuses
-    out-of-jurisdiction; the LLM is never called.
-    """
     audit_repo = MemAnswerAuditRecordRepo()
     empty_j_repo = MemJurisdictionRepo()  # Denver slug resolves, no DB row
     retrieval_svc = RetrievalService(
@@ -452,15 +418,7 @@ def test_slug_resolved_but_missing_jurisdiction_row_emits_ooj() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.OUT_OF_JURISDICTION
 
 
-# ===========================================================================
-# --- Ambiguous-material path ---
-# ===========================================================================
-
-
 def test_ambiguous_material_path() -> None:
-    """Ambiguous normalizer result -> short_answer='unknown', citations=[],
-    non-null clarifying_question, persists CONFLICTED reason.
-    """
     cand1 = _make_material("pet-bottle")
     cand2 = _make_material("hdpe-jug")
     normalizer = _FakeNormalizer(Ambiguous(candidates=(cand1, cand2)))
@@ -488,15 +446,7 @@ def test_ambiguous_material_path() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.CONFLICTED
 
 
-# ===========================================================================
-# --- Uncertain-material path ---
-# ===========================================================================
-
-
 def test_uncertain_material_path() -> None:
-    """Uncertain normalizer result -> short_answer='unknown', citations=[],
-    non-null clarifying_question, persists UNCERTAIN_MATERIAL reason.
-    """
     normalizer = _FakeNormalizer(Uncertain())
 
     svc, audit_repo, _ = _build_service(
@@ -521,16 +471,7 @@ def test_uncertain_material_path() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.UNCERTAIN_MATERIAL
 
 
-# ===========================================================================
-# --- Validator-rejected path ---
-# ===========================================================================
-
-
 def test_validator_rejected_path() -> None:
-    """LLM returns an answer with no citation -> AnswerAuditRecord
-    construction raises AnswerAuditRecordValidationError; fallback produces
-    NoEvaluation(VALIDATOR_REJECTED). Exactly one row persists.
-    """
     # Return Accepted verdict but empty citations -- triggers
     # AnswerAuditRecordValidator violation (INV-PROD-001).
     source_url = "https://denvergov.org/recycling"
@@ -767,11 +708,6 @@ def test_save_raises_propagates() -> None:
         )
 
 
-# ===========================================================================
-# --- LLM_REJECTED (retry budget exhausted) ---
-# ===========================================================================
-
-
 def test_llm_rejected_path() -> None:
     """RetrievalLLM returns NoEvaluation(LLM_REJECTED) ->
     short_answer='unknown', audit row with LLM_REJECTED.
@@ -825,11 +761,6 @@ def test_llm_rejected_path() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.LLM_REJECTED
 
 
-# ===========================================================================
-# --- ItemVerdict sum-completeness ---
-# ===========================================================================
-
-
 def test_item_verdict_sum_completeness_exhaustiveness() -> None:
     """Every variant in ItemVerdict is covered by domain_to_wire mapper.
 
@@ -870,9 +801,20 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
     assert result.citations == []
 
 
-# ===========================================================================
-# --- SEO pages: superseded rules excluded ---
-# ===========================================================================
+def test_conflicted_with_citations_surfaces_them_on_unknown() -> None:
+    citation = _make_citation("https://denver.gov/recycling")
+    answer = _make_evaluated_answer(Conflicted(), (citation,))
+    result = evaluated_answer_to_wire(
+        answer,
+        audit_record_id=uuid.uuid4(),
+        jurisdiction_id=_make_jurisdiction_id(),
+        jurisdiction_name="Denver",
+    )
+
+    assert result.short_answer == "unknown"
+    assert result.refusal_reason == "conflict_unresolved"
+    assert len(result.citations) == 1
+    assert result.citations[0].url == "https://denver.gov/recycling"
 
 
 def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
@@ -950,18 +892,13 @@ def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
     )
 
 
-# ===========================================================================
-# Construction-time fallback: wire response matches persisted record
-# ===========================================================================
-
-
 def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     """When the AnswerAuditRecordValidator fires at construction time
     (construction-time last-line defense), the wire response must match
     the persisted fallback record -- both must be VALIDATOR_REJECTED, not
     the original EvaluatedAnswer that failed validation.
 
-    Exercises the P0 bug fix: outcome is rebound to the fallback before
+    outcome is rebound to the fallback before
     _to_wire() is called (INV-PROD-001).
     """
     # Inject a fake RetrievalService that returns an EvaluatedAnswer
@@ -1005,11 +942,6 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     assert saved.no_evaluation_reason == NoEvaluationReason.VALIDATOR_REJECTED
 
 
-# ===========================================================================
-# NO_EVIDENCE mapper coverage
-# ===========================================================================
-
-
 def test_no_evidence_mapper_produces_unknown_with_no_evidence_refusal() -> None:
     """NoEvaluation(reason=NO_EVIDENCE) maps to short_answer='unknown' and
     refusal_reason='no_evidence' via no_evaluation_to_wire.
@@ -1035,11 +967,6 @@ def test_no_evidence_mapper_produces_unknown_with_no_evidence_refusal() -> None:
     assert result.refusal_reason == "no_evidence"
     assert result.clarifying_question is None
     assert result.citations == []
-
-
-# ===========================================================================
-# Jurisdiction display name -- resolver name flows to wire (INV-PROD-003)
-# ===========================================================================
 
 
 def test_jurisdiction_name_from_repo_not_hardcoded() -> None:

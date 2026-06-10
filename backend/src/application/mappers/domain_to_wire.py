@@ -57,6 +57,10 @@ def verdict_to_short_answer(verdict: ItemVerdict) -> str:
         case NotCovered():
             return "unknown"
         case Conflicted():
+            # Folds into 'unknown', but unlike NotCovered a Conflicted
+            # answer carries citations (the conflicting sources). The
+            # citations rule and the deferred option to give Conflicted
+            # its own short_answer value both live in contracts/answer.md.
             return "unknown"
         case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
             assert_never(unreachable)

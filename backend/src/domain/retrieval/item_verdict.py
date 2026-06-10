@@ -1,14 +1,6 @@
 """ItemVerdict sum type and its variants.
 
 The domain verdict produced by the LLM and validated by GroundingValidator.
-The wire layer maps this sum to the four-valued short_answer string tag.
-
-Verdict mapping (per contracts/answer.md):
-- Accepted (no conditions) -> short_answer = 'yes'
-- Accepted (conditions non-empty) -> short_answer = 'conditional'
-- Refused -> short_answer = 'no'
-- NotCovered -> short_answer = 'unknown', refusal_reason = 'no_evidence'
-- Conflicted -> short_answer = 'unknown', refusal_reason = 'no_evidence'
 """
 
 from dataclasses import dataclass, field
