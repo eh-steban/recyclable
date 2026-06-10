@@ -83,6 +83,28 @@ carries `NullPool` and a `lock_timeout=5000` ms setting for the
 same reason -- a lingering pooled connection with an open
 transaction would produce the same deadlock vector.
 
+### Randomized execution order
+
+The suite uses `pytest-randomly` (a backend dev dependency), so test
+execution order is shuffled on every run. Each run prints a line like
+`Using --randomly-seed=<N>` in the pytest header -- that seed makes the
+shuffle reproducible.
+
+Order-independence is what the existing DB-isolation discipline
+(rollback, TRUNCATE, and module-scoped engines described above) buys:
+no test should leave state that a later test depends on. Randomized
+order surfaces hidden violations of that discipline.
+
+To replay a failing run exactly:
+
+```bash
+# Pin the seed from the failing run's header
+pytest -p randomly --randomly-seed=<N>
+
+# Or replay the most recent run without looking up the seed
+pytest -p randomly --randomly-seed=last
+```
+
 ## Domain tests
 
 Unit test all domain entities, value objects, and domain services:

@@ -11,7 +11,12 @@ from src.infra.db.models import Base  # noqa: F401 -- registers all metadata
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False: scope this config to alembic's own
+    # loggers (root/sqlalchemy/alembic) and leave every other logger in the
+    # shared registry untouched. The default (True) disables every
+    # already-created app logger -- e.g. when alembic runs in-process during
+    # a startup migration or a CLI job -- silently muting application logs.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
