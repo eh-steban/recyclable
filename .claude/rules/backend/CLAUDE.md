@@ -29,8 +29,9 @@ contract via a generated TypeScript client (see
 `.claude/rules/contracts.md` for the contract-generation pipeline).
 
 Implements domain-driven design. Tactical and strategic principles
-live in `.claude/rules/ddd/` (hub: `principles-hub.md`); load
-applicable shards by `paths:` frontmatter.
+live in `.claude/docs/ddd/` (hub: `principles-hub.md`); they are
+reference docs, not auto-loaded rules -- open applicable shards on
+demand via the hub.
 
 ## Structure
 
@@ -152,7 +153,7 @@ alembic revision --autogenerate -m "description"
 - Application tests mock infrastructure dependencies
 - See `.claude/rules/backend/testing.md` for patterns
 - Test-first discipline (red / green / refactor, captured red-state
-  evidence): `.claude/rules/tdd.md`
+  evidence): `.claude/docs/tdd.md`
 
 ## Database
 

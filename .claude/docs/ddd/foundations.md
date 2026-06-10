@@ -1,8 +1,3 @@
----
-paths:
-  - "private/specs/**"
----
-
 # DDD foundations (Ch. 1)
 
 Foundational context for reasoning about Domain-Driven Design. Load when

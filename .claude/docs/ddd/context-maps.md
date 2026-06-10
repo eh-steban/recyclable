@@ -1,10 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "frontend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- context maps
 
 Strategic-design principles for **relationships between bounded
@@ -148,7 +141,7 @@ the truth.
 - `principles-hub.md` -- DDD hub: index of shards.
 - `bounded-contexts.md` -- principles for *defining* a single
   bounded context.
-- `../contracts.md` -- the *shape* discipline for HTTP-boundary
+- `../../rules/contracts.md` -- the *shape* discipline for HTTP-boundary
   contracts; complementary to the *integration pattern* choice
   here.
 - `../refactoring.md` -- a refactor may not move or rename an

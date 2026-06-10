@@ -1,12 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/**/*.ts"
-  - "frontend/**/*.tsx"
-  - "frontend/**/*.js"
-  - "frontend/**/*.jsx"
----
-
 # Refactoring rules
 
 What counts as a refactor in this repo, what is allowed, and what is
@@ -111,7 +102,7 @@ implementation. Prioritize:
 
 ## DDD principles as refactor constraints
 
-The DDD shards under `.claude/rules/ddd/` (hub:
+The DDD shards under `.claude/docs/ddd/` (hub:
 `principles-hub.md`) define what counts as a domain-layer
 boundary. Several principles act as explicit constraints on what
 "behavior-preserving" means. A change that crosses one of these is

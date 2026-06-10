@@ -1,10 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "frontend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- bounded contexts
 
 Strategic-design principles for **defining and sizing bounded
@@ -166,5 +159,5 @@ Shared Kernel by accident, and it always rots.
   bounded contexts.
 - `architecture.md` -- architectural styles *inside* a context
   (Layers, DIP, Hexagonal, CQRS, EDA, Event Sourcing).
-- `../contracts.md` -- the *shape* discipline for HTTP-boundary
+- `../../rules/contracts.md` -- the *shape* discipline for HTTP-boundary
   contracts; complementary to the *why* discipline here.

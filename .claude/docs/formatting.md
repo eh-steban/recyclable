@@ -1,14 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/**/*.ts"
-  - "frontend/**/*.tsx"
-  - "frontend/**/*.js"
-  - "frontend/**/*.jsx"
-  - "frontend/**/*.json"
-  - "frontend/**/*.css"
----
-
 # Code Formatting
 
 Single line-length budget across both services: **80 columns**.

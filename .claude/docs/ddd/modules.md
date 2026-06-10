@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- modules
 
 Strategic-design principles for **how to organize a bounded context's
@@ -259,7 +253,7 @@ seams decide where the deployment unit can cleanly cut.
 - `architecture.md` -- the architectural compartments
   (`domain.model`, `application`, `infrastructure`,
   `interfaces` / `resources`) are this shard's hierarchy backbone.
-- `../contracts.md` -- public Module surfaces (exported types,
+- `../../rules/contracts.md` -- public Module surfaces (exported types,
   resource URIs, Event names) are wire-level contracts in their own
   right; renaming an exported Module surface is a contract change,
   not a free internal refactor.

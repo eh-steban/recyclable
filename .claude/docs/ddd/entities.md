@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- entities
 
 Tactical-design principles for **modeling Entities**: when a concept
@@ -280,7 +274,7 @@ carry the requirement -- see `architecture.md` Principle 9.
   Services that use them sit in the application/domain layers per
   the Layers + DIP principle. Event Sourcing as a way to track
   change is a high-cost architectural choice (Principle 9 there).
-- `../contracts.md` -- a wire schema is its own type; do not return an
+- `../../rules/contracts.md` -- a wire schema is its own type; do not return an
   Entity directly over HTTP.
 - `../refactoring.md` -- renaming an Entity, its identity field, or
   its command methods is a public-contract change in the

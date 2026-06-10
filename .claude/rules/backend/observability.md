@@ -4,7 +4,9 @@ paths:
 ---
 # Backend Observability
 
-Python/FastAPI logging and monitoring guidelines.
+Python/FastAPI logging and monitoring guidelines. Cross-service
+logging and observability standards (log levels, correlation IDs,
+what-not-to-log) live in `.claude/docs/observability.md`.
 
 ## Logger setup
 

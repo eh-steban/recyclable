@@ -31,7 +31,7 @@ folklore.
 - Relevant service rules under `.claude/rules/[service]/`
 - Implementation summary or plan
 - Validation Evidence (commands, exit codes, output excerpts) per
-  `.claude/rules/validation.md`
+  `.claude/docs/validation.md`
 - Code-reviewer output, if available
 
 ## Loading rules on demand
@@ -46,7 +46,7 @@ frontmatter. After identifying the diff scope:
 3. Read the body of any rule whose `paths:` matches a file in the
    diff. Skip rules that do not match.
 
-`private/invariants.md` and `.claude/rules/validation.md` always
+`private/invariants.md` and `.claude/docs/validation.md` always
 apply.
 
 ## Review lenses

@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- services
 
 Tactical-design principles for **Domain Services**: when an operation
@@ -224,7 +218,7 @@ each one is a return-shape decision, not an `else throw` afterthought.
 - `architecture.md` -- Dependency Inversion places technical Service
   implementations in infrastructure while the interface stays in the
   domain layer.
-- `../contracts.md` -- the wire shape of any cross-service operation
+- `../../rules/contracts.md` -- the wire shape of any cross-service operation
   is its own contract; the Service's signature is the *domain* shape,
   not the wire shape.
 - `../refactoring.md` -- changing a Service's operation set, its

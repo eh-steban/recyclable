@@ -8,7 +8,7 @@ paths:
 Architecture constraints and load-bearing decisions for the Python
 research worker. This document describes how the worker is shaped and
 why -- not what specific files or APIs exist (those live in code and
-in `.claude/rules/backend/architecture.md`).
+in `.claude/rules/architecture.md`).
 
 This is a stub. Fill in as constraints stabilize. Until then, treat
 unwritten sections as "no committed constraint -- ask before

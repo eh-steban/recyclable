@@ -15,7 +15,7 @@ fix / refactor plan in `private/plans/`.]
 
 ## Validation Evidence
 
-> Shape and discipline live in `.claude/rules/validation.md`. Paste
+> Shape and discipline live in `.claude/docs/validation.md`. Paste
 > the four-field record(s) from the plan's Checkpoint(s) -- do not
 > summarize as "tests pass."
 

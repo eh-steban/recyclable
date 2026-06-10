@@ -1,10 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "frontend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- integrating bounded contexts
 
 How to wire two bounded contexts together at runtime so that the
@@ -381,7 +374,7 @@ explicit in the runbook before launch.
   `domain-events.md` and `aggregates.md`; this shard takes them as
   given and shows how Events flow on the wire.
 - **HTTP contract specifics.** Header conventions, error codes, OpenAPI
-  versioning, security scheme -- those are governed by `../contracts.md`
+  versioning, security scheme -- those are governed by `../../rules/contracts.md`
   and `architecture.md`. This shard governs what crosses the wire and
   why, not how to spell HTTP.
 - **Messaging-broker internals.** RabbitMQ exchanges, Kafka partitions,
@@ -440,7 +433,7 @@ explicit in the runbook before launch.
   live in `infrastructure` Modules; the facade interface and the
   local Aggregate / Value Object live in domain Modules
   (`modules.md` Principle 8).
-- `../contracts.md` -- the wire shape between two contexts is a
+- `../../rules/contracts.md` -- the wire shape between two contexts is a
   contract; the Published Language (Principle 3) is the artefact
   that contract is written down in. Renaming a field in the wire
   format is a contract change.

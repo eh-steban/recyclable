@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- factories
 
 How to use Factories inside a domain model so that constructing a complex
@@ -275,7 +269,7 @@ Factory.
 - `architecture.md` -- the Service-as-Factory implementation lives in
   `infrastructure`; the interface lives in `domain.model` (or
   `domain.service`).
-- `../contracts.md` -- a Service-as-Factory whose interface is
+- `../../rules/contracts.md` -- a Service-as-Factory whose interface is
   consumed by another team is a public contract; renaming it is a
   contract change.
 - `../refactoring.md` -- moving a creation site between

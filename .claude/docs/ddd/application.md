@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- application
 
 How the components that surround a domain model -- user interface,
@@ -446,7 +440,7 @@ interface in the layer that needs it; place the implementation in
   in their own Modules (`application`, `presentation`,
   `infrastructure`), named after the language of the application
   (`modules.md` Principle 1).
-- `../contracts.md` -- the Application Service signature is a contract
+- `../../rules/contracts.md` -- the Application Service signature is a contract
   to its UI clients; renaming a Command, changing the output Port
   shape, or rewording an authorization role is a contract change.
 - `../refactoring.md` -- swapping a UI framework, container, or

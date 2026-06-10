@@ -4,7 +4,10 @@ paths:
 ---
 # Backend Error Handling
 
-Python/FastAPI error handling patterns and standards.
+Python/FastAPI error handling patterns and standards. Cross-service
+error-handling philosophy (error categories, status mapping, graceful
+degradation, sensitive-data rules) lives in
+`.claude/docs/error-handling.md`.
 
 ## Exception hierarchy
 

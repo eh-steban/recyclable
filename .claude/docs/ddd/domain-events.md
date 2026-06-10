@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- domain events
 
 Tactical-design principles for **Domain Events**: how to discover them
@@ -353,7 +347,7 @@ message twice and asserts a single observable effect.
   outside the domain; Event-Driven Architecture, CQRS, and Event
   Sourcing are downstream architectural choices that build on the
   rules here.
-- `../contracts.md` -- a published Event is a wire-level public
+- `../../rules/contracts.md` -- a published Event is a wire-level public
   contract. Adding fields is usually safe; removing or renaming is
   a breaking change that must be versioned and coordinated.
 - `../refactoring.md` -- changing an Event's name, payload shape,

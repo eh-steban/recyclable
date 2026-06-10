@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/src/**/*.ts"
-  - "frontend/src/**/*.tsx"
----
 # Observability Standards
 
 Cross-service logging, monitoring, and observability guidelines.

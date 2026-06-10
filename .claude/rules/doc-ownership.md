@@ -11,7 +11,7 @@ Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-05-15
+**Last reconciled:** 2026-06-10
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a
@@ -80,6 +80,17 @@ with normal review gates.
   When adding or moving a rule, keep `paths:` accurate -- stale globs
   cause agents to load the wrong rules or miss relevant ones.
 - `.claude/knowledge-management.md` -- knowledge system process doc.
+- `.claude/docs/ddd/**/*.md` -- the DDD shards (hub
+  `principles-hub.md`); reference docs opened on demand via the hub,
+  not auto-loaded.
+- `.claude/docs/tdd.md`, `.claude/docs/validation.md`,
+  `.claude/docs/refactoring.md`, `.claude/docs/formatting.md`,
+  `.claude/docs/error-handling.md`, `.claude/docs/observability.md` --
+  cross-cutting process and philosophy docs opened on demand by name.
+  These and the DDD shards moved out of `.claude/rules/` so they stop
+  auto-loading on every file read; same spec-writer ownership as the
+  rules they came from. (`.claude/docs/infra/git.md` predates this move
+  and keeps its existing ownership.)
 
 ## Append-only by service agents
 

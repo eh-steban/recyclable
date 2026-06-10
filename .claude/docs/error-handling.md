@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/src/**/*.ts"
-  - "frontend/src/**/*.tsx"
----
 # Error Handling Standards
 
 Cross-service error handling philosophy and principles.

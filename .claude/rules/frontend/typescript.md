@@ -12,7 +12,7 @@ paths:
 - Type all props, state, and API responses
 - Infer types from API schemas where possible
 - Formatting: 80-col line limit, enforced by Prettier. See
-  `.claude/rules/formatting.md`.
+  `.claude/docs/formatting.md`.
 
 ## Interface vs Type
 

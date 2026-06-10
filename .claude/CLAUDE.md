@@ -93,19 +93,24 @@ recyclable/
   API and the ingestion worker both depend inward on the same domain.
   The frontend applies strategic DDD -- bounded contexts, Ubiquitous
   Language, translation at boundaries -- per
-  `.claude/rules/ddd/principles-hub.md`. Tactical patterns (Aggregates,
+  `.claude/docs/ddd/principles-hub.md`. Tactical patterns (Aggregates,
   Repositories, etc.) are backend-only by default.
 - **Fail fast:** detect errors at boundaries (HTTP request, ingestion
   source, LLM response), refuse to answer on missing evidence.
 
 ## Standards and rules
 
-Detailed standards live under `.claude/rules/` -- one file or shard per
-topic (backend, frontend, llm, infra, ddd, error-handling, observability,
-contracts, refactoring, validation, doc-ownership, etc.). Most shards
-declare a `paths:` frontmatter glob and load on demand when an agent
-edits a matching file; see any agent file's "Loading rules on demand"
-section for the mechanism.
+Path-scoped rules live under `.claude/rules/` -- service rules
+(backend, frontend, llm, infra), plus `architecture.md`, `contracts.md`,
+`data-model.md`, and a few others. Each declares a `paths:` frontmatter
+glob and auto-loads only when an agent reads a matching file.
+
+Cross-cutting reference and process docs live under `.claude/docs/` so
+they do not auto-load on every file: the DDD shards (`docs/ddd/`, hub
+`principles-hub.md`), `tdd.md`, `validation.md`, `refactoring.md`,
+`formatting.md`, and the cross-service `error-handling.md` /
+`observability.md`. Agents open these on demand by name; see any agent
+file's "Loading rules on demand" section for the mechanism.
 
 Git standards live separately at `.claude/docs/infra/git.md`.
 Worktrees: use `scripts/wt` (it branches the `private/` submodule to

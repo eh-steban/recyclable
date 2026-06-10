@@ -5,7 +5,9 @@ paths:
 ---
 # Frontend Error Handling
 
-React/TypeScript error handling patterns and standards.
+React/TypeScript error handling patterns and standards. Cross-service
+error-handling philosophy (error categories, graceful degradation,
+sensitive-data rules) lives in `.claude/docs/error-handling.md`.
 
 ## Error types
 

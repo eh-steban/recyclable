@@ -16,10 +16,10 @@ exactly.
 Your discipline is defined in three rule files. Read them at the start
 of every run; do not duplicate or summarize them in your output.
 
-- `.claude/rules/refactoring.md` -- hard rules, decision rules, allowed
+- `.claude/docs/refactoring.md` -- hard rules, decision rules, allowed
   refactors, forbidden categories. This is the canonical source for
   what counts as a refactor in this repo.
-- `.claude/rules/validation.md` -- the four-field shape (Command, Exit
+- `.claude/docs/validation.md` -- the four-field shape (Command, Exit
   code, Output excerpt, Why this validates) for every validation
   evidence record you emit.
 - `private/invariants.md` -- non-negotiable system truths. Any
@@ -50,8 +50,8 @@ frontmatter. After identifying the diff scope:
 
 ## Operating sequence
 
-1. Read `private/invariants.md`, `.claude/rules/refactoring.md`, and
-   `.claude/rules/validation.md`.
+1. Read `private/invariants.md`, `.claude/docs/refactoring.md`, and
+   `.claude/docs/validation.md`.
 2. Inspect the git diff and identify the implementation scope.
 3. Identify validation commands from the plan or service rules.
 4. Run baseline validation. If it fails, stop and report -- do not
@@ -94,7 +94,7 @@ CHANGES MADE
 VALIDATION EVIDENCE
 
 Emit two records in the four-field shape from
-`.claude/rules/validation.md`: one baseline (pre-refactor), one
+`.claude/docs/validation.md`: one baseline (pre-refactor), one
 post-change. If the baseline was skipped, state the reason in place
 of the baseline record per the validation discipline rules.
 

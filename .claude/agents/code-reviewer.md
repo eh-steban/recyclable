@@ -34,9 +34,10 @@ Rule files under `.claude/rules/` are NOT auto-loaded. Load only what
 applies to the diff:
 
 1. List candidate rule files: `.claude/rules/{backend,frontend,llm}/*.md`
-   for the touched services and `.claude/rules/*.md` at the repo level
-   (including `.claude/rules/ddd/*.md` for any diff that touches a
-   domain layer or a context boundary).
+   for the touched services and `.claude/rules/*.md` at the repo level.
+   For a diff touching a domain layer or a context boundary, open the
+   DDD shards on demand via `.claude/docs/ddd/principles-hub.md` -- they
+   are reference docs, not part of this scan.
 2. Inspect each file's frontmatter -- e.g. `head -10 <file>` -- for a
    `paths:` glob list.
 3. Read the body of any rule whose `paths:` matches a file in the
@@ -105,11 +106,11 @@ number explicitly -- e.g. "violates `aggregates.md` Principle 1
 (one-Aggregate-per-transaction)" or "violates
 `integrating-bounded-contexts.md` Principle 3 (Published Language,
 not shared classes)". Do not flag vague "this isn't very DDD"
-feedback. The hub is at `.claude/rules/ddd/principles-hub.md`; load
-applicable shards via the `paths:` discovery above. Load
-`foundations.md` explicitly (no `paths:` glob) when a finding involves
-Ubiquitous-Language drift or anemic-model symptoms -- those are Ch. 1
-framings, not chapter-shard principles.
+feedback. The hub is at `.claude/docs/ddd/principles-hub.md`; read it
+and open the applicable shards it indexes (they are reference docs,
+not part of the scan above). Read `foundations.md` from the hub when a
+finding involves Ubiquitous-Language drift or anemic-model symptoms --
+those are Ch. 1 framings, not chapter-shard principles.
 
 ### 8. Knowledge management
 

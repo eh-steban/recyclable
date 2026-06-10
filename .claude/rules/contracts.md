@@ -10,9 +10,9 @@ paths:
 Rules for agents working on features that cross service boundaries.
 
 For DDD framing of *what counts as* a contract crossing a Bounded
-Context, see `.claude/rules/ddd/integrating-bounded-contexts.md`
+Context, see `.claude/docs/ddd/integrating-bounded-contexts.md`
 Principle 3 (Published Language, not shared classes) and
-`.claude/rules/ddd/context-maps.md` for the relationship patterns
+`.claude/docs/ddd/context-maps.md` for the relationship patterns
 that govern the boundary.
 
 ## What is a contract

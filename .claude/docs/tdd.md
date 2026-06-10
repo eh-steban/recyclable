@@ -1,12 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/**/*.ts"
-  - "frontend/**/*.tsx"
-  - "frontend/**/*.js"
-  - "frontend/**/*.jsx"
----
-
 # Test-Driven Development
 
 How agents write code in this repo: tests first, in nested cycles.
@@ -37,7 +28,7 @@ the green-state record `validation.md` already mandates.
   (typos, config bumps, comment edits, formatting). State the
   skip and the reason, same discipline as `validation.md`.
 - **Refactor-only changes** are governed by
-  `.claude/rules/refactoring.md` instead -- a refactor preserves
+  `.claude/docs/refactoring.md` instead -- a refactor preserves
   behavior, so the existing test suite *is* the red-green
   evidence (baseline green, post-change green). No new red step
   is required.
@@ -70,7 +61,7 @@ Around each completed unit test:
    that works. Duplication and ugliness are tolerated here --
    this step optimizes for *correctness*, not *structure*.
 3. **Refactor.** With the test green, clean the code under
-   `.claude/rules/refactoring.md`. Tests stay green throughout;
+   `.claude/docs/refactoring.md`. Tests stay green throughout;
    if they go red, revert the refactor step, do not edit the
    tests to fit. Refactor scope is "code touched in green,"
    not "the whole file."
@@ -96,9 +87,9 @@ shape of what you have built so far against the architectural
 constraints that govern it:
 
 - DDD layering (domain pure, no leakage into infra/api) -- see
-  `.claude/rules/ddd/architecture.md`.
+  `.claude/docs/ddd/architecture.md`.
 - Bounded-context boundaries and Ubiquitous Language --
-  `.claude/rules/ddd/bounded-contexts.md`.
+  `.claude/docs/ddd/bounded-contexts.md`.
 - Service layout rules in
   `.claude/rules/{backend,frontend}/CLAUDE.md`.
 - Invariants in `private/invariants.md`.
@@ -112,7 +103,7 @@ phase checkpoint.
 The new requirement this rule introduces. Each Phase Checkpoint
 that contains implementation work records *two* validation
 records, both following the four-field shape in
-`.claude/rules/validation.md`:
+`.claude/docs/validation.md`:
 
 1. **Red record** -- proves the new test failed before the
    production change. Captured by running the test on the
@@ -177,12 +168,12 @@ production change.
 
 ## Cross-references
 
-- `.claude/rules/validation.md` -- evidence shape used by both
+- `.claude/docs/validation.md` -- evidence shape used by both
   red and green records.
-- `.claude/rules/refactoring.md` -- governs the refactor step
+- `.claude/docs/refactoring.md` -- governs the refactor step
   of the minute cycle, and the refactor-only path that opts
   out of red-state evidence.
-- `.claude/rules/ddd/architecture.md` -- architectural
+- `.claude/docs/ddd/architecture.md` -- architectural
   constraints checked on the hourly cycle.
 - `private/invariants.md` -- invariant IDs cited in
   red-record "Why this validates" lines.

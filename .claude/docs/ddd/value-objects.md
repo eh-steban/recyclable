@@ -1,10 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "frontend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- value objects
 
 Tactical-design principles for **modeling Value Objects**: when a
@@ -294,7 +287,7 @@ characteristics in a few lines.
   immutability and side-effect-free behavior are what make
   hexagonal adapters cheap (a Value crossing the boundary needs
   no defensive copy).
-- `../contracts.md` -- a wire schema is its own type; Values may
+- `../../rules/contracts.md` -- a wire schema is its own type; Values may
   be serialized into the wire shape, but the wire type is not
   the Value type.
 - `../refactoring.md` -- changing a Value's attribute set, its

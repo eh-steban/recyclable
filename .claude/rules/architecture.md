@@ -10,7 +10,10 @@ paths:
 How the recyclable codebase is organized: bounded contexts, Modules,
 layering, type categories, persistence boundaries, and the principles
 that make those choices coherent. This file is the *what we have*; the
-DDD shards under `ddd/` are the *why*.
+DDD shards under `ddd/` are the *why*. Those shards live in
+`.claude/docs/ddd/` (open on demand via `principles-hub.md`), not in
+the auto-loaded rules tree; `ddd/<shard>` citations below are shorthand
+for that location.
 
 When a question is "why is it organized this way?", the answer lives
 in the relevant shard. When the question is "where does this code

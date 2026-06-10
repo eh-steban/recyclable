@@ -26,8 +26,8 @@ re-runs codegen and the compiler catches type drift.
 **Strategic DDD applies here** (Bounded Contexts, Ubiquitous
 Language, translation at boundaries). Tactical patterns
 (Aggregates, Repositories, Domain Events) are backend-only. See
-`.claude/rules/ddd/principles-hub.md`; load applicable shards by
-`paths:` frontmatter.
+`.claude/docs/ddd/principles-hub.md`; the shards are reference docs,
+not auto-loaded rules -- open applicable ones on demand via the hub.
 
 ## Structure
 
@@ -215,7 +215,7 @@ npm run test:e2e
 - Vitest + React Testing Library
 - Playwright for E2E
 - Test-first discipline (red / green / refactor, captured red-state
-  evidence): `.claude/rules/tdd.md`
+  evidence): `.claude/docs/tdd.md`
 - `zod` for the BFF route handlers' input validation (browser →
   Next.js boundary). The Next.js → backend boundary is typed by the
   generated client and does not need zod.

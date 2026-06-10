@@ -32,7 +32,7 @@ Read these before reviewing; do not summarize them back in your output:
   the type-category model, Entity-vs-Value diagnostics, repository
   style, Aggregate boundaries, layering. Repo-wide pattern decisions
   live here.
-- `.claude/rules/ddd/principles-hub.md` -- navigation to the `ddd/`
+- `.claude/docs/ddd/principles-hub.md` -- navigation to the `ddd/`
   shards, the *why* behind a pattern choice. Load a shard only when a
   finding turns on that pattern's rationale.
 - `.claude/rules/doc-ownership.md` -- who may write each relocation

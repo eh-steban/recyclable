@@ -1,13 +1,3 @@
----
-paths:
-  - "backend/**/*.py"
-  - "frontend/**/*.ts"
-  - "frontend/**/*.tsx"
-  - "frontend/**/*.js"
-  - "frontend/**/*.jsx"
-  - "private/plans/**"
----
-
 # Validation evidence
 
 How agents prove a change works. This file defines the **shape** of
@@ -83,7 +73,7 @@ A record missing any field is not evidence; it is a claim.
 - **Fix plans** -- the Verification block. See
   `private/templates/plans/fix.md` "## Verification."
 - **Refactor plans** -- baseline + post-change records, both using
-  this shape. See `.claude/rules/refactoring.md` for the
+  this shape. See `.claude/docs/refactoring.md` for the
   refactor-specific framing.
 - **Agent outputs** -- any agent that runs validation as part of
   its work emits a record in this shape (refactorer, code-reviewer
@@ -115,7 +105,7 @@ covers the food-contamination negative path.
 
 - `private/invariants.md` -- invariant IDs cited in "Why
   this validates"
-- `.claude/rules/refactoring.md` -- refactor-specific use of this
+- `.claude/docs/refactoring.md` -- refactor-specific use of this
   shape (baseline + post-change records)
 - `private/templates/plans/implementation.md` and `fix.md` --
   templates whose Checkpoint / Verification slots match this

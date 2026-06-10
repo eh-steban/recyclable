@@ -1,10 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "frontend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- architecture
 
 Architectural-style principles for **how DDD code is organized and
@@ -221,7 +214,7 @@ requirement.
 - The exact directory layout inside a service -- that lives in
   the service's own conventions doc. This shard governs the
   *style*; the service doc governs the *names*.
-- The HTTP wire schema -- that is `../contracts.md`.
+- The HTTP wire schema -- that is `../../rules/contracts.md`.
 - Cross-context relationships -- that is `context-maps.md`.
 
 ## Cross-references
@@ -231,7 +224,7 @@ requirement.
   Smart-UI anti-pattern.
 - `context-maps.md` -- integration patterns, ACLs, eventual
   consistency, modeling unavailability.
-- `../contracts.md` -- HTTP wire-schema discipline; complementary
+- `../../rules/contracts.md` -- HTTP wire-schema discipline; complementary
   to the Hexagonal framing here.
 - `../refactoring.md` -- a refactor may not invert a layer
   dependency direction (e.g., importing infrastructure from

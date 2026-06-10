@@ -30,7 +30,7 @@ Rule files under .claude/rules/ are NOT auto-loaded. Load only what you need:
 This keeps your context targeted. Do not Read every rule body up front.
 
 When the task involves implementing or fixing behavior (not a refactor or
-quick-fix), load `.claude/rules/tdd.md` before writing any production code
+quick-fix), load `.claude/docs/tdd.md` before writing any production code
 -- it defines the test-first discipline and the red-state evidence the
 Phase Checkpoint will require.
 

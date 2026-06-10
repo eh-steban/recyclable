@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- repositories
 
 How to design and use a Repository so that the domain layer talks about
@@ -396,7 +390,7 @@ write it.
 - `bounded-contexts.md`, `context-maps.md` -- a Repository belongs
   to one context; cross-context reads go through Open Host Service
   / Published Language, not foreign Repositories.
-- `../contracts.md` -- a Repository interface consumed beyond its
+- `../../rules/contracts.md` -- a Repository interface consumed beyond its
   bounded context (rare; usually only Application Services consume
   it) is a contract; renaming or reshaping the public interface is
   a contract change.

@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- event sourcing (A+ES)
 
 How to persist an Aggregate as an ordered, append-only stream of
@@ -584,7 +578,7 @@ Aggregate's *fields* directly, the test is reading the wrong surface.
   (`modules.md` Principle 8); Projection classes typically live in
   their own Module so they can be added and replaced without
   touching the Aggregate's Module.
-- `../contracts.md` -- the Event schema is a contract, *especially*
+- `../../rules/contracts.md` -- the Event schema is a contract, *especially*
   under A+ES, because past Events live in the Stream forever. Adding
   a field is safe with tag-based serialization (Principle 10);
   removing or renaming one is a contract change requiring a versioned

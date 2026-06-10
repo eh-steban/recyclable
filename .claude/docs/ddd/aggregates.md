@@ -1,9 +1,3 @@
----
-paths:
-  - "backend/**"
-  - "private/specs/**"
----
-
 # DDD shard -- aggregates
 
 Tactical-design principles for **Aggregates**: how to draw the
@@ -414,7 +408,7 @@ no longer applies.
   mechanisms (optimistic locking, document vs row storage,
   CQRS) live in the architectural layer; this shard governs
   what they protect.
-- `../contracts.md` -- the Aggregate's command method
+- `../../rules/contracts.md` -- the Aggregate's command method
   signatures and emitted Event payloads are public contracts
   in the Ubiquitous-Language sense; renaming or reshaping them
   is a cross-callsite change, not a free internal refactor.

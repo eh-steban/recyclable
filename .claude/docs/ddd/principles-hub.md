@@ -42,7 +42,7 @@ Default: do not preload shards. If unsure which applies, ask before reading.
 
 ## Interactions with other rules
 
-- `../contracts.md` -- HTTP boundary shape; the DDD shards govern why that boundary exists.
+- `../../rules/contracts.md` -- HTTP boundary shape; the DDD shards govern why that boundary exists.
 - `../refactoring.md` -- contract-change rules. A cross-context integration surface counts as a public contract even when both sides live in this repo.
 - `private/invariants.md` -- wins on conflict. Flag and escalate when a DDD principle conflicts with a numbered invariant.
 
