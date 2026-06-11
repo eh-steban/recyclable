@@ -157,14 +157,28 @@ file.
 
 ### Review gates (before marking work done)
 
-1. Run `test-auditor` against changed services.
-2. Run `code-reviewer` against the unstaged diff.
-3. If the diff adds or changes comments or docstrings, run
-   `comment-reviewer` against the diff.
-4. Fix issues before reporting done.
+Run against the FINAL diff, in this order:
 
-Quick-fixes (typos, config changes, one-line edits) self-review only.
-For specs and katas, run `spec-writer` instead.
+1. `test-auditor` against changed services.
+2. `code-reviewer` against the unstaged diff.
+3. Apply all fixes from steps 1-2.
+4. `comment-reviewer` against the diff -- LAST, so it sees the final
+   state of every comment. Required whenever the diff adds or changes
+   comments or docstrings. If any code changes after it passes (a later
+   fix included), comment-reviewer MUST be re-run before done. "Ran last"
+   is not enough; it must run against the state you actually commit.
+
+Fix issues before reporting done. Quick-fixes (typos, config changes,
+one-line edits) self-review only. For specs and katas, run `spec-writer`
+instead.
+
+A `pre-commit` backstop enforces step 4: a commit touching `backend/` or
+`frontend/` source is rejected unless `bin/mark-comment-review` has
+stamped the current staged diff. After comment-reviewer passes on the
+final diff, stage everything and run `bin/mark-comment-review`, then
+commit. The marker binds to the staged diff's hash, so any later edit
+re-arms the gate. Bypass a genuinely trivial edit (no comment change)
+with `SKIP=comment-review git commit ...`.
 
 ### Context budgets
 
