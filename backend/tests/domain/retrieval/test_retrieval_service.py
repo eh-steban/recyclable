@@ -97,8 +97,6 @@ def _make_source(source_id: SourceId, url: str) -> SourceDocument:
 
 @final
 class _FakeNormalizer:
-    """Returns a pre-set NormalizationResult variant."""
-
     def __init__(self, result: NormalizationResult) -> None:
         self._result = result
 
@@ -140,8 +138,6 @@ class MemRuleRepo:
 
 
 class MemSourceRepo:
-    """Dict-backed source repo. Unknown SourceIds return None."""
-
     def __init__(
         self, docs: dict[SourceId, SourceDocument] | None = None
     ) -> None:
@@ -165,8 +161,6 @@ class MemSourceRepo:
 
 @final
 class _RecordingLLM:
-    """Records call count; asserts pre-LLM branches never invoke it."""
-
     def __init__(self) -> None:
         self.call_count = 0
 
@@ -183,8 +177,6 @@ class _RecordingLLM:
 
 @final
 class _ConfigurableLLM:
-    """Returns a pre-set EvaluatedAnswer or NoEvaluation."""
-
     def __init__(self, response: EvaluatedAnswer | NoEvaluation) -> None:
         self._response = response
 
@@ -203,7 +195,6 @@ def _build_service(
     source_repo: MemSourceRepo | None = None,
     llm: _RecordingLLM | _ConfigurableLLM | None = None,
 ) -> RetrievalService:
-    """Assemble RetrievalService with in-memory doubles."""
     return RetrievalService(
         material_normalizer=normalizer,  # type: ignore[arg-type]
         rule_repo=rule_repo or MemRuleRepo(),
@@ -234,8 +225,6 @@ class TestOutOfJurisdiction:
 
 
 class TestAmbiguousMaterialPath:
-    """`Ambiguous(candidates)` -> `NoEvaluation(reason=CONFLICTED)`."""
-
     def test_returns_no_evaluation_with_conflicted_reason(self) -> None:
         candidates = (_make_material("pet-bottle"), _make_material("hdpe-jug"))
         llm = _RecordingLLM()
@@ -256,8 +245,6 @@ class TestAmbiguousMaterialPath:
 
 
 class TestUncertainMaterialPath:
-    """`Uncertain` -> `NoEvaluation(reason=UNCERTAIN_MATERIAL)`."""
-
     def test_returns_no_evaluation_with_uncertain_reason(self) -> None:
         llm = _RecordingLLM()
         service = _build_service(
@@ -277,8 +264,6 @@ class TestUncertainMaterialPath:
 
 
 class TestResolvedMaterialReachesRetrievalStep:
-    """`Resolved` must NOT short-circuit -- flows into rule retrieval."""
-
     def test_resolved_proceeds_past_normalizer_step(self) -> None:
         material = _make_material("cardboard")
         llm = _RecordingLLM()
@@ -440,10 +425,6 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
     def test_source_repo_miss_excludes_url_from_set(self) -> None:
-        """A Rule whose source_document_id has no SourceDocument in the
-        repo contributes no URL to retrieved_source_urls. The LLM that
-        cites a URL not in the set should be rejected.
-        """
         material = _make_material("cardboard")
         source_id = SourceId(uuid.uuid4())
 
@@ -478,10 +459,6 @@ class TestFallbackForValidatorRejection:
     """`fallback_for_validator_rejection` returns the spec-pinned outcome."""
 
     def test_returns_validator_rejected_no_evaluation(self) -> None:
-        """fallback_for_validator_rejection() returns
-        NoEvaluation(reason=VALIDATOR_REJECTED) with a non-empty
-        recommended_action matching the spec-pinned grounding-failure text.
-        """
         service = _build_service(
             normalizer=_FakeNormalizer(Uncertain()),
         )
