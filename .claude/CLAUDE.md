@@ -157,14 +157,19 @@ file.
 
 ### Review gates (before marking work done)
 
-1. Run `test-auditor` against changed services.
-2. Run `code-reviewer` against the unstaged diff.
-3. If the diff adds or changes comments or docstrings, run
-   `comment-reviewer` against the diff.
-4. Fix issues before reporting done.
+Run against the FINAL diff, in this order -- comment-reviewer LAST:
 
-Quick-fixes (typos, config changes, one-line edits) self-review only.
-For specs and katas, run `spec-writer` instead.
+1. `test-auditor` against changed services.
+2. `code-reviewer` against the unstaged diff.
+3. Apply all fixes from steps 1-2.
+4. `comment-reviewer` against the diff, when it adds or changes comments
+   or docstrings. It runs last so it sees the final state of every
+   comment; if a later fix changes code after it passes, re-run it.
+   "Ran last" is not enough -- it must run against the state you commit.
+
+Fix issues before reporting done. Quick-fixes (typos, config changes,
+one-line edits) self-review only. For specs and katas, run `spec-writer`
+instead.
 
 ### Context budgets
 
