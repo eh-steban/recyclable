@@ -143,6 +143,12 @@ file.
 - **Type-checks passing is not "it works."** State what you actually
   ran (tests, UI in browser, query) vs. what you inferred.
 - **Empty findings are valid output.** Don't pad to look thorough.
+- **Cite `file:line` for every code reference.** Findings, review
+  items, bug reports, and summaries that point at code give the
+  concrete `path:line` (or `path:start-end`), not a prose location.
+  When relaying a subagent's findings, carry its `file:line` through;
+  fetch one if the subagent omitted it. The owner follows along in an
+  editor and needs jumpable coordinates.
 
 ### Review gates (before marking work done)
 

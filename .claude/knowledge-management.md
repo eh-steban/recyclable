@@ -188,7 +188,7 @@ knowledge already lives in its proper tier (mental model, rule shard, or
 architecture doc), and `paths:` on-demand loading already surfaces it to
 anyone editing the file.
 
-Two concrete anti-pattern shapes:
+Concrete anti-pattern shapes:
 
 - **Boilerplate identical across sibling modules.** A header like
   `See architecture.md § X` pasted onto every file in a directory
@@ -197,6 +197,19 @@ Two concrete anti-pattern shapes:
 - **A pointer that restates a project-general fact.** If the comment
   would be equally true in every file in the codebase, it belongs in
   a shared rule doc -- not here.
+- **A comment recoverable from the code itself.** If a reader could
+  state the comment's content from the symbols, assertions, and types
+  alone, it adds nothing. The common case is a test docstring that
+  re-narrates the test name and what the assertions already show. A
+  test docstring earns its place only when it states a non-obvious why,
+  gotcha, or edge case the body does not make self-evident; "describes
+  what is verified" is not enough when the verification is plain from
+  the code.
+- **A comment that contrasts against code that no longer exists.**
+  Justifying a choice by what it is *not* ("the genuine set, not one
+  rebuilt from the citations") points at an alternative the reader
+  cannot see once it is removed from the tree. State what the code does
+  and why; a deleted design lives in git history, not the comment.
 
 **A pointer is justified** when it flags non-obvious, file-specific
 foundational knowledge or an implementation gotcha that applies only in

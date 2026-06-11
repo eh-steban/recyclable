@@ -115,13 +115,25 @@ the rubric is the tier it should live in per the decision matrix.
    from X to Y on...", "added because reviewer asked"), TDD-step
    narration, or commented-out former code. This is not knowledge in
    any tier -- it belongs in git history / the plan. Recommend
-   deletion. For test docstrings specifically, the rule is: describe
-   what is verified, not when or how the test was written.
+   deletion. For test docstrings specifically: describe what is
+   verified, not when or how the test was written -- and if that
+   description is already plain from the test name and the assertions,
+   it is type-7 noise, not a kept docstring.
 6. **Pointer to a doc that does not exist.** A `See <path>` comment
    whose target you cannot locate. Either the path is wrong or the
    destination doc was never written. Verify the path before flagging.
-7. **Comment restates the code.** Zero added information. Recommend
-   deletion. (Do not over-report this -- only when clearly noise.)
+7. **Comment restates what the code already shows.** If a reader could
+   state the comment's content from the symbols, assertions, and types
+   alone, it adds nothing -- recommend deletion. This is the common
+   failure mode for test docstrings: one that only re-narrates the test
+   name and what the assertions plainly show is bloat, even though it
+   "describes what is verified" (type 5); it survives only when it adds
+   a non-obvious why, gotcha, or edge case the body does not make
+   self-evident. Also delete a comment that explains a choice by
+   contrasting it against code that no longer exists ("the genuine set,
+   not one rebuilt from the citations") -- once the alternative is gone,
+   the contrast points at nothing the reader can see. Still flag only
+   clear cases, not merely-tightenable prose.
 8. **Generic info / pointer with no per-module knowledge.** The inverse
    of types 1-4: rather than hoarding higher-tier knowledge, the comment
    carries none specific to its file. Boilerplate identical across
