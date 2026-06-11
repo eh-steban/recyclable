@@ -97,6 +97,7 @@ async def test_grounded_accept_returns_cited_yes(
             citations=(Citation(title="Denver Recycling", url=match.group(0)),),
             recommended_action="Place empty cans in your recycling cart.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         )
 
     fake = FakeAnthropicClient(
@@ -144,6 +145,7 @@ async def test_ungrounded_accept_is_refused(
             ),
             recommended_action="Recycle it.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         ),
         classify_result=_resolve_by_name("aluminum"),
     )
@@ -208,6 +210,7 @@ async def test_out_of_jurisdiction_never_calls_the_llm(
             citations=(Citation(title="x", url="https://example.com/x"),),
             recommended_action="should never be returned",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         ),
         classify_result=_resolve_by_name("aluminum"),
     )

@@ -12,7 +12,7 @@ from typing import final, get_args
 
 import pytest
 
-from src.application.answer_query import AnswerQuery
+from src.application.answer_query import AnswerQuery, _make_record
 from src.application.answer_query_command import AnswerQueryCommand
 from src.application.get_jurisdiction_page import GetJurisdictionPage
 from src.application.mappers.domain_to_wire import (
@@ -21,6 +21,7 @@ from src.application.mappers.domain_to_wire import (
     verdict_to_short_answer,
 )
 from src.domain.audit.answer_audit_record import AnswerAuditRecordId
+from src.domain.exceptions import AnswerAuditRecordValidationError
 from src.domain.knowledge_base.jurisdiction import (
     Jurisdiction,
     JurisdictionId,
@@ -195,12 +196,14 @@ def _make_evaluated_answer(
     verdict: ItemVerdict,
     citations: tuple[Citation, ...],
     recommended_action: str = "Place in the blue bin.",
+    retrieved_source_urls: frozenset[str] = frozenset(),
 ) -> EvaluatedAnswer:
     return EvaluatedAnswer(
         verdict=verdict,
         citations=citations,
         recommended_action=recommended_action,
         confidence="high",
+        retrieved_source_urls=retrieved_source_urls,
     )
 
 
@@ -481,6 +484,7 @@ def test_validator_rejected_path() -> None:
             citations=(),  # empty -- grounding violation
             recommended_action="Place in the blue bin.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         )
     )
 
@@ -594,6 +598,7 @@ def test_not_covered_with_citations_is_refused() -> None:
             citations=(_make_citation(source_url),),
             recommended_action="No matching rule found.",
             confidence="low",
+            retrieved_source_urls=frozenset(),
         )
     )
 
@@ -637,6 +642,85 @@ def test_not_covered_with_citations_is_refused() -> None:
     assert len(audit_repo._store) == 1
     saved = next(iter(audit_repo._store.values()))
     assert saved.no_evaluation_reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+
+# ===========================================================================
+# --- _make_record audit provenance ---
+# ===========================================================================
+
+
+def _make_record_args(
+    outcome: EvaluatedAnswer,
+) -> tuple[AnswerAuditRecordId, AnswerQueryCommand, EvaluatedAnswer]:
+    return (
+        AnswerAuditRecordId(uuid.uuid4()),
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        ),
+        outcome,
+    )
+
+
+def test_make_record_grades_citations_against_threaded_set() -> None:
+    outcome = EvaluatedAnswer(
+        verdict=Accepted(),
+        citations=(_make_citation("https://denver.gov/recycling"),),
+        recommended_action="Place in the blue bin.",
+        confidence="high",
+        retrieved_source_urls=frozenset(),  # genuine set omits the cited URL
+    )
+    record_id, command, outcome = _make_record_args(outcome)
+    with pytest.raises(AnswerAuditRecordValidationError):
+        _make_record(
+            record_id,
+            command,
+            outcome,
+            latency_ms=10,
+            created_at=datetime.now(tz=UTC),
+            jurisdiction=_make_denver_jurisdiction(),
+        )
+
+
+def test_make_record_persists_genuine_retrieved_set() -> None:
+    cited = "https://denver.gov/recycling"
+    uncited = "https://denver.gov/guidelines"
+    outcome = EvaluatedAnswer(
+        verdict=Accepted(),
+        citations=(_make_citation(cited),),
+        recommended_action="Place in the blue bin.",
+        confidence="high",
+        retrieved_source_urls=frozenset({cited, uncited}),
+    )
+    record_id, command, outcome = _make_record_args(outcome)
+    record = _make_record(
+        record_id,
+        command,
+        outcome,
+        latency_ms=10,
+        created_at=datetime.now(tz=UTC),
+        jurisdiction=_make_denver_jurisdiction(),
+    )
+    assert record.retrieved_source_urls == frozenset({cited, uncited})
+
+
+def test_make_record_no_evaluation_has_empty_retrieved_set() -> None:
+    record = _make_record(
+        AnswerAuditRecordId(uuid.uuid4()),
+        AnswerQueryCommand(
+            query_text="Can I recycle cardboard?",
+            location_input="Denver, CO",
+        ),
+        NoEvaluation(
+            reason=NoEvaluationReason.NO_EVIDENCE,
+            recommended_action="No rule found.",
+        ),
+        latency_ms=10,
+        created_at=datetime.now(tz=UTC),
+        jurisdiction=_make_denver_jurisdiction(),
+    )
+    assert record.retrieved_source_urls == frozenset()
+    assert record.no_evaluation_reason == NoEvaluationReason.NO_EVIDENCE
 
 
 # ===========================================================================
@@ -911,6 +995,7 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
             citations=(),  # no citations -- construction-time validator fires
             recommended_action="Place in the blue bin.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         )
     )
     audit_repo = MemAnswerAuditRecordRepo()

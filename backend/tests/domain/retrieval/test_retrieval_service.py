@@ -315,6 +315,7 @@ class TestRetrievedSourceUrlsFromRules:
             citations=(Citation(title="Denver", url=rule_url),),
             recommended_action="Yes, recycle it.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         )
 
         service = RetrievalService(
@@ -328,7 +329,10 @@ class TestRetrievedSourceUrlsFromRules:
             Query(text="cardboard", location_input="Denver"), denver
         )
 
-        assert result is llm_answer
+        assert isinstance(result, EvaluatedAnswer)
+        assert result.verdict == llm_answer.verdict
+        assert result.citations == llm_answer.citations
+        assert result.retrieved_source_urls == frozenset({rule_url})
 
     def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
         material = _make_material("cardboard")
@@ -344,12 +348,121 @@ class TestRetrievedSourceUrlsFromRules:
             ),
             recommended_action="Yes.",
             confidence="high",
+            retrieved_source_urls=frozenset(),
         )
 
         service = RetrievalService(
             material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver"), denver
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+    def test_multiple_sources_returns_full_retrieved_set(self) -> None:
+        material = _make_material("cardboard")
+        sid_a, sid_b = SourceId(uuid.uuid4()), SourceId(uuid.uuid4())
+        url_a = "https://denvergov.org/recycling"
+        url_b = "https://denvergov.org/guidelines"
+
+        denver = _make_jurisdiction()
+        rules = [
+            _make_rule(denver.id, material.id, sid_a),
+            _make_rule(denver.id, material.id, sid_b),
+        ]
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(Citation(title="B", url=url_b),),
+            recommended_action="Yes.",
+            confidence="high",
+            retrieved_source_urls=frozenset(),
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            rule_repo=MemRuleRepo(rules=rules),
+            source_repo=MemSourceRepo(
+                docs={
+                    sid_a: _make_source(sid_a, url_a),
+                    sid_b: _make_source(sid_b, url_b),
+                }
+            ),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver"), denver
+        )
+
+        assert isinstance(result, EvaluatedAnswer)
+        assert result.retrieved_source_urls == frozenset({url_a, url_b})
+
+    def test_partial_source_repo_miss_excludes_missing_url(self) -> None:
+        material = _make_material("cardboard")
+        sid_found = SourceId(uuid.uuid4())
+        sid_missing = SourceId(uuid.uuid4())
+        found_url = "https://denvergov.org/recycling"
+        missing_url = "https://denvergov.org/not-in-repo"
+
+        denver = _make_jurisdiction()
+        rules = [
+            _make_rule(denver.id, material.id, sid_found),
+            _make_rule(denver.id, material.id, sid_missing),
+        ]
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(Citation(title="Missing", url=missing_url),),
+            recommended_action="Yes.",
+            confidence="high",
+            retrieved_source_urls=frozenset(),
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            rule_repo=MemRuleRepo(rules=rules),
+            source_repo=MemSourceRepo(
+                docs={sid_found: _make_source(sid_found, found_url)}
+            ),
+            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+        )
+
+        result = service.answer(
+            Query(text="cardboard", location_input="Denver"), denver
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+    def test_source_repo_miss_excludes_url_from_set(self) -> None:
+        """A Rule whose source_document_id has no SourceDocument in the
+        repo contributes no URL to retrieved_source_urls. The LLM that
+        cites a URL not in the set should be rejected.
+        """
+        material = _make_material("cardboard")
+        source_id = SourceId(uuid.uuid4())
+
+        denver = _make_jurisdiction()
+        rule = _make_rule(denver.id, material.id, source_id)
+        llm_answer = EvaluatedAnswer(
+            verdict=Accepted(),
+            citations=(
+                Citation(title="X", url="https://denvergov.org/recycling"),
+            ),
+            recommended_action="Yes.",
+            confidence="high",
+            retrieved_source_urls=frozenset(),
+        )
+
+        service = RetrievalService(
+            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            rule_repo=MemRuleRepo(rules=[rule]),
+            source_repo=MemSourceRepo(docs={}),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
         )
 
@@ -379,36 +492,3 @@ class TestFallbackForValidatorRejection:
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
         assert "grounded" in result.recommended_action.lower()
-
-    def test_source_repo_miss_excludes_url_from_set(self) -> None:
-        """A Rule whose source_document_id has no SourceDocument in the
-        repo contributes no URL to retrieved_source_urls. The LLM that
-        cites a URL not in the set should be rejected.
-        """
-        material = _make_material("cardboard")
-        source_id = SourceId(uuid.uuid4())
-
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
-        llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(
-                Citation(title="X", url="https://denvergov.org/recycling"),
-            ),
-            recommended_action="Yes.",
-            confidence="high",
-        )
-
-        service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
-            rule_repo=MemRuleRepo(rules=[rule]),
-            source_repo=MemSourceRepo(docs={}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
-        )
-
-        result = service.answer(
-            Query(text="cardboard", location_input="Denver"), denver
-        )
-
-        assert isinstance(result, NoEvaluation)
-        assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED

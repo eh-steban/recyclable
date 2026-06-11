@@ -260,6 +260,10 @@ class AnthropicClient:
                 citations=citations,
                 recommended_action=recommended_action,
                 confidence=confidence,
+                # Empty here: the LLM port produces a candidate and does not
+                # know the retrieved set. RetrievalService stamps the genuine
+                # allow-list after grounding (INV-LLM-002).
+                retrieved_source_urls=frozenset(),
                 preparation_steps=tuple(payload.get("preparation_steps", [])),
                 do_not_do=tuple(payload.get("do_not_do", [])),
                 clarifying_question=payload.get("clarifying_question"),

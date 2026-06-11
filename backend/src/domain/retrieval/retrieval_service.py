@@ -1,6 +1,7 @@
 """RetrievalService Domain Service: Sonnet user-path choreography."""
 
 import logging
+from dataclasses import replace
 from typing import final
 
 from src.domain.knowledge_base.jurisdiction import Jurisdiction
@@ -166,7 +167,7 @@ class RetrievalService:
                 recommended_action=_VALIDATOR_REJECTED_MSG,
             )
 
-        return llm_result
+        return replace(llm_result, retrieved_source_urls=retrieved_source_urls)
 
     def fallback_for_validator_rejection(self, query: Query) -> NoEvaluation:
         """Return a NoEvaluation(VALIDATOR_REJECTED) for construction-time

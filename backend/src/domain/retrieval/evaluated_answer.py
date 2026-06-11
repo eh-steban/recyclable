@@ -23,6 +23,9 @@ class EvaluatedAnswer:
     citations: sources that support the verdict. Non-empty for definitive
                verdicts per INV-PROD-001.
     recommended_action: short actionable text (<= 200 characters on wire).
+    retrieved_source_urls: the grounding allow-list (INV-LLM-002) -- the URL
+               set behind the retrieved rules, of which citations must be a
+               subset.
     clarifying_question: non-None when material normalization was ambiguous.
     """
 
@@ -30,6 +33,7 @@ class EvaluatedAnswer:
     citations: tuple[Citation, ...]
     recommended_action: str
     confidence: str  # 'high' | 'medium' | 'low'
+    retrieved_source_urls: frozenset[str]
     preparation_steps: tuple[str, ...] = field(default_factory=tuple)
     do_not_do: tuple[str, ...] = field(default_factory=tuple)
     clarifying_question: str | None = None

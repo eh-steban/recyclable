@@ -77,12 +77,6 @@ def _make_record(
     )
 
     if isinstance(outcome, EvaluatedAnswer):
-        # Use citation URLs as retrieved_source_urls for the audit record.
-        # GroundingValidator already verified every citation URL is in the
-        # original retrieved set; this mirrors the same contract
-        # (INV-LLM-002) without threading a separate url set through the
-        # application layer.
-        retrieved_urls = frozenset(c.url for c in outcome.citations)
         return AnswerAuditRecord(
             id=record_id,
             query_text=command.query_text,
@@ -90,7 +84,7 @@ def _make_record(
             jurisdiction_id=jurisdiction_id,
             verdict=outcome.verdict,
             citations=outcome.citations,
-            retrieved_source_urls=retrieved_urls,
+            retrieved_source_urls=outcome.retrieved_source_urls,
             recommended_action=outcome.recommended_action,
             prompt_version="ask_compose_v1",
             model_id=SONNET_MODEL_ID,
