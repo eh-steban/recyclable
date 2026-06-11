@@ -101,47 +101,58 @@ phase checkpoint.
 ## Red-state evidence
 
 The new requirement this rule introduces. Each Phase Checkpoint
-that contains implementation work records *two* validation
-records, both following the four-field shape in
-`.claude/docs/validation.md`:
+that contains implementation work records a **compact TDD
+attestation** with four fields:
 
-1. **Red record** -- proves the new test failed before the
-   production change. Captured by running the test on the
-   pre-change tree (or with the change reverted on a scratch
-   commit). Exit code must be **non-zero**, and the "Why this
-   validates" line names the assertion or symbol that produced
-   the failure.
-2. **Green record** -- the existing post-change record. Exit
-   code zero, output excerpt showing the same test now passing.
+- **test** -- the fully-qualified test id
+  (`path/to/test.py::test_name`).
+- **red** -- the one-line failing-assertion message plus exit
+  code. This is the proof token: it distinguishes a real
+  assertion failure from an import/collection error.
+- **green** -- pass confirmation, suite-count delta
+  (before -> after), and exit 0.
+- **guards** -- the invariant IDs (from `private/invariants.md`)
+  the test exercises. This replaces the old "why this validates"
+  prose.
 
-A checkpoint with only a green record is incomplete: it does
-not prove the test exercises the change. State this explicitly
-in `Deferred items` if a red record was genuinely impossible
-(e.g., greenfield setup with no prior tree to run against),
-same discipline as a skipped baseline in `validation.md`.
+Captured by running the test on the pre-change tree (or with
+the change reverted on a scratch commit).
 
-### Example red record
+A checkpoint missing a red attestation is incomplete. State
+this explicitly in `Deferred items` if a red record was
+genuinely impossible (e.g., greenfield setup with no prior tree
+to run against), same discipline as a skipped baseline in
+`validation.md`.
+
+**Auditor note:** an auditor (or `test-auditor` agent) confirms
+the named test exists and the red claim is plausible --
+specifically that it is an assertion-type failure, not a
+collection or import error -- by re-running on the
+pre-implementation tree.
+
+### Example compact attestation (service phase)
 
 ```text
-**Command:** `cd backend && uv run pytest tests/domain/test_rule_eval.py -k pizza_box`
-
-**Exit code:** `1`
-
-**Output excerpt:**
-
-  tests/domain/test_rule_eval.py::test_pizza_box_rejected FAILED
-  >   assert outcome.refused is True
-  E   AttributeError: 'RuleOutcome' object has no attribute 'refused'
-
-**Why this validates:** the assertion fails because
-`RuleOutcome.refused` does not yet exist; the test is
-exercising the not-yet-implemented refusal path on the
-food-contamination case (INV-PROD-002).
+TDD (per .claude/docs/tdd.md):
+- test:   tests/domain/retrieval/test_check_grounding.py::test_uncited_refused
+- red:    AssertionError: citations empty on definitive answer (exit 1)
+- green:  passed; suite 297 -> 298 (exit 0)
+- guards: INV-PROD-001, INV-PROD-004
 ```
 
-The matching green record paired with this would show exit
-code `0` and `test_pizza_box_rejected PASSED` after the
-production change.
+### Refactor-only collapse variant
+
+When a phase ships no new behavioral test (pure refactor,
+dependency bump, comment edit), the red step is N/A. Substitute
+the compact gate line:
+
+```text
+TDD: refactor-only -- no new behavioral test; red record N/A per tdd.md.
+  gate: suite green 297 -> 297; coverage 84.1 -> 84.1; assertions intact.
+```
+
+The numbers must reflect actual before/after runs, not
+placeholders.
 
 ## Discipline rules
 
@@ -150,7 +161,7 @@ production change.
   it is regression coverage layered on. Both have value, but
   the four-cycle discipline requires the order.
 - **Capture the red, do not summarize it.** "I saw it fail"
-  without a recorded command + non-zero exit + assertion line
+  without the test id, a non-zero exit, and the assertion line
   is the same hand-wave `validation.md` forbids for green runs.
 - **One failing test at a time.** If multiple tests are red
   simultaneously, you have left the inner cycle. Drive one to
@@ -175,7 +186,7 @@ production change.
   out of red-state evidence.
 - `.claude/docs/ddd/architecture.md` -- architectural
   constraints checked on the hourly cycle.
-- `private/invariants.md` -- invariant IDs cited in
-  red-record "Why this validates" lines.
+- `private/invariants.md` -- invariant IDs cited in the
+  `guards:` field of compact attestations.
 - `private/templates/plans/implementation.md` -- the Checkpoint
-  block that consumes the red + green pair.
+  block that consumes the compact attestation.
