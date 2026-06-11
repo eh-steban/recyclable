@@ -22,7 +22,7 @@ class EvaluatedAnswer:
     verdict: the domain verdict (Accepted | Refused | NotCovered | Conflicted).
     citations: sources that support the verdict. Non-empty for definitive
                verdicts per INV-PROD-001.
-    recommended_action: short actionable text (<= 200 characters on wire).
+    recommended_action: short actionable text (<= 500 characters on wire).
     retrieved_source_urls: the grounding allow-list (INV-LLM-002) -- the URL
                set behind the retrieved rules, of which citations must be a
                subset.

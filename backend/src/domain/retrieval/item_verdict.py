@@ -53,8 +53,8 @@ class NotCovered:
 class Conflicted:
     """Multiple sources disagree on this rule.
 
-    The retrieval service surfaces the conflict; the GroundingValidator
-    downgrades confidence to 'low'. Citations are required (INV-PROD-001).
+    The retrieval service surfaces the conflict. Citations are required
+    (INV-PROD-001).
     """
 
     pass

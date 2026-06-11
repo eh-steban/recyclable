@@ -64,7 +64,7 @@ exact shape:
 }
 
 Field rules:
-- "recommended_action": one concise next step for the user, at most 200 \
+- "recommended_action": one concise next step for the user, at most 500 \
 characters.
 - "citations": exactly the sources you used; "quote" is a short snippet copied \
 from that rule's source text. Empty list ONLY when verdict is "not_covered".

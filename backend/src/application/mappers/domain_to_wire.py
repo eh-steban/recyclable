@@ -34,6 +34,28 @@ from src.domain.retrieval.item_verdict import (
     Refused,
 )
 
+#: Wire cap on recommended_action length (answer.md § recommended_action).
+_RECOMMENDED_ACTION_MAX = 500
+
+
+def _truncate_recommended_action(text: str) -> str:
+    """Cap recommended_action at the wire limit (answer.md).
+
+    Hard-cuts a single long token rather than zeroing the field.
+    """
+    if len(text) <= _RECOMMENDED_ACTION_MAX:
+        return text
+    prefix = text[:_RECOMMENDED_ACTION_MAX]
+    if not text[_RECOMMENDED_ACTION_MAX].isspace():
+        cut = max(
+            (i for i, ch in enumerate(prefix) if ch.isspace()),
+            default=0,
+        )
+        word_bounded = prefix[:cut].rstrip()
+        if word_bounded:
+            prefix = word_bounded
+    return prefix.rstrip()
+
 
 def verdict_to_short_answer(verdict: ItemVerdict) -> str:
     """Map an ItemVerdict to the wire short_answer tag.
@@ -100,7 +122,9 @@ def evaluated_answer_to_wire(
         audit_record_id=str(audit_record_id),
         short_answer=short,
         confidence=answer.confidence,
-        recommended_action=answer.recommended_action,
+        recommended_action=_truncate_recommended_action(
+            answer.recommended_action
+        ),
         refusal_reason=refusal,
         clarifying_question=answer.clarifying_question,
         citations=citations,
@@ -145,7 +169,9 @@ def no_evaluation_to_wire(
         audit_record_id=str(audit_record_id),
         short_answer="unknown",
         confidence="low",
-        recommended_action=outcome.recommended_action,
+        recommended_action=_truncate_recommended_action(
+            outcome.recommended_action
+        ),
         refusal_reason=refusal_reason,
         clarifying_question=outcome.clarifying_question,
         citations=[],

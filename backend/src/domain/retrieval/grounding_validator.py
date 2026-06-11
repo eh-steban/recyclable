@@ -1,8 +1,7 @@
 """GroundingValidator Specification (Level-2 whole-object check).
 
 Runs after every Sonnet response on the retrieval path. Hard blocks convert
-the response to NoEvaluation(reason=ValidatorRejected). Soft downgrades
-lower confidence and append notes to recommended_action.
+the response to NoEvaluation(reason=ValidatorRejected).
 
 Calls check_grounding() from domain/retrieval/check_grounding.py -- the
 single shared pure function (design D2).
