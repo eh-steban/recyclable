@@ -4,7 +4,7 @@ Adds a nullable `conditions jsonb` column to answer_audit_records so
 that Accepted verdicts with conditions round-trip faithfully through
 find_by_id (Phase 5.3). Also extends the answer_no_evaluation_reason
 enum with the three missing variants: llm_rejected, uncertain_material,
-conflicted.
+ambiguous_material.
 
 Revision ID: 0003_conditions_column
 Revises: 0002_answer_audit_record_columns
@@ -21,7 +21,7 @@ branch_labels = None
 depends_on = None
 
 _NO_EVAL_REASON_TYPE = "answer_no_evaluation_reason"
-_NEW_REASONS = ("llm_rejected", "uncertain_material", "conflicted")
+_NEW_REASONS = ("llm_rejected", "uncertain_material", "ambiguous_material")
 _ADD_ENUM_VALUE = "ALTER TYPE {t} ADD VALUE IF NOT EXISTS '{v}'"
 
 

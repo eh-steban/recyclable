@@ -225,7 +225,7 @@ class TestOutOfJurisdiction:
 
 
 class TestAmbiguousMaterialPath:
-    def test_returns_no_evaluation_with_conflicted_reason(self) -> None:
+    def test_returns_no_evaluation_with_ambiguous_material_reason(self) -> None:
         candidates = (_make_material("pet-bottle"), _make_material("hdpe-jug"))
         llm = _RecordingLLM()
         service = _build_service(
@@ -239,7 +239,7 @@ class TestAmbiguousMaterialPath:
         )
 
         assert isinstance(result, NoEvaluation)
-        assert result.reason == NoEvaluationReason.CONFLICTED
+        assert result.reason == NoEvaluationReason.AMBIGUOUS_MATERIAL
         assert result.clarifying_question is not None
         assert llm.call_count == 0
 
@@ -453,6 +453,44 @@ class TestRetrievedSourceUrlsFromRules:
 
         assert isinstance(result, NoEvaluation)
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
+
+
+class TestUnknownStatusRule:
+    """A retrieved rule with accepted_status=UNKNOWN short-circuits to
+    NO_EVIDENCE before the LLM -- it states no disposition, so sending it
+    to the model would force a guessed (yet citable) verdict.
+    """
+
+    def test_unknown_status_returns_no_evidence_without_llm(self) -> None:
+        material = _make_material("mystery-plastic")
+        source_id = SourceId(uuid.uuid4())
+        denver = _make_jurisdiction()
+        rule = Rule(
+            id=RuleId(uuid.uuid4()),
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            disposition=Disposition.UNKNOWN,
+            accepted_status=AcceptedStatus.UNKNOWN,
+            source_document_id=source_id,
+            source_quote="Status of this material is under review.",
+        )
+        source = _make_source(source_id, "https://denvergov.org/recycling")
+        llm = _RecordingLLM()
+
+        service = _build_service(
+            normalizer=_FakeNormalizer(Resolved(material=material)),
+            rule_repo=MemRuleRepo(rules=[rule]),
+            source_repo=MemSourceRepo(docs={source_id: source}),
+            llm=llm,
+        )
+
+        result = service.answer(
+            Query(text="mystery plastic", location_input="Denver"), denver
+        )
+
+        assert isinstance(result, NoEvaluation)
+        assert result.reason == NoEvaluationReason.NO_EVIDENCE
+        assert llm.call_count == 0
 
 
 class TestFallbackForValidatorRejection:

@@ -50,7 +50,7 @@ NoEvaluationReasonEnum = Enum(
     "validator_rejected",
     "llm_rejected",
     "uncertain_material",
-    "conflicted",
+    "ambiguous_material",
     name="answer_no_evaluation_reason",
 )
 

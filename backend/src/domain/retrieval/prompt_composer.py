@@ -39,21 +39,19 @@ least one citation drawn from the RETRIEVED RULES block.
 3. Copy each citation's "url" and "title" verbatim from the block. Never \
 invent, edit, shorten, or complete a URL. A citation whose URL is not in the \
 block is discarded and the answer is rejected.
-4. If the RETRIEVED RULES block does not answer the question, respond with \
-verdict "not_covered", an empty "citations" list, and a recommended_action \
-saying you cannot verify a rule for this item.
+4. The RETRIEVED RULES block contains the governing rule for this item; \
+base your verdict on its status.
 
 Verdict selection, from the rule's status in the block:
 - status "accepted"    -> verdict "accepted" with an empty "conditions" list.
 - status "conditional" -> verdict "accepted" and list each precondition (for \
 example "Empty and rinse") as a string in "conditions".
 - status "rejected"    -> verdict "refused".
-- no matching rule     -> verdict "not_covered".
 
 Respond with ONLY a single JSON object (no prose, no markdown fence) of this \
 exact shape:
 {
-  "verdict": "accepted" | "refused" | "not_covered",
+  "verdict": "accepted" | "refused",
   "conditions": [string],
   "recommended_action": string,
   "confidence": "high" | "medium" | "low",
@@ -67,7 +65,8 @@ Field rules:
 - "recommended_action": one concise next step for the user, at most 500 \
 characters.
 - "citations": exactly the sources you used; "quote" is a short snippet copied \
-from that rule's source text. Empty list ONLY when verdict is "not_covered".
+from that rule's source text. Never empty -- every verdict cites the rule it \
+relied on.
 - "confidence": your confidence that the cited rule answers the question.
 - "preparation_steps" / "do_not_do": may be empty lists.
 - "clarifying_question": null unless you must ask the user to clarify."""

@@ -52,7 +52,7 @@ class NoEvaluationReason(StrEnum):
     VALIDATOR_REJECTED = "validator_rejected"
     LLM_REJECTED = "llm_rejected"
     UNCERTAIN_MATERIAL = "uncertain_material"
-    CONFLICTED = "conflicted"
+    AMBIGUOUS_MATERIAL = "ambiguous_material"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +61,10 @@ class NoEvaluation:
 
     reason explains why:
     - OUT_OF_JURISDICTION: location not in the supported alias set.
-    - NO_EVIDENCE: no rule found for (jurisdiction, material).
+    - NO_EVIDENCE: no actionable rule for (jurisdiction, material) --
+      either no current rule exists, or the only current rule has
+      accepted_status UNKNOWN (states no disposition, so it cannot ground
+      a verdict). Both reach the user as "unknown".
     - VALIDATOR_REJECTED: model answered, but GroundingValidator
       hard-blocked the response (parse failure, schema mismatch, or
       grounding-citation violation). The model produced output.
@@ -70,10 +73,13 @@ class NoEvaluation:
       Per INV-PROD-004, this reason -- not VALIDATOR_REJECTED -- is the
       correct domain shape for Anthropic unavailability.
     - UNCERTAIN_MATERIAL: normalizer could not classify the material.
-    - CONFLICTED: normalizer matched multiple candidate materials.
+    - AMBIGUOUS_MATERIAL: normalizer matched multiple candidate materials.
+      (Distinct from the rule-level `Conflicted` ItemVerdict, which means
+      sources disagree on a retrieved rule -- a different layer, surfaced
+      by ingestion, not this reason.)
 
     `clarifying_question` is set on the material-level paths
-    (UNCERTAIN_MATERIAL, CONFLICTED) so the UI can ask the user to
+    (UNCERTAIN_MATERIAL, AMBIGUOUS_MATERIAL) so the UI can ask the user to
     pick or rephrase. Other reasons leave it None.
     """
 

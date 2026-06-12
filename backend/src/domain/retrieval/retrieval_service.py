@@ -10,6 +10,7 @@ from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
     Uncertain,
 )
+from src.domain.knowledge_base.rule import AcceptedStatus
 from src.domain.knowledge_base.rule_repo import RuleRepo
 from src.domain.knowledge_base.source import SourceDocument, SourceId
 from src.domain.knowledge_base.source_repo import SourceRepo
@@ -104,7 +105,7 @@ class RetrievalService:
                 c.canonical_name for c in normalization.candidates
             )
             return NoEvaluation(
-                reason=NoEvaluationReason.CONFLICTED,
+                reason=NoEvaluationReason.AMBIGUOUS_MATERIAL,
                 recommended_action=(
                     f"Several materials match your query: {candidate_names}."
                 ),
@@ -125,6 +126,23 @@ class RetrievalService:
                 recommended_action=(
                     "No recycling rule found for this material in "
                     "the queried jurisdiction."
+                ),
+            )
+
+        # UNKNOWN status states no disposition: the model could still cite
+        # the rule, yielding a groundless but citable verdict. Refuse as
+        # missing evidence (INV-PROD-001). find_for returns one rule (LIMIT 1).
+        if rules[0].accepted_status == AcceptedStatus.UNKNOWN:
+            logger.info(
+                "UNKNOWN-status rule: jurisdiction=%s material=%s",
+                jurisdiction.id,
+                material_id,
+            )
+            return NoEvaluation(
+                reason=NoEvaluationReason.NO_EVIDENCE,
+                recommended_action=(
+                    "No conclusive recycling rule is available for this "
+                    "material in the queried jurisdiction."
                 ),
             )
 

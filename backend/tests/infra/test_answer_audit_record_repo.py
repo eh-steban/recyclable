@@ -148,6 +148,51 @@ def test_save_out_of_jurisdiction_record_persists_as_null(
     assert loaded.jurisdiction_id == ooj
 
 
+@pytest.mark.parametrize(
+    "reason",
+    [
+        NoEvaluationReason.LLM_REJECTED,
+        NoEvaluationReason.UNCERTAIN_MATERIAL,
+        NoEvaluationReason.AMBIGUOUS_MATERIAL,
+    ],
+)
+def test_no_evaluation_reason_enum_label_persists(
+    db_session: Session, reason: NoEvaluationReason
+) -> None:
+    """The reasons added by migration 0003 are accepted by the Postgres enum.
+
+    The rename was folded into 0003 (ambiguous_material), so a typo in its
+    ALTER TYPE ... ADD VALUE would surface only on write. Save a record with
+    each label and read it back from the actual enum column to prove the type
+    accepts it -- the ORM/StrEnum declarations alone do not.
+    """
+    record = AnswerAuditRecord(
+        id=AnswerAuditRecordId(uuid.uuid4()),
+        query_text="Is cardboard recyclable?",
+        query_location_input="Denver, CO",
+        jurisdiction_id=JurisdictionId(uuid.UUID(int=0)),
+        verdict=NotCovered(),
+        citations=(),
+        retrieved_source_urls=frozenset(),
+        recommended_action="No conclusive rule.",
+        prompt_version="no_evaluation",
+        model_id="none",
+        latency_ms=0,
+        created_at=datetime.now(UTC),
+        no_evaluation_reason=reason,
+    )
+    repo = PgAnswerAuditRecordRepo(db_session)
+    repo.save(record)
+
+    stored = db_session.execute(
+        text(
+            "SELECT no_evaluation_reason FROM answer_audit_records WHERE id = :id"  # noqa: E501
+        ),
+        {"id": str(record.id.value)},
+    ).scalar_one()
+    assert stored == reason.value
+
+
 def test_find_by_id_returns_none_for_unknown(db_session: Session) -> None:
     """find_by_id() returns None for an id that was never saved."""
     repo = PgAnswerAuditRecordRepo(db_session)

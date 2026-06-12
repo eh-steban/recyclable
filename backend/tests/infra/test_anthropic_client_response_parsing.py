@@ -22,7 +22,11 @@ from src.domain.knowledge_base.material import (
     MaterialCategory,
     MaterialId,
 )
-from src.domain.retrieval.evaluated_answer import EvaluatedAnswer, NoEvaluation
+from src.domain.retrieval.evaluated_answer import (
+    EvaluatedAnswer,
+    NoEvaluation,
+    NoEvaluationReason,
+)
 from src.domain.retrieval.item_verdict import Accepted
 from src.infra.external.anthropic_client import AnthropicClient
 
@@ -157,3 +161,33 @@ def test_ask_degrades_to_no_evaluation_on_unclosed_fence(
     )
 
     assert isinstance(result, NoEvaluation)
+
+
+def _fenced_ask_with_verdict(verdict: str) -> str:
+    return (
+        "```json\n"
+        f'{{"verdict": "{verdict}", '
+        '"recommended_action": "x", '
+        '"confidence": "low", '
+        '"citations": []}\n'
+        "```"
+    )
+
+
+@pytest.mark.parametrize("verdict", ["not_covered", "conflicted", "banana"])
+def test_ask_off_contract_verdict_degrades_to_no_evaluation(
+    verdict: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The model may mint only accepted/refused. not_covered and conflicted
+    are produced by retrieval/ingestion, never the model; any other verdict
+    string is off-contract and degrades to VALIDATOR_REJECTED rather than
+    smuggling an unknown/conflict through as an evaluated answer.
+    """
+    client = _client_returning(_fenced_ask_with_verdict(verdict), monkeypatch)
+
+    result = client.ask(
+        messages=[{"role": "user", "content": "x"}], system_prompt="sys"
+    )
+
+    assert isinstance(result, NoEvaluation)
+    assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED

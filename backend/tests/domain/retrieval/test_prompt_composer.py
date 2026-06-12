@@ -103,8 +103,10 @@ class TestSystemPrompt:
         prompt = ask_compose_v1(query, rule_context="RETRIEVED RULES:\n(none)")
 
         lowered = prompt.system_prompt.lower()
-        # Refusal verdict and the cite-or-refuse rule must be stated.
-        assert "not_covered" in lowered
+        # The model commits to a grounded verdict; not_covered is not offered
+        # because the no-rule case is handled before the LLM is called.
+        assert "not_covered" not in lowered
+        assert "accepted" in lowered and "refused" in lowered
         assert "citation" in lowered or "cite" in lowered
 
     def test_embeds_rule_context_block(self) -> None:

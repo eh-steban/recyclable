@@ -30,13 +30,7 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluation,
     NoEvaluationReason,
 )
-from src.domain.retrieval.item_verdict import (
-    Accepted,
-    Conflicted,
-    ItemVerdict,
-    NotCovered,
-    Refused,
-)
+from src.domain.retrieval.item_verdict import Accepted, Refused
 from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID, LLMMessage
 
 logger = logging.getLogger(__name__)
@@ -245,6 +239,13 @@ class AnthropicClient:
             citations_raw: list[Any] = payload.get("citations", [])
 
             verdict = self._parse_verdict(verdict_str, payload)
+            if verdict is None:
+                logger.warning(
+                    "ask: model emitted non-grounded verdict %r", verdict_str
+                )
+                return NoEvaluation(
+                    reason=NoEvaluationReason.VALIDATOR_REJECTED
+                )
             citations = tuple(
                 Citation(
                     title=c.get("title", ""),
@@ -281,19 +282,19 @@ class AnthropicClient:
     @staticmethod
     def _parse_verdict(
         verdict_str: str, payload: dict[str, Any]
-    ) -> ItemVerdict:
-        """Map wire verdict string to domain ItemVerdict variant."""
+    ) -> Accepted | Refused | None:
+        """Map a wire verdict string to a grounded ItemVerdict, or None.
+
+        Only the two grounded verdicts are model-mintable. None signals an
+        off-contract verdict (not_covered, conflicted, or anything
+        unrecognized); the caller converts it to NoEvaluation.
+        """
         conditions = payload.get("conditions", [])
         if verdict_str == "accepted":
             return Accepted(conditions=tuple(conditions))
         if verdict_str == "refused":
             return Refused()
-        if verdict_str == "not_covered":
-            return NotCovered()
-        if verdict_str == "conflicted":
-            return Conflicted()
-        # Unknown verdict -- default to NotCovered (no evidence).
-        return NotCovered()
+        return None
 
     # ------------------------------------------------------------------
     # MaterialNormalizerLLM port
