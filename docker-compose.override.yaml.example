@@ -1,0 +1,23 @@
+# Worktree-only compose override (template).
+#
+# `git worktree` worktrees cannot run the full stack because
+# docker-compose.yaml publishes fixed host ports (3000/8000/5432) that
+# collide with the main checkout's running stack. This override
+# UNPUBLISHES those ports (via the compose `!reset` tag) so a worktree can
+# run its own isolated stack alongside main and be reached with
+# `docker compose exec` -- host port access is not needed to run tests.
+#
+# Usage in a worktree (compose auto-loads docker-compose.override.yaml):
+#   cp docker-compose.override.yaml.example docker-compose.override.yaml
+#   docker compose up -d app-db app-backend
+#   docker compose exec app-backend pytest -q
+#
+# The worktree gets its own app-db (a project-scoped volume), so its
+# test database is isolated from the main checkout's.
+services:
+  app-db:
+    ports: !reset []
+  app-backend:
+    ports: !reset []
+  app-frontend:
+    ports: !reset []
