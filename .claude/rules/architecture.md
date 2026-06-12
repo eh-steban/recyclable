@@ -104,6 +104,17 @@ compartment justifies sub-division (per `ddd/modules.md`
 Principle 8). At MVP scale, those compartments are flat; they
 sub-divide as they grow.
 
+### Shared kernel: `src/domain/shared/`
+
+`src/domain/shared/` is an owner-approved **shared-kernel** location
+for cross-cutting domain abstractions that belong to no single bounded
+context. It is **not** a fifth Module in the Ubiquitous Language.
+Currently it holds the generic `Repo[T, ID]` Protocol
+(`domain/shared/repo.py`); all aggregate-repo ports extend it.
+Per `ddd/modules.md` Principle 6, moving cross-Module identity or
+abstraction types into a small shared package is the correct way to
+keep Module dependencies acyclic without untyping them.
+
 ## Layers + DIP (inside the Backend Context)
 
 The four DDD layers, with the Dependency Inversion Principle
@@ -467,18 +478,27 @@ We therefore use **persistence-oriented** repos: the Application
 Service hands modified Entities back to the repo explicitly.
 
 ```python
-# domain/knowledge_base/rule_repo.py
-class RuleRepo(Protocol):
-    def next_identity(self) -> RuleId: ...
-    def save(self, rule: Rule) -> None: ...
-    def find_by_id(self, rule_id: RuleId) -> Rule | None: ...
+# domain/shared/repo.py  -- declared once; every aggregate repo extends it
+class Repo[T, ID](Protocol):
+    def next_identity(self) -> ID: ...
+    def save(self, entity: T, /) -> None: ...        # positional-only
+    def find_by_id(self, entity_id: ID, /) -> T | None: ...  # positional-only
+
+# domain/knowledge_base/rule_repo.py  -- finders only; base supplies the rest
+class RuleRepo(Repo[Rule, RuleId], Protocol):
     def find_for(
         self,
         jurisdiction_id: JurisdictionId,
         material_id: MaterialId,
     ) -> list[Rule]: ...
-    def remove(self, rule_id: RuleId) -> None: ...
+    def find_for_jurisdiction(
+        self, jurisdiction_id: JurisdictionId
+    ) -> list[Rule]: ...
 ```
+
+The positional-only markers on `save` and `find_by_id` let concrete Pg
+repos and test fakes use their own parameter names (`rule`, `record`,
+etc.) without suppression -- both still conform to `Repo[T, ID]`.
 
 `save(entity)` is idempotent (upsert by id). Per
 `ddd/repositories.md` Principle 2, calling it twice with the same
