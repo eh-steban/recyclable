@@ -991,9 +991,7 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     j_repo = MemJurisdictionRepo()
     j_repo.save(denver)
     svc = AnswerQuery(
-        # RetrievalService is @final; subclassing is forbidden;
-        # fake substitution test-only.
-        retrieval_service=fake_svc,  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        retrieval_service=fake_svc,
         audit_repo=audit_repo,
         jurisdiction_repo=j_repo,
     )

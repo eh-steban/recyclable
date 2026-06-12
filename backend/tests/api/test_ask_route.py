@@ -482,9 +482,7 @@ def test_ask_no_evaluation_wire_via_real_mapper() -> None:
             return None
 
     real_svc = AnswerQuery(
-        # RetrievalService is @final; subclassing is forbidden;
-        # fake substitution is test-only.
-        retrieval_service=_FakeRetrievalService(),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        retrieval_service=_FakeRetrievalService(),
         audit_repo=MemAuditRepo(),  # type: ignore[arg-type]
         # "TestCity" resolves to None, so find_by_slug is never reached;
         # an empty repo is sufficient for the OOJ wire path.

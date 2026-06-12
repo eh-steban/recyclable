@@ -34,7 +34,7 @@ from src.domain.retrieval.item_verdict import NotCovered
 from src.domain.retrieval.location_resolver import resolve_location
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID
-from src.domain.retrieval.retrieval_service import RetrievalService
+from src.domain.retrieval.retrieval_service_port import RetrievalServicePort
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class AnswerQuery:
 
     def __init__(
         self,
-        retrieval_service: RetrievalService,
+        retrieval_service: RetrievalServicePort,
         audit_repo: AnswerAuditRecordRepo,
         jurisdiction_repo: JurisdictionRepo,
     ) -> None:
