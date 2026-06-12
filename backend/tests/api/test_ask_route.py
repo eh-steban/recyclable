@@ -5,8 +5,8 @@ inject fake application services -- no Postgres, no Anthropic SDK.
 
 Behavior checks per Phase 6 plan:
   - happy-path response shape (Denver)
-  - HTTP 200 on exactly 500-char query (INV-LLM-004 boundary accepted)
-  - HTTP 400 on 501-char query (INV-LLM-004 length cap)
+  - HTTP 200 on exactly 150-char query (INV-LLM-004 boundary accepted)
+  - HTTP 400 on 151-char query (INV-LLM-004 length cap)
   - out-of-jurisdiction (Aurora) returns short_answer='unknown',
     citations=[], non-empty audit_record_id, no Anthropic call
   - 404 on slug-miss for both page routes
@@ -237,19 +237,19 @@ def test_ask_denver_happy_path_response_shape() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /ask -- 400 on 501-character query (INV-LLM-004)
+# POST /ask -- 400 on 151-character query (INV-LLM-004)
 # ---------------------------------------------------------------------------
 
 
-def test_ask_501_char_query_returns_400() -> None:
-    """POST /ask with query > 500 chars returns HTTP 400 error='query_too_long'.
+def test_ask_151_char_query_returns_400() -> None:
+    """POST /ask with query > 150 chars returns HTTP 400 error='query_too_long'.
 
-    Validates INV-LLM-004: the 500-char cap bounds the prompt-injection
+    Validates INV-LLM-004: the 150-char cap bounds the prompt-injection
     surface. The route enforces this before delegating to the application
     service. An override is registered so FastAPI's DI resolves without
     reaching the fail-fast get_material_normalizer stub.
     """
-    long_query = "x" * 501
+    long_query = "x" * 151
     fake_svc = MemAnswerQuery(_denver_answer())
 
     def _override() -> MemAnswerQuery:
@@ -402,18 +402,18 @@ def test_material_page_slug_miss_returns_404() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /ask -- 500-character boundary ACCEPTED (INV-LLM-004 boundary)
+# POST /ask -- 150-character boundary ACCEPTED (INV-LLM-004 boundary)
 # ---------------------------------------------------------------------------
 
 
-def test_ask_500_char_query_accepted() -> None:
-    """POST /ask with exactly 500-char query returns HTTP 200 (not 400).
+def test_ask_150_char_query_accepted() -> None:
+    """POST /ask with exactly 150-char query returns HTTP 200 (not 400).
 
-    Validates INV-LLM-004 boundary: the cap is > 500, so a query of
-    exactly 500 characters is within the allowed range and must not
-    be rejected.
+    Validates INV-LLM-004 boundary: the route rejects only `len > 150`,
+    so a query of exactly 150 characters is within the allowed range
+    and must not be rejected.
     """
-    boundary_query = "x" * 500
+    boundary_query = "x" * 150
     fake_svc = MemAnswerQuery(_denver_answer())
 
     def _override() -> MemAnswerQuery:

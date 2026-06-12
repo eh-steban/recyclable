@@ -19,7 +19,7 @@ export interface paths {
      *
      *     Returns HTTP 200 for all retrieval outcomes including refusals.
      *     Returns HTTP 400 with error='query_too_long' when query exceeds
-     *     500 characters.
+     *     150 characters.
      */
     post: operations["ask_ask_post"];
     delete?: never;
@@ -125,7 +125,7 @@ export interface components {
     AskRequest: {
       /**
        * Query
-       * @description Free-text user question, max 500 chars
+       * @description Free-text user question, max 150 chars
        */
       query: string;
       /**
@@ -157,7 +157,7 @@ export interface components {
      *       { "error": "<machine_code>" }
      *
      *     Known codes per answer.md § Known error codes:
-     *       query_too_long  -- 400, POST /ask, query > 500 chars
+     *       query_too_long  -- 400, POST /ask, query > 150 chars
      *       not_found       -- 404, page routes, slug miss
      *       internal_error  -- 500, all routes, unhandled server error
      */
@@ -321,7 +321,7 @@ export interface operations {
           "application/json": components["schemas"]["Answer"];
         };
       };
-      /** @description query_too_long -- query exceeds 500 characters */
+      /** @description query_too_long -- query exceeds 150 characters */
       400: {
         headers: {
           [name: string]: unknown;

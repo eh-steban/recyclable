@@ -3,7 +3,9 @@
 from dataclasses import dataclass
 
 #: Maximum query length enforced at the HTTP boundary (INV-LLM-004).
-QUERY_MAX_LENGTH = 500
+#: 150 sits well above any genuine recycling question while keeping
+#: the worst-case prompt-injection payload small.
+QUERY_MAX_LENGTH = 150
 
 
 @dataclass(frozen=True, slots=True)

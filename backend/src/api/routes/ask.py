@@ -5,7 +5,7 @@ exactly one application service via Depends, returns wire response.
 No domain imports; no business-logic branches beyond request-shape
 validation.
 
-The 500-char cap on `query` is enforced here (HTTP 400 with
+The 150-char cap on `query` is enforced here (HTTP 400 with
 error='query_too_long', not HTTP 422) per answer.md § Request.
 INV-LLM-004: the cap bounds the prompt-injection surface.
 """
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_MAX_QUERY_LEN = 500
+_MAX_QUERY_LEN = 150
 
 
 @router.post(
@@ -33,7 +33,7 @@ _MAX_QUERY_LEN = 500
     responses={
         400: {
             "model": ErrorEnvelope,
-            "description": ("query_too_long -- query exceeds 500 characters"),
+            "description": ("query_too_long -- query exceeds 150 characters"),
         },
     },
 )
@@ -45,7 +45,7 @@ def ask(
 
     Returns HTTP 200 for all retrieval outcomes including refusals.
     Returns HTTP 400 with error='query_too_long' when query exceeds
-    500 characters.
+    150 characters.
     """
     if len(body.query) > _MAX_QUERY_LEN:
         logger.warning("ask: query_too_long length=%d", len(body.query))
