@@ -26,8 +26,9 @@ def _evaluated(
     recommended_action: str, confidence: str = "high"
 ) -> EvaluatedAnswer:
     return EvaluatedAnswer(
-        verdict=Accepted(),
-        citations=(Citation(title="Denver", url="https://denver.gov"),),
+        verdict=Accepted(
+            citations=(Citation(title="Denver", url="https://denver.gov"),)
+        ),
         recommended_action=recommended_action,
         confidence=confidence,
         retrieved_source_urls=frozenset({"https://denver.gov"}),

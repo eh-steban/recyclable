@@ -93,8 +93,11 @@ async def test_grounded_accept_returns_cited_yes(
         assert match is not None, "expected a source URL in the prompt"
         grounded_url["value"] = match.group(0)
         return EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(Citation(title="Denver Recycling", url=match.group(0)),),
+            verdict=Accepted(
+                citations=(
+                    Citation(title="Denver Recycling", url=match.group(0)),
+                )
+            ),
             recommended_action="Place empty cans in your recycling cart.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -136,12 +139,13 @@ async def test_ungrounded_accept_is_refused(
     """The same accept citing an unretrieved URL is refused by grounding."""
     fake = FakeAnthropicClient(
         ask_result=EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(
-                Citation(
-                    title="Fabricated",
-                    url="https://not-a-retrieved-source.example/made-up",
-                ),
+            verdict=Accepted(
+                citations=(
+                    Citation(
+                        title="Fabricated",
+                        url="https://not-a-retrieved-source.example/made-up",
+                    ),
+                )
             ),
             recommended_action="Recycle it.",
             confidence="high",
@@ -206,8 +210,9 @@ async def test_out_of_jurisdiction_never_calls_the_llm(
     """An out-of-jurisdiction query is refused before the LLM is consulted."""
     fake = FakeAnthropicClient(
         ask_result=EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(Citation(title="x", url="https://example.com/x"),),
+            verdict=Accepted(
+                citations=(Citation(title="x", url="https://example.com/x"),)
+            ),
             recommended_action="should never be returned",
             confidence="high",
             retrieved_source_urls=frozenset(),

@@ -38,6 +38,7 @@ from src.domain.retrieval.item_verdict import (
     Conflicted,
     NotCovered,
     Refused,
+    citations_of,
 )
 from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
 from src.infra.db.repos._exceptions import translate_repo_exceptions
@@ -70,19 +71,21 @@ def _verdict_to_wire(record: AnswerAuditRecord) -> str:
 def _wire_to_verdict(
     verdict_str: str,
     conditions_json: list[Any] | None = None,
+    citations: tuple[Citation, ...] = (),
 ) -> Accepted | Refused | NotCovered | Conflicted:
     """Map ORM wire string back to a domain ItemVerdict variant.
 
     conditions_json is read from the JSONB conditions column so that
     'conditional' rows round-trip faithfully.
+    citations is attached to the definitive variants.
     """
     if verdict_str == "yes":
-        return Accepted()
+        return Accepted(citations=citations)
     if verdict_str == "conditional":
         conds = tuple(str(c) for c in (conditions_json or []))
-        return Accepted(conditions=conds)
+        return Accepted(conditions=conds, citations=citations)
     if verdict_str == "no":
-        return Refused()
+        return Refused(citations=citations)
     return NotCovered()
 
 
@@ -142,7 +145,7 @@ class PgAnswerAuditRecordRepo:
                 "url": c.url,
                 "quote": c.quote,
             }
-            for c in record.citations
+            for c in citations_of(record.verdict)
         ]
         validator_findings_json: dict[str, object] = {
             "retrieved_source_urls": sorted(record.retrieved_source_urls),
@@ -217,7 +220,7 @@ class PgAnswerAuditRecordRepo:
             list[Any] | None, getattr(row, "conditions", None)
         )
 
-        verdict = _wire_to_verdict(row.verdict, raw_conditions)
+        verdict = _wire_to_verdict(row.verdict, raw_conditions, citations)
 
         created_at: datetime = row.created_at
         if created_at.tzinfo is None:
@@ -238,7 +241,6 @@ class PgAnswerAuditRecordRepo:
             query_location_input=row.query_location_input,
             jurisdiction_id=JurisdictionId(jid),
             verdict=verdict,
-            citations=citations,
             retrieved_source_urls=retrieved_source_urls,
             recommended_action=row.recommended_action,
             prompt_version=row.prompt_version,

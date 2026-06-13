@@ -10,13 +10,15 @@ domain/exceptions.py).
 """
 
 from src.domain.retrieval.check_grounding import check_grounding
-from src.domain.retrieval.citation import Citation
-from src.domain.retrieval.item_verdict import ItemVerdict, is_definitive
+from src.domain.retrieval.item_verdict import (
+    ItemVerdict,
+    citations_of,
+    is_definitive,
+)
 
 
 def validate_answer_audit_record(
     verdict: ItemVerdict,
-    citations: list[Citation] | tuple[Citation, ...],
     retrieved_source_urls: frozenset[str],
 ) -> list[str]:
     """Validate the grounding contract for an AnswerAuditRecord.
@@ -24,21 +26,16 @@ def validate_answer_audit_record(
     Returns a list of violation descriptions. Empty list means valid.
     Never raises -- violations are returned as values.
     """
-    if check_grounding(verdict, citations, retrieved_source_urls):
+    if check_grounding(verdict, retrieved_source_urls):
         return []
 
     violations: list[str] = []
+    citations = citations_of(verdict)
 
     if is_definitive(verdict) and not citations:
         violations.append(
             "Definitive verdict has no citations (INV-PROD-001): every"
             + " definitive answer must cite a source."
-        )
-
-    if not is_definitive(verdict) and citations:
-        violations.append(
-            "Non-definitive verdict carries citations (INV-PROD-001):"
-            + " NotCovered claims no evidence and must not cite."
         )
 
     for citation in citations:

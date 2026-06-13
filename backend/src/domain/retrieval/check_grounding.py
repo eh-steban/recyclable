@@ -10,37 +10,38 @@ Enforces:
 - INV-LLM-002: every citation URL must be in the retrieved source set.
 """
 
-from src.domain.retrieval.citation import Citation
-from src.domain.retrieval.item_verdict import ItemVerdict, is_definitive
+from src.domain.retrieval.item_verdict import (
+    ItemVerdict,
+    citations_of,
+    is_definitive,
+)
 
 
 def check_grounding(
     verdict: ItemVerdict,
-    citations: list[Citation] | tuple[Citation, ...],
     retrieved_source_urls: frozenset[str],
 ) -> bool:
-    """Return True when verdict + citations satisfy the grounding contract.
+    """Return True when verdict satisfies the grounding contract.
 
     A verdict is grounded when:
-    1. If the verdict is definitive (Accepted / Refused / Conflicted):
+    1. If the verdict is non-definitive (NotCovered): always grounded --
+       NotCovered structurally carries no citations.
+    2. If the verdict is definitive (Accepted / Refused / Conflicted):
        - citations is non-empty (INV-PROD-001).
        - every citation.url is a member of retrieved_source_urls
          (INV-LLM-002).
-    2. If the verdict is non-definitive (NotCovered):
-       - citations must be empty. NotCovered means no evidence exists, so
-         a citation would lend an unverifiable answer false authority
-         (INV-PROD-001).
 
     Returns False on any violation; does not raise.
     """
     if not is_definitive(verdict):
-        # NotCovered claims no evidence, so it must carry no citations --
-        # a citation on an "I can't verify this" answer is a grounding leak.
-        return not citations
+        # NotCovered structurally carries no citations.
+        return True
+
+    citations = citations_of(verdict)
 
     # Definitive verdict: must have at least one citation (INV-PROD-001).
     if not citations:
         return False
 
     # Every citation URL must be in the retrieved source set (INV-LLM-002).
-    return all(citation.url in retrieved_source_urls for citation in citations)
+    return all(c.url in retrieved_source_urls for c in citations)

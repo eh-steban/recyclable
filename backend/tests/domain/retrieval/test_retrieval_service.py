@@ -296,8 +296,9 @@ class TestRetrievedSourceUrlsFromRules:
         rule = _make_rule(denver.id, material.id, source_id)
         source = _make_source(source_id, rule_url)
         llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(Citation(title="Denver", url=rule_url),),
+            verdict=Accepted(
+                citations=(Citation(title="Denver", url=rule_url),)
+            ),
             recommended_action="Yes, recycle it.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -316,7 +317,6 @@ class TestRetrievedSourceUrlsFromRules:
 
         assert isinstance(result, EvaluatedAnswer)
         assert result.verdict == llm_answer.verdict
-        assert result.citations == llm_answer.citations
         assert result.retrieved_source_urls == frozenset({rule_url})
 
     def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
@@ -327,9 +327,12 @@ class TestRetrievedSourceUrlsFromRules:
         rule = _make_rule(denver.id, material.id, source_id)
         source = _make_source(source_id, "https://denvergov.org/recycling")
         llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(
-                Citation(title="Hallucination", url="https://made-up.example"),
+            verdict=Accepted(
+                citations=(
+                    Citation(
+                        title="Hallucination", url="https://made-up.example"
+                    ),
+                )
             ),
             recommended_action="Yes.",
             confidence="high",
@@ -362,8 +365,7 @@ class TestRetrievedSourceUrlsFromRules:
             _make_rule(denver.id, material.id, sid_b),
         ]
         llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(Citation(title="B", url=url_b),),
+            verdict=Accepted(citations=(Citation(title="B", url=url_b),)),
             recommended_action="Yes.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -401,8 +403,9 @@ class TestRetrievedSourceUrlsFromRules:
             _make_rule(denver.id, material.id, sid_missing),
         ]
         llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(Citation(title="Missing", url=missing_url),),
+            verdict=Accepted(
+                citations=(Citation(title="Missing", url=missing_url),)
+            ),
             recommended_action="Yes.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -431,9 +434,10 @@ class TestRetrievedSourceUrlsFromRules:
         denver = _make_jurisdiction()
         rule = _make_rule(denver.id, material.id, source_id)
         llm_answer = EvaluatedAnswer(
-            verdict=Accepted(),
-            citations=(
-                Citation(title="X", url="https://denvergov.org/recycling"),
+            verdict=Accepted(
+                citations=(
+                    Citation(title="X", url="https://denvergov.org/recycling"),
+                )
             ),
             recommended_action="Yes.",
             confidence="high",

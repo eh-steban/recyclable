@@ -19,14 +19,13 @@ the application service mints the id, constructs the record
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import cast, override
+from typing import override
 
 from src.domain.audit.answer_audit_record_validator import (
     validate_answer_audit_record,
 )
 from src.domain.exceptions import AnswerAuditRecordValidationError
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
-from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import NoEvaluationReason
 from src.domain.retrieval.item_verdict import ItemVerdict
 
@@ -60,7 +59,9 @@ class AnswerAuditRecord:
 
     The constructor enforces INV-PROD-001 (via AnswerAuditRecordValidator):
     a definitive verdict must have non-empty citations whose URLs are all
-    members of retrieved_source_urls.
+    members of retrieved_source_urls. Citations are carried by the verdict
+    itself (Accepted, Refused, Conflicted); use citations_of(verdict) to
+    access them uniformly.
 
     Fields:
         id: typed identity, minted by repo.next_identity().
@@ -68,8 +69,7 @@ class AnswerAuditRecord:
         query_location_input: the raw user location input.
         jurisdiction_id: resolved JurisdictionId (typed id, not object ref).
         verdict: the domain verdict (Accepted | Refused | NotCovered |
-                 Conflicted).
-        citations: source citations supporting the verdict.
+                 Conflicted). Carries citations for definitive variants.
         retrieved_source_urls: the URL set from the rule retrieval query;
                                stored here so the validator can check
                                provenance at construction and at replay.
@@ -89,7 +89,6 @@ class AnswerAuditRecord:
     query_location_input: str
     jurisdiction_id: JurisdictionId
     verdict: ItemVerdict
-    citations: tuple[Citation, ...]
     retrieved_source_urls: frozenset[str]
     recommended_action: str
     prompt_version: str
@@ -99,20 +98,11 @@ class AnswerAuditRecord:
     no_evaluation_reason: NoEvaluationReason | None = field(default=None)
 
     def __post_init__(self) -> None:
-        # Runtime boundary guard: cast(object, ...) keeps this a real check
-        # despite the declared tuple type. See private/learnings.md
-        # (tuple boundary-guard idiom).
-        if not isinstance(cast(object, self.citations), tuple):
-            kind = type(self.citations).__name__
-            raise TypeError(
-                f"AnswerAuditRecord.citations must be a tuple, got {kind}"
-            )
         # Level-2 whole-object validation (architecture.md § Three-level
         # validation). Runs AnswerAuditRecordValidator inline; violation
         # raises AnswerAuditRecordValidationError.
         violations = validate_answer_audit_record(
             self.verdict,
-            self.citations,
             self.retrieved_source_urls,
         )
         if violations:
