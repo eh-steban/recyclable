@@ -132,6 +132,58 @@ Both surfaces share the same database and the same grounding contract.
     receive an already-translated value, or the translation
     belongs in the fetch helper, not at the call site.
 
+## TypeScript client codegen (openapi-typescript + openapi-fetch)
+
+`openapi-typescript` (v7) generates a `types.ts` file of TypeScript
+interfaces from the backend's OpenAPI JSON snapshot. It generates
+type interfaces only -- not a runtime client. `openapi-fetch` (v0.13+)
+provides the runtime client, typed by passing the generated `paths`
+interface: `createClient<paths>({ baseUrl })`.
+
+**Known wire-type quirks from this project:**
+
+- `accepted_status` and `disposition` generate as plain `string` (not
+  union literals) even when the backend uses Python `Literal[...]`,
+  because OpenAPI 3.1 schema objects with `type: string` and no `enum`
+  field produce `string` in the output. The ACL in `translate.ts`
+  carries these as `string` in presentation types -- acceptable for
+  MVP; if narrowing is needed, add a discriminated union in
+  `translate.ts` without touching the generated file.
+- `CitationWire.quote` generates as `quote?: string | null` (optional
+  AND nullable). The `?` comes from the field appearing in `properties`
+  but not in `required`; the `| null` comes from the
+  `anyOf: [{type: string}, {type: null}]` shape FastAPI emits for
+  `Optional[str]`. Consuming code must handle both the missing-key
+  case and the explicit-null case.
+- The codegen script (`scripts/codegen-api.mjs`) fetches the spec live
+  from `${BACKEND_URL:-http://localhost:8000}/openapi.json`. The
+  snapshot is committed to `lib/api/openapi.json` so the type-checker
+  can run in CI without a live backend.
+
+## `/ask` form: Server Action over BFF route handler
+
+The `/ask` form is a client component but `lib/api` is `server-only`
+(it reads `BACKEND_URL` and is built for server-side fetches). The
+runtime form submission crosses the client/server boundary via a Next.js
+**Server Action** (`app/ask/actions.ts`, `"use server"`), not a
+`app/api/ask/route.ts` route handler. The Server Action is simpler: no
+client `fetch`, no route file; the action returns a typed `AskResult`
+discriminated union directly.
+
+**`lib/api/ask.ts` omits the `server-only` marker intentionally** --
+mirroring `citation.ts` -- so its presentation types are reachable via
+`import type` from client components (type-only imports are erased at
+build time, so no runtime client import occurs). `fetchAsk` transitively
+imports the `server-only` `apiClient`, so any accidental non-type import
+from a client component is still a build-time error; the guard lives one
+level down, not on the type module. `fetchAsk` is NOT re-exported from
+`index.ts` -- the Server Action imports it from `lib/api/ask` directly,
+analogous to how a route handler would.
+
+**Add a component-local `types.ts` only when a view-model diverges from
+the ACL type.** The `Answer` presentation type from `lib/api/ask.ts` is
+a sufficient component prop type for `<AnswerCard />`.
+
 ## Non-commitments (for now)
 
 - Component library and styling choices beyond Tailwind defaults are

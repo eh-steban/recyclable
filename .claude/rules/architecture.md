@@ -235,6 +235,18 @@ it with a **Command object** named after the operation
 Value -- immutable, named, equal by content -- and unlocks future
 asynchronous dispatch without rewriting the service signature.
 
+### Tuple boundary-guard idiom on frozen domain dataclasses
+
+Frozen domain dataclasses whose fields cross the LLM or ORM boundary
+(e.g. `Accepted.conditions`, `AnswerAuditRecord.citations`) declare a
+`tuple[...]` type but cannot trust it at runtime -- LLM and ORM adapters
+may pass a list. The standing idiom is a `__post_init__` guard using
+`isinstance(cast(object, self.field), tuple)`. The `cast(object, ...)`
+deliberately defeats type-checker narrowing so the `isinstance` is not
+flagged unreachable and remains a real runtime check. Policy is reject
+(`TypeError`), never silently coerce. The `cast(object, ...)` is
+load-bearing -- do not simplify it away.
+
 ## Hexagonal framing
 
 The Backend Context is one hexagon. The inside is `application/` +
@@ -497,6 +509,29 @@ FastAPI dependency-provider functions in `deps.py` annotate their
 return type as the domain Protocol (the port), not the concrete
 implementation -- this is the DIP return-side complement to the
 interface-in-domain, implementation-in-infra rule above.
+
+### Domain Service ports
+
+A `@final` Domain Service gets a `Protocol` port so the Application
+layer depends on the seam, not the concrete class. Without a port,
+test doubles cannot structurally substitute a `@final` class, and
+tests must carry `# pyright: ignore[reportArgumentType]` suppressions.
+
+**Pattern:**
+
+- Declare `class XxxServicePort(Protocol)` in
+  `domain/<module>/xxx_service_port.py` alongside the concrete service.
+- Application Service consumers accept `XxxServicePort`, not
+  `XxxService`. Provider functions in `deps.py` return the Protocol type.
+- Concrete implementations and test fakes do NOT subclass the Protocol
+  -- they satisfy it structurally (matching method signatures).
+
+**Implemented:** `RetrievalServicePort` --
+`backend/src/domain/retrieval/retrieval_service_port.py:13`
+(commit 0c71744). When the port was added, the two
+`# pyright: ignore[reportArgumentType]` suppressions in
+`tests/application/test_answer_query.py` and
+`tests/api/test_ask_route.py` were removed.
 
 ### Persistence exceptions translate at the boundary
 

@@ -36,6 +36,45 @@ one-line comment explaining why:
 "It felt convenient" and "I want to scope the import to the test"
 are not exceptions. Lift the import.
 
+A single deferred import is not a sortable block, so it needs only the
+`# noqa: PLC0415` above -- `I001` (isort) does not also fire, even though
+isort is enabled. If a suppression list on an import ever needs to grow
+past `PLC0415`, treat that as the signal to lift the import, not to
+lengthen the noqa. Keep noqa lists minimal; the goal is zero.
+
+## Ruff lint suppressions
+
+**FastAPI `Depends()` in default args -- suppress B008 globally.**
+Ruff B008 ("do not perform function call in argument defaults") fires
+on every FastAPI provider function that uses `Depends(...)` as a
+default. This is the canonical FastAPI DI pattern and cannot be
+avoided. Add `ignore = ["B008"]` under `[tool.ruff.lint]` in
+`pyproject.toml` rather than suppressing every provider individually.
+A per-line `# noqa: B008` approach works but creates noise in `deps.py`
+and every route file.
+
+## FastAPI dependency injection conventions
+
+**`Depends` override key is the provider function, not the service
+class.** `app.dependency_overrides` is keyed by the provider factory
+function passed to `Depends(...)`, not by the service class the provider
+returns. If a route uses `Depends(get_answer_query)`, tests must
+override `app.dependency_overrides[get_answer_query]`. Overriding the
+class (`app.dependency_overrides[AnswerQuery]`) silently has no effect
+because FastAPI resolves the dependency by callable reference, not by
+return type. Import the provider function from `src.api.deps` in the
+test file.
+
+## basedpyright: exhaustiveness and `assert_never`
+
+When all union arms in a `match` statement are covered, basedpyright
+narrows the subject to `Never` and emits `reportUnnecessaryComparison`
+for the `case _: assert_never(x)` arm. This is correct -- the arm is
+unreachable by design. Exit code 1 from basedpyright means "has any
+diagnostic including warnings"; 0 errors with N warnings is a clean
+type-check. Do not suppress these warnings; they confirm the
+exhaustiveness pin is working.
+
 ## Naming Conventions
 
 | Type | Convention | Example |
