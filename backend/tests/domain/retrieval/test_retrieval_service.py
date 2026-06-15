@@ -4,32 +4,17 @@ service never calls location resolution itself.
 """
 
 import uuid
-from datetime import UTC, datetime
 from typing import final
 
-from src.domain.knowledge_base.jurisdiction import (
-    Jurisdiction,
-    JurisdictionId,
-    JurisdictionType,
-    SupportedStatus,
-)
-from src.domain.knowledge_base.material import (
-    Material,
-    MaterialCategory,
-    MaterialId,
-)
+from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.material import MaterialId
 from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
     NormalizationResult,
     Resolved,
     Uncertain,
 )
-from src.domain.knowledge_base.rule import (
-    AcceptedStatus,
-    Disposition,
-    Rule,
-    RuleId,
-)
+from src.domain.knowledge_base.rule import Rule, RuleId
 from src.domain.knowledge_base.source import SourceDocument, SourceId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import (
@@ -38,61 +23,15 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.domain.retrieval.item_verdict import Accepted
-from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
-
-
-def _make_jurisdiction(slug: str = DENVER_SLUG) -> Jurisdiction:
-    return Jurisdiction(
-        id=JurisdictionId(uuid.uuid4()),
-        name="City and County of Denver",
-        slug=slug,
-        type=JurisdictionType.CITY,
-        country="US",
-        supported_status=SupportedStatus.SUPPORTED,
-        created_at=datetime.now(tz=UTC),
-        updated_at=datetime.now(tz=UTC),
-    )
-
-
-def _make_material(slug: str) -> Material:
-    return Material(
-        id=MaterialId(uuid.uuid4()),
-        canonical_name=slug.replace("-", " ").title(),
-        slug=slug,
-        category=MaterialCategory.PLASTIC,
-    )
-
-
-def _make_rule(
-    jurisdiction_id: JurisdictionId,
-    material_id: MaterialId,
-    source_id: SourceId,
-) -> Rule:
-    return Rule(
-        id=RuleId(uuid.uuid4()),
-        jurisdiction_id=jurisdiction_id,
-        material_id=material_id,
-        disposition=Disposition.CURBSIDE_RECYCLE,
-        accepted_status=AcceptedStatus.ACCEPTED,
-        source_document_id=source_id,
-        source_quote="Corrugated cardboard is accepted in purple recycle carts",
-    )
-
-
-def _make_source(source_id: SourceId, url: str) -> SourceDocument:
-    return SourceDocument(
-        id=source_id,
-        jurisdiction_id=JurisdictionId(uuid.uuid4()),
-        url=url,
-        title="Denver Recycling Guidelines",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="...",
-        source_text_hash="hash",
-    )
+from tests.utils.builders import (
+    make_jurisdiction,
+    make_material,
+    make_rule,
+    make_source_document,
+)
 
 
 @final
@@ -226,7 +165,10 @@ class TestOutOfJurisdiction:
 
 class TestAmbiguousMaterialPath:
     def test_returns_no_evaluation_with_conflicted_reason(self) -> None:
-        candidates = (_make_material("pet-bottle"), _make_material("hdpe-jug"))
+        candidates = (
+            make_material(slug="pet-bottle"),
+            make_material(slug="hdpe-jug"),
+        )
         llm = _RecordingLLM()
         service = _build_service(
             normalizer=_FakeNormalizer(Ambiguous(candidates=candidates)),
@@ -235,7 +177,7 @@ class TestAmbiguousMaterialPath:
 
         result = service.answer(
             Query(text="plastic", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -254,7 +196,7 @@ class TestUncertainMaterialPath:
 
         result = service.answer(
             Query(text="something obscure", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -265,7 +207,7 @@ class TestUncertainMaterialPath:
 
 class TestResolvedMaterialReachesRetrievalStep:
     def test_resolved_proceeds_past_normalizer_step(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         llm = _RecordingLLM()
         service = _build_service(
             normalizer=_FakeNormalizer(Resolved(material=material)),
@@ -274,7 +216,7 @@ class TestResolvedMaterialReachesRetrievalStep:
 
         result = service.answer(
             Query(text="cardboard", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -288,13 +230,17 @@ class TestRetrievedSourceUrlsFromRules:
     """
 
     def test_grounded_citation_url_returns_evaluated_answer(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
         rule_url = "https://denvergov.org/recycling"
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
-        source = _make_source(source_id, rule_url)
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
+        source = make_source_document(id=source_id, url=rule_url)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
             citations=(Citation(title="Denver", url=rule_url),),
@@ -320,12 +266,18 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.retrieved_source_urls == frozenset({rule_url})
 
     def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
-        source = _make_source(source_id, "https://denvergov.org/recycling")
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
+        source = make_source_document(
+            id=source_id, url="https://denvergov.org/recycling"
+        )
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
             citations=(
@@ -351,15 +303,23 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
     def test_multiple_sources_returns_full_retrieved_set(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         sid_a, sid_b = SourceId(uuid.uuid4()), SourceId(uuid.uuid4())
         url_a = "https://denvergov.org/recycling"
         url_b = "https://denvergov.org/guidelines"
 
-        denver = _make_jurisdiction()
+        denver = make_jurisdiction()
         rules = [
-            _make_rule(denver.id, material.id, sid_a),
-            _make_rule(denver.id, material.id, sid_b),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_a,
+            ),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_b,
+            ),
         ]
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -374,8 +334,8 @@ class TestRetrievedSourceUrlsFromRules:
             rule_repo=MemRuleRepo(rules=rules),
             source_repo=MemSourceRepo(
                 docs={
-                    sid_a: _make_source(sid_a, url_a),
-                    sid_b: _make_source(sid_b, url_b),
+                    sid_a: make_source_document(id=sid_a, url=url_a),
+                    sid_b: make_source_document(id=sid_b, url=url_b),
                 }
             ),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
@@ -389,16 +349,24 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.retrieved_source_urls == frozenset({url_a, url_b})
 
     def test_partial_source_repo_miss_excludes_missing_url(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         sid_found = SourceId(uuid.uuid4())
         sid_missing = SourceId(uuid.uuid4())
         found_url = "https://denvergov.org/recycling"
         missing_url = "https://denvergov.org/not-in-repo"
 
-        denver = _make_jurisdiction()
+        denver = make_jurisdiction()
         rules = [
-            _make_rule(denver.id, material.id, sid_found),
-            _make_rule(denver.id, material.id, sid_missing),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_found,
+            ),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_missing,
+            ),
         ]
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
@@ -412,7 +380,9 @@ class TestRetrievedSourceUrlsFromRules:
             material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=rules),
             source_repo=MemSourceRepo(
-                docs={sid_found: _make_source(sid_found, found_url)}
+                docs={
+                    sid_found: make_source_document(id=sid_found, url=found_url)
+                }
             ),
             retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
         )
@@ -425,11 +395,15 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
     def test_source_repo_miss_excludes_url_from_set(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(),
             citations=(

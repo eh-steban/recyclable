@@ -25,13 +25,6 @@ from src.domain.exceptions import AnswerAuditRecordValidationError
 from src.domain.knowledge_base.jurisdiction import (
     Jurisdiction,
     JurisdictionId,
-    JurisdictionType,
-    SupportedStatus,
-)
-from src.domain.knowledge_base.material import (
-    Material,
-    MaterialCategory,
-    MaterialId,
 )
 from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
@@ -42,11 +35,8 @@ from src.domain.knowledge_base.normalization_result import (
 from src.domain.knowledge_base.rule import (
     AcceptedStatus,
     Disposition,
-    Rule,
-    RuleId,
 )
-from src.domain.knowledge_base.source import SourceDocument, SourceId
-from src.domain.retrieval.citation import Citation
+from src.domain.knowledge_base.source import SourceId
 from src.domain.retrieval.evaluated_answer import (
     EvaluatedAnswer,
     NoEvaluation,
@@ -58,10 +48,17 @@ from src.domain.retrieval.item_verdict import (
     ItemVerdict,
     NotCovered,
 )
-from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
+from tests.utils.builders import (
+    make_citation,
+    make_evaluated_answer,
+    make_jurisdiction,
+    make_material,
+    make_rule,
+    make_source_document,
+)
 from tests.utils.fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
 from tests.utils.fakes.jurisdiction_repo import MemJurisdictionRepo
 from tests.utils.fakes.material_repo import MemMaterialRepo
@@ -152,69 +149,6 @@ def _make_jurisdiction_id() -> JurisdictionId:
     return JurisdictionId(uuid.uuid4())
 
 
-def _make_denver_jurisdiction() -> Jurisdiction:
-    return Jurisdiction(
-        id=JurisdictionId(uuid.uuid4()),
-        name="City and County of Denver",
-        slug=DENVER_SLUG,
-        type=JurisdictionType.CITY,
-        country="US",
-        supported_status=SupportedStatus.SUPPORTED,
-        created_at=datetime.now(tz=UTC),
-        updated_at=datetime.now(tz=UTC),
-    )
-
-
-def _make_material(slug: str = "cardboard") -> Material:
-    return Material(
-        id=MaterialId(uuid.uuid4()),
-        canonical_name=slug.replace("-", " ").title(),
-        slug=slug,
-        category=MaterialCategory.PAPER,
-    )
-
-
-def _make_rule(
-    jid: JurisdictionId,
-    mid: MaterialId,
-    sid: SourceId,
-    preparation_steps: tuple[str, ...] = (),
-) -> Rule:
-    return Rule(
-        id=RuleId(uuid.uuid4()),
-        jurisdiction_id=jid,
-        material_id=mid,
-        disposition=Disposition.CURBSIDE_RECYCLE,
-        accepted_status=AcceptedStatus.ACCEPTED,
-        source_document_id=sid,
-        source_quote="Cardboard is accepted curbside.",
-        preparation_steps=preparation_steps,
-    )
-
-
-def _make_evaluated_answer(
-    verdict: ItemVerdict,
-    citations: tuple[Citation, ...],
-    recommended_action: str = "Place in the blue bin.",
-    retrieved_source_urls: frozenset[str] = frozenset(),
-) -> EvaluatedAnswer:
-    return EvaluatedAnswer(
-        verdict=verdict,
-        citations=citations,
-        recommended_action=recommended_action,
-        confidence="high",
-        retrieved_source_urls=retrieved_source_urls,
-    )
-
-
-def _make_citation(url: str) -> Citation:
-    return Citation(
-        title="Denver Recycling Guide",
-        url=url,
-        quote="Cardboard is accepted curbside.",
-    )
-
-
 def _build_service(
     *,
     normalizer: _FakeNormalizer | None = None,
@@ -241,7 +175,7 @@ def _build_service(
     _normalizer = normalizer or _FakeNormalizer(Uncertain())
 
     # Seed a generated-UUID Denver jurisdiction in the in-memory repo.
-    _jurisdiction = jurisdiction or _make_denver_jurisdiction()
+    _jurisdiction = jurisdiction or make_jurisdiction()
     j_repo = MemJurisdictionRepo()
     j_repo.save(_jurisdiction)
 
@@ -269,29 +203,26 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
     len(citations)>0 and a populated audit_record_id.
     """
     source_url = "https://denvergov.org/recycling"
-    citation = _make_citation(source_url)
+    citation = make_citation(url=source_url)
     verdict = Accepted()
-    llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
+    llm = _FakeLLM(
+        make_evaluated_answer(verdict=verdict, citations=(citation,))
+    )
 
     # Build Denver with a GENERATED id (not the 0001 sentinel).
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule = _make_rule(jid, mat.id, src_id)
+    rule = make_rule(
+        jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+    )
     rule_repo.save(rule)
 
     normalizer = _FakeNormalizer(Resolved(material=mat))
@@ -321,27 +252,26 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
 
 def test_wire_jurisdiction_id_comes_from_repo_not_hardcoded() -> None:
     source_url = "https://denvergov.org/recycling"
-    citation = _make_citation(source_url)
-    llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
+    citation = make_citation(url=source_url)
+    llm = _FakeLLM(
+        make_evaluated_answer(verdict=Accepted(), citations=(citation,))
+    )
 
-    denver = _make_denver_jurisdiction()  # fresh UUID
+    denver = make_jurisdiction()  # fresh UUID
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
 
     normalizer = _FakeNormalizer(Resolved(material=mat))
     svc, audit_repo, _ = _build_service(
@@ -422,8 +352,8 @@ def test_slug_resolved_but_missing_jurisdiction_row_emits_ooj() -> None:
 
 
 def test_ambiguous_material_path() -> None:
-    cand1 = _make_material("pet-bottle")
-    cand2 = _make_material("hdpe-jug")
+    cand1 = make_material(slug="pet-bottle")
+    cand2 = make_material(slug="hdpe-jug")
     normalizer = _FakeNormalizer(Ambiguous(candidates=(cand1, cand2)))
 
     svc, audit_repo, _ = _build_service(
@@ -488,24 +418,21 @@ def test_validator_rejected_path() -> None:
         )
     )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
     svc, audit_repo, _ = _build_service(
@@ -539,29 +466,34 @@ def test_ungrounded_citation_is_refused() -> None:
     """
     retrieved_url = "https://denvergov.org/recycling"
     unretrieved_url = "https://not-a-retrieved-source.example/made-up"
-    # LLM cites a URL the retrieval set does not contain.
+    # LLM cites a URL the retrieval set does not contain. retrieved_source_urls
+    # is left empty on the stub to keep that intent explicit; the service
+    # rebuilds the real set from the source repo before grounding anyway.
     llm = _FakeLLM(
-        _make_evaluated_answer(Accepted(), (_make_citation(unretrieved_url),))
+        make_evaluated_answer(
+            verdict=Accepted(),
+            citations=(make_citation(url=unretrieved_url),),
+            retrieved_source_urls=frozenset(),
+        )
     )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
+    src_doc = make_source_document(
         id=src_id,
         jurisdiction_id=jid,
         url=retrieved_url,  # the only retrieved source URL
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
     svc, audit_repo, _ = _build_service(
@@ -595,31 +527,28 @@ def test_not_covered_with_citations_is_refused() -> None:
     llm = _FakeLLM(
         EvaluatedAnswer(
             verdict=NotCovered(),
-            citations=(_make_citation(source_url),),
+            citations=(make_citation(url=source_url),),
             recommended_action="No matching rule found.",
             confidence="low",
             retrieved_source_urls=frozenset(),
         )
     )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
     svc, audit_repo, _ = _build_service(
@@ -665,7 +594,7 @@ def _make_record_args(
 def test_make_record_grades_citations_against_threaded_set() -> None:
     outcome = EvaluatedAnswer(
         verdict=Accepted(),
-        citations=(_make_citation("https://denver.gov/recycling"),),
+        citations=(make_citation(url="https://denver.gov/recycling"),),
         recommended_action="Place in the blue bin.",
         confidence="high",
         retrieved_source_urls=frozenset(),  # genuine set omits the cited URL
@@ -678,7 +607,7 @@ def test_make_record_grades_citations_against_threaded_set() -> None:
             outcome,
             latency_ms=10,
             created_at=datetime.now(tz=UTC),
-            jurisdiction=_make_denver_jurisdiction(),
+            jurisdiction=make_jurisdiction(),
         )
 
 
@@ -687,7 +616,7 @@ def test_make_record_persists_genuine_retrieved_set() -> None:
     uncited = "https://denver.gov/guidelines"
     outcome = EvaluatedAnswer(
         verdict=Accepted(),
-        citations=(_make_citation(cited),),
+        citations=(make_citation(url=cited),),
         recommended_action="Place in the blue bin.",
         confidence="high",
         retrieved_source_urls=frozenset({cited, uncited}),
@@ -699,7 +628,7 @@ def test_make_record_persists_genuine_retrieved_set() -> None:
         outcome,
         latency_ms=10,
         created_at=datetime.now(tz=UTC),
-        jurisdiction=_make_denver_jurisdiction(),
+        jurisdiction=make_jurisdiction(),
     )
     assert record.retrieved_source_urls == frozenset({cited, uncited})
 
@@ -717,7 +646,7 @@ def test_make_record_no_evaluation_has_empty_retrieved_set() -> None:
         ),
         latency_ms=10,
         created_at=datetime.now(tz=UTC),
-        jurisdiction=_make_denver_jurisdiction(),
+        jurisdiction=make_jurisdiction(),
     )
     assert record.retrieved_source_urls == frozenset()
     assert record.no_evaluation_reason == NoEvaluationReason.NO_EVIDENCE
@@ -745,27 +674,26 @@ class _BrokenAuditRepo:
 def test_save_raises_propagates() -> None:
     """If repo.save raises, the exception propagates -- no swallowing."""
     source_url = "https://denvergov.org/recycling"
-    citation = _make_citation(source_url)
-    llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
+    citation = make_citation(url=source_url)
+    llm = _FakeLLM(
+        make_evaluated_answer(verdict=Accepted(), citations=(citation,))
+    )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
     j_repo = MemJurisdictionRepo()
@@ -804,24 +732,21 @@ def test_llm_rejected_path() -> None:
         )
     )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url="https://denvergov.org/recycling",
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url="https://denvergov.org/recycling"
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
     normalizer = _FakeNormalizer(Resolved(material=mat))
 
     svc, audit_repo, _ = _build_service(
@@ -872,7 +797,7 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
     Distinct from NotCovered's 'no_evidence': a source conflict is not
     an absence of evidence.
     """
-    answer = _make_evaluated_answer(Conflicted(), ())
+    answer = make_evaluated_answer(verdict=Conflicted(), citations=())
     result = evaluated_answer_to_wire(
         answer,
         audit_record_id=uuid.uuid4(),
@@ -886,8 +811,8 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
 
 
 def test_conflicted_with_citations_surfaces_them_on_unknown() -> None:
-    citation = _make_citation("https://denver.gov/recycling")
-    answer = _make_evaluated_answer(Conflicted(), (citation,))
+    citation = make_citation(url="https://denver.gov/recycling")
+    answer = make_evaluated_answer(verdict=Conflicted(), citations=(citation,))
     result = evaluated_answer_to_wire(
         answer,
         audit_record_id=uuid.uuid4(),
@@ -906,18 +831,19 @@ def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
     the jurisdiction page output (INV-AUTH-002).
     """
     jid = _make_jurisdiction_id()
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
 
     # Build active rule and a superseded rule.
-    active_rule = _make_rule(jid, mat.id, src_id)
-    superseded_rule = Rule(
-        id=RuleId(uuid.uuid4()),
+    active_rule = make_rule(
+        jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+    )
+    superseded_rule = make_rule(
         jurisdiction_id=jid,
         material_id=mat.id,
+        source_document_id=src_id,
         disposition=Disposition.LANDFILL,
         accepted_status=AcceptedStatus.REJECTED,
-        source_document_id=src_id,
         source_quote="Old rule: cardboard goes to landfill.",
         superseded_by=active_rule.id,  # marks it superseded
     )
@@ -927,28 +853,12 @@ def test_get_jurisdiction_page_excludes_superseded_rules() -> None:
     rule_repo.save(superseded_rule)
 
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url="https://denvergov.org/recycling",
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url="https://denvergov.org/recycling"
     )
     source_repo.save(src_doc)
 
-    jurisdiction = Jurisdiction(
-        id=jid,
-        name="Denver",
-        slug="denver-co-us",
-        type=JurisdictionType.CITY,
-        country="US",
-        supported_status=SupportedStatus.SUPPORTED,
-        created_at=datetime.now(tz=UTC),
-        updated_at=datetime.now(tz=UTC),
-    )
+    jurisdiction = make_jurisdiction(id=jid, name="Denver", slug="denver-co-us")
     jurisdiction_repo = MemJurisdictionRepo()
     jurisdiction_repo.save(jurisdiction)
 
@@ -999,7 +909,7 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
         )
     )
     audit_repo = MemAnswerAuditRecordRepo()
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction()
     j_repo = MemJurisdictionRepo()
     j_repo.save(denver)
     svc = AnswerQuery(
@@ -1062,28 +972,27 @@ def test_jurisdiction_name_from_repo_not_hardcoded() -> None:
     the wire response unchanged.
     """
     source_url = "https://denvergov.org/recycling"
-    citation = _make_citation(source_url)
+    citation = make_citation(url=source_url)
     verdict = Accepted()
-    llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
+    llm = _FakeLLM(
+        make_evaluated_answer(verdict=verdict, citations=(citation,))
+    )
 
-    denver = _make_denver_jurisdiction()
+    denver = make_jurisdiction(name="City and County of Denver")
     jid = denver.id
-    mat = _make_material("cardboard")
+    mat = make_material(slug="cardboard")
     src_id = SourceId(uuid.uuid4())
     rule_repo = MemRuleRepo()
     source_repo = MemSourceRepo()
-    src_doc = SourceDocument(
-        id=src_id,
-        jurisdiction_id=jid,
-        url=source_url,
-        title="Denver Recycling Guide",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Cardboard is accepted curbside.",
-        source_text_hash="abc123",
+    src_doc = make_source_document(
+        id=src_id, jurisdiction_id=jid, url=source_url
     )
     source_repo.save(src_doc)
-    rule_repo.save(_make_rule(jid, mat.id, src_id))
+    rule_repo.save(
+        make_rule(
+            jurisdiction_id=jid, material_id=mat.id, source_document_id=src_id
+        )
+    )
 
     normalizer = _FakeNormalizer(Resolved(material=mat))
     svc, _, _ = _build_service(
