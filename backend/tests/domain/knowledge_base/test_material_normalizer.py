@@ -39,8 +39,8 @@ from src.domain.knowledge_base.normalization_result import (
     Resolved,
     Uncertain,
 )
-from tests._fakes.material_alias_search import MemMaterialAliasSearch
-from tests._fakes.material_repo import MemMaterialRepo
+from tests.utils.fakes.material_alias_search import MemMaterialAliasSearch
+from tests.utils.fakes.material_repo import MemMaterialRepo
 
 # ---------------------------------------------------------------------------
 # Shared material IDs

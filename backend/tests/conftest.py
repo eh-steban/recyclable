@@ -28,11 +28,11 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
-from tests._fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
-from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
-from tests._fakes.material_repo import MemMaterialRepo
-from tests._fakes.rule_repo import MemRuleRepo
-from tests._fakes.source_repo import MemSourceRepo
+from tests.utils.fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
+from tests.utils.fakes.jurisdiction_repo import MemJurisdictionRepo
+from tests.utils.fakes.material_repo import MemMaterialRepo
+from tests.utils.fakes.rule_repo import MemRuleRepo
+from tests.utils.fakes.source_repo import MemSourceRepo
 
 # ---------------------------------------------------------------------------
 # Test-database URL -- NEVER the dev ``recyclable`` database

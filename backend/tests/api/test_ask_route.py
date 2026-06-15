@@ -44,7 +44,7 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.main import app
-from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
+from tests.utils.fakes.jurisdiction_repo import MemJurisdictionRepo
 
 # ---------------------------------------------------------------------------
 # Fake application services (port doubles)

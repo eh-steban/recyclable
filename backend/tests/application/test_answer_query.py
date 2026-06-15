@@ -62,11 +62,11 @@ from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
-from tests._fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
-from tests._fakes.jurisdiction_repo import MemJurisdictionRepo
-from tests._fakes.material_repo import MemMaterialRepo
-from tests._fakes.rule_repo import MemRuleRepo
-from tests._fakes.source_repo import MemSourceRepo
+from tests.utils.fakes.answer_audit_record_repo import MemAnswerAuditRecordRepo
+from tests.utils.fakes.jurisdiction_repo import MemJurisdictionRepo
+from tests.utils.fakes.material_repo import MemMaterialRepo
+from tests.utils.fakes.rule_repo import MemRuleRepo
+from tests.utils.fakes.source_repo import MemSourceRepo
 
 # ---------------------------------------------------------------------------
 # Fake LLM implementations
