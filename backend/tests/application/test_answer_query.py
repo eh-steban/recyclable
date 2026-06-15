@@ -193,13 +193,11 @@ def _make_rule(
 
 def _make_evaluated_answer(
     verdict: ItemVerdict,
-    citations: tuple[Citation, ...],
     recommended_action: str = "Place in the blue bin.",
     retrieved_source_urls: frozenset[str] = frozenset(),
 ) -> EvaluatedAnswer:
     return EvaluatedAnswer(
         verdict=verdict,
-        citations=citations,
         recommended_action=recommended_action,
         confidence="high",
         retrieved_source_urls=retrieved_source_urls,
@@ -269,8 +267,8 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
     """
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
-    verdict = Accepted()
-    llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
+    verdict = Accepted(citations=(citation,))
+    llm = _FakeLLM(_make_evaluated_answer(verdict))
 
     # Build Denver with a GENERATED id (not the 0001 sentinel).
     denver = _make_denver_jurisdiction()
@@ -321,7 +319,7 @@ def test_happy_path_short_answer_yes_with_citations() -> None:
 def test_wire_jurisdiction_id_comes_from_repo_not_hardcoded() -> None:
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
-    llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
+    llm = _FakeLLM(_make_evaluated_answer(Accepted(citations=(citation,))))
 
     denver = _make_denver_jurisdiction()  # fresh UUID
     jid = denver.id
@@ -479,8 +477,8 @@ def test_validator_rejected_path() -> None:
     source_url = "https://denvergov.org/recycling"
     llm = _FakeLLM(
         EvaluatedAnswer(
+            # empty citations on verdict -- grounding violation
             verdict=Accepted(),
-            citations=(),  # empty -- grounding violation
             recommended_action="Place in the blue bin.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -540,7 +538,9 @@ def test_ungrounded_citation_is_refused() -> None:
     unretrieved_url = "https://not-a-retrieved-source.example/made-up"
     # LLM cites a URL the retrieval set does not contain.
     llm = _FakeLLM(
-        _make_evaluated_answer(Accepted(), (_make_citation(unretrieved_url),))
+        _make_evaluated_answer(
+            Accepted(citations=(_make_citation(unretrieved_url),))
+        )
     )
 
     denver = _make_denver_jurisdiction()
@@ -605,8 +605,9 @@ def _make_record_args(
 
 def test_make_record_grades_citations_against_threaded_set() -> None:
     outcome = EvaluatedAnswer(
-        verdict=Accepted(),
-        citations=(_make_citation("https://denver.gov/recycling"),),
+        verdict=Accepted(
+            citations=(_make_citation("https://denver.gov/recycling"),)
+        ),
         recommended_action="Place in the blue bin.",
         confidence="high",
         retrieved_source_urls=frozenset(),  # genuine set omits the cited URL
@@ -627,8 +628,7 @@ def test_make_record_persists_genuine_retrieved_set() -> None:
     cited = "https://denver.gov/recycling"
     uncited = "https://denver.gov/guidelines"
     outcome = EvaluatedAnswer(
-        verdict=Accepted(),
-        citations=(_make_citation(cited),),
+        verdict=Accepted(citations=(_make_citation(cited),)),
         recommended_action="Place in the blue bin.",
         confidence="high",
         retrieved_source_urls=frozenset({cited, uncited}),
@@ -687,7 +687,7 @@ def test_save_raises_propagates() -> None:
     """If repo.save raises, the exception propagates -- no swallowing."""
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
-    llm = _FakeLLM(_make_evaluated_answer(Accepted(), (citation,)))
+    llm = _FakeLLM(_make_evaluated_answer(Accepted(citations=(citation,))))
 
     denver = _make_denver_jurisdiction()
     jid = denver.id
@@ -860,7 +860,7 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
     Distinct from NotCovered's 'no_evidence': a source conflict is not
     an absence of evidence.
     """
-    answer = _make_evaluated_answer(Conflicted(), ())
+    answer = _make_evaluated_answer(Conflicted())
     result = evaluated_answer_to_wire(
         answer,
         audit_record_id=uuid.uuid4(),
@@ -875,7 +875,10 @@ def test_conflicted_maps_to_conflict_unresolved_refusal() -> None:
 
 def test_conflicted_with_citations_surfaces_them_on_unknown() -> None:
     citation = _make_citation("https://denver.gov/recycling")
-    answer = _make_evaluated_answer(Conflicted(), (citation,))
+    answer = _make_evaluated_answer(
+        Conflicted(citations=(citation,)),
+        retrieved_source_urls=frozenset({"https://denver.gov/recycling"}),
+    )
     result = evaluated_answer_to_wire(
         answer,
         audit_record_id=uuid.uuid4(),
@@ -979,8 +982,8 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     # hits the construction-time AnswerAuditRecordValidator.
     fake_svc = _FakeRetrievalService(
         answer_result=EvaluatedAnswer(
+            # empty citations on verdict -- construction-time validator fires
             verdict=Accepted(),
-            citations=(),  # no citations -- construction-time validator fires
             recommended_action="Place in the blue bin.",
             confidence="high",
             retrieved_source_urls=frozenset(),
@@ -991,9 +994,7 @@ def test_construction_time_fallback_wire_matches_persisted_record() -> None:
     j_repo = MemJurisdictionRepo()
     j_repo.save(denver)
     svc = AnswerQuery(
-        # RetrievalService is @final; subclassing is forbidden;
-        # fake substitution test-only.
-        retrieval_service=fake_svc,  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        retrieval_service=fake_svc,
         audit_repo=audit_repo,
         jurisdiction_repo=j_repo,
     )
@@ -1051,8 +1052,8 @@ def test_jurisdiction_name_from_repo_not_hardcoded() -> None:
     """
     source_url = "https://denvergov.org/recycling"
     citation = _make_citation(source_url)
-    verdict = Accepted()
-    llm = _FakeLLM(_make_evaluated_answer(verdict, (citation,)))
+    verdict = Accepted(citations=(citation,))
+    llm = _FakeLLM(_make_evaluated_answer(verdict))
 
     denver = _make_denver_jurisdiction()
     jid = denver.id

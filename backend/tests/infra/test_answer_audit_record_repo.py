@@ -25,7 +25,7 @@ from src.domain.exceptions import (
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import NoEvaluationReason
-from src.domain.retrieval.item_verdict import Accepted, NotCovered
+from src.domain.retrieval.item_verdict import Accepted, NotCovered, citations_of
 from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
 
 # ---------------------------------------------------------------------------
@@ -60,13 +60,14 @@ def _make_record(jurisdiction_id: JurisdictionId) -> AnswerAuditRecord:
         query_text="Is cardboard recyclable?",
         query_location_input="Denver, CO",
         jurisdiction_id=jurisdiction_id,
-        verdict=Accepted(),
-        citations=(
-            Citation(
-                title="Denver Recycling Guide",
-                url=source_url,
-                quote="Cardboard is accepted.",
-            ),
+        verdict=Accepted(
+            citations=(
+                Citation(
+                    title="Denver Recycling Guide",
+                    url=source_url,
+                    quote="Cardboard is accepted.",
+                ),
+            )
         ),
         retrieved_source_urls=frozenset({source_url}),
         recommended_action="Place flattened in the blue bin.",
@@ -101,10 +102,12 @@ def test_save_and_find_roundtrip(db_session: Session) -> None:
     # Pin the verdict-type roundtrip so a stub _wire_to_verdict returning
     # NotCovered would not silently pass.
     assert isinstance(loaded.verdict, Accepted)
-    # Citation roundtrip.
-    assert len(loaded.citations) == 1
-    assert loaded.citations[0].url == record.citations[0].url
-    assert loaded.citations[0].title == record.citations[0].title
+    # Citation roundtrip -- citations live on the verdict after refactor.
+    loaded_cits = citations_of(loaded.verdict)
+    record_cits = citations_of(record.verdict)
+    assert len(loaded_cits) == 1
+    assert loaded_cits[0].url == record_cits[0].url
+    assert loaded_cits[0].title == record_cits[0].title
     # retrieved_source_urls roundtrip via validator_findings JSONB.
     assert loaded.retrieved_source_urls == record.retrieved_source_urls
 
@@ -128,7 +131,6 @@ def test_save_out_of_jurisdiction_record_persists_as_null(
         query_location_input="Aurora",
         jurisdiction_id=ooj,
         verdict=NotCovered(),
-        citations=(),
         retrieved_source_urls=frozenset(),
         recommended_action="Aurora is not covered yet.",
         prompt_version="no_evaluation",
@@ -172,7 +174,6 @@ def test_no_evaluation_reason_enum_label_persists(
         query_location_input="Denver, CO",
         jurisdiction_id=JurisdictionId(uuid.UUID(int=0)),
         verdict=NotCovered(),
-        citations=(),
         retrieved_source_urls=frozenset(),
         recommended_action="No conclusive rule.",
         prompt_version="no_evaluation",
@@ -219,13 +220,14 @@ def test_duplicate_id_raises_duplicate_aggregate_error(
         query_text="Different query",
         query_location_input="Denver, CO",
         jurisdiction_id=jid,
-        verdict=Accepted(),
-        citations=(
-            Citation(
-                title="Source",
-                url="https://example.gov/recycling",
-                quote=None,
-            ),
+        verdict=Accepted(
+            citations=(
+                Citation(
+                    title="Source",
+                    url="https://example.gov/recycling",
+                    quote=None,
+                ),
+            )
         ),
         retrieved_source_urls=frozenset({"https://example.gov/recycling"}),
         recommended_action="action",

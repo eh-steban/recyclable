@@ -34,7 +34,7 @@ from src.domain.retrieval.item_verdict import NotCovered
 from src.domain.retrieval.location_resolver import resolve_location
 from src.domain.retrieval.query import Query
 from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID
-from src.domain.retrieval.retrieval_service import RetrievalService
+from src.domain.retrieval.retrieval_service_port import RetrievalServicePort
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def _make_record(
     """Translate EvaluatedAnswer | NoEvaluation into an AnswerAuditRecord.
 
     EvaluatedAnswer -> outcome_kind='evaluated', no_evaluation_reason=None.
-    NoEvaluation   -> verdict=NotCovered(), citations=(),
+    NoEvaluation   -> verdict=NotCovered(),
                       no_evaluation_reason=outcome.reason.
 
     The NotCovered sentinel makes the construction-time validator pass
@@ -83,7 +83,6 @@ def _make_record(
             query_location_input=command.location_input,
             jurisdiction_id=jurisdiction_id,
             verdict=outcome.verdict,
-            citations=outcome.citations,
             retrieved_source_urls=outcome.retrieved_source_urls,
             recommended_action=outcome.recommended_action,
             prompt_version="ask_compose_v1",
@@ -99,7 +98,6 @@ def _make_record(
             query_location_input=command.location_input,
             jurisdiction_id=jurisdiction_id,
             verdict=NotCovered(),
-            citations=(),
             retrieved_source_urls=frozenset(),
             recommended_action=outcome.recommended_action,
             prompt_version=_NO_EVAL_PROMPT_VERSION,
@@ -125,7 +123,7 @@ class AnswerQuery:
 
     def __init__(
         self,
-        retrieval_service: RetrievalService,
+        retrieval_service: RetrievalServicePort,
         audit_repo: AnswerAuditRecordRepo,
         jurisdiction_repo: JurisdictionRepo,
     ) -> None:

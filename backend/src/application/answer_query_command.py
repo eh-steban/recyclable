@@ -11,7 +11,7 @@ from dataclasses import dataclass
 class AnswerQueryCommand:
     """Command object for the AnswerQuery use case.
 
-    query_text: the raw user question (max 500 chars, enforced by
+    query_text: the raw user question (max 150 chars, enforced by
     the HTTP layer before the command is constructed).
     location_input: the raw user location string.
     """

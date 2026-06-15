@@ -1,10 +1,15 @@
 """ItemVerdict sum type and its variants.
 
 The domain verdict produced by the LLM and validated by GroundingValidator.
+Citations are carried by the definitive variants (Accepted, Refused,
+Conflicted). NotCovered structurally carries no citations -- use
+citations_of() for a uniform accessor.
 """
 
 from dataclasses import dataclass, field
-from typing import cast
+from typing import assert_never, cast
+
+from src.domain.retrieval.citation import Citation
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,9 +19,12 @@ class Accepted:
     conditions is an ordered list of prerequisite requirements (e.g. "Empty
     and rinse"). When non-empty, the wire layer renders
     short_answer = 'conditional'.
+
+    citations: sources that support the verdict (INV-PROD-001).
     """
 
     conditions: tuple[str, ...] = field(default_factory=tuple)
+    citations: tuple[Citation, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         # Runtime boundary guard: cast(object, ...) keeps this a real check
@@ -25,6 +33,9 @@ class Accepted:
         if not isinstance(cast(object, self.conditions), tuple):
             kind = type(self.conditions).__name__
             raise TypeError(f"Accepted.conditions must be a tuple, got {kind}")
+        if not isinstance(cast(object, self.citations), tuple):
+            kind = type(self.citations).__name__
+            raise TypeError(f"Accepted.citations must be a tuple, got {kind}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +46,12 @@ class Refused:
     required by INV-PROD-001.
     """
 
-    pass
+    citations: tuple[Citation, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if not isinstance(cast(object, self.citations), tuple):
+            kind = type(self.citations).__name__
+            raise TypeError(f"Refused.citations must be a tuple, got {kind}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +60,7 @@ class NotCovered:
 
     Maps to short_answer = 'unknown'. No Anthropic call is made;
     the application service produces this without consulting the LLM.
+    Structurally carries no citations.
     """
 
     pass
@@ -57,7 +74,12 @@ class Conflicted:
     (INV-PROD-001).
     """
 
-    pass
+    citations: tuple[Citation, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if not isinstance(cast(object, self.citations), tuple):
+            kind = type(self.citations).__name__
+            raise TypeError(f"Conflicted.citations must be a tuple, got {kind}")
 
 
 #: The ItemVerdict sum type.
@@ -72,3 +94,14 @@ def is_definitive(verdict: ItemVerdict) -> bool:
     exists and therefore no citation is possible.
     """
     return isinstance(verdict, (Accepted, Refused, Conflicted))
+
+
+def citations_of(verdict: ItemVerdict) -> tuple[Citation, ...]:
+    """Return the verdict's citations, or () for NotCovered."""
+    match verdict:
+        case Accepted() | Refused() | Conflicted():
+            return verdict.citations
+        case NotCovered():
+            return ()
+        case _ as unreachable:  # pyright: ignore[reportUnnecessaryComparison]
+            assert_never(unreachable)

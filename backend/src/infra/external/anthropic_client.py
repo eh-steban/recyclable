@@ -238,14 +238,6 @@ class AnthropicClient:
             confidence: str = payload.get("confidence", "low")
             citations_raw: list[Any] = payload.get("citations", [])
 
-            verdict = self._parse_verdict(verdict_str, payload)
-            if verdict is None:
-                logger.warning(
-                    "ask: model emitted non-grounded verdict %r", verdict_str
-                )
-                return NoEvaluation(
-                    reason=NoEvaluationReason.VALIDATOR_REJECTED
-                )
             citations = tuple(
                 Citation(
                     title=c.get("title", ""),
@@ -256,9 +248,17 @@ class AnthropicClient:
                 if c.get("url")
             )
 
+            verdict = self._parse_verdict(verdict_str, payload, citations)
+            if verdict is None:
+                logger.warning(
+                    "ask: model emitted non-grounded verdict %r", verdict_str
+                )
+                return NoEvaluation(
+                    reason=NoEvaluationReason.VALIDATOR_REJECTED
+                )
+
             return EvaluatedAnswer(
                 verdict=verdict,
-                citations=citations,
                 recommended_action=recommended_action,
                 confidence=confidence,
                 # Empty here: the LLM port produces a candidate and does not
@@ -281,7 +281,9 @@ class AnthropicClient:
 
     @staticmethod
     def _parse_verdict(
-        verdict_str: str, payload: dict[str, Any]
+        verdict_str: str,
+        payload: dict[str, Any],
+        citations: tuple[Citation, ...],
     ) -> Accepted | Refused | None:
         """Map a wire verdict string to a grounded ItemVerdict, or None.
 
@@ -291,9 +293,9 @@ class AnthropicClient:
         """
         conditions = payload.get("conditions", [])
         if verdict_str == "accepted":
-            return Accepted(conditions=tuple(conditions))
+            return Accepted(conditions=tuple(conditions), citations=citations)
         if verdict_str == "refused":
-            return Refused()
+            return Refused(citations=citations)
         return None
 
     # ------------------------------------------------------------------

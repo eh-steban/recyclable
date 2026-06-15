@@ -105,8 +105,8 @@ def test_ask_parses_fenced_json(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert isinstance(result, EvaluatedAnswer)
     assert isinstance(result.verdict, Accepted)
-    assert len(result.citations) == 1
-    assert result.citations[0].url == "https://denvergov.org/recycling"
+    assert len(result.verdict.citations) == 1
+    assert result.verdict.citations[0].url == "https://denvergov.org/recycling"
 
 
 def test_classify_still_parses_bare_json_array(

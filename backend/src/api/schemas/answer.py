@@ -21,7 +21,7 @@ class ErrorEnvelope(BaseModel):
       { "error": "<machine_code>" }
 
     Known codes per answer.md § Known error codes:
-      query_too_long  -- 400, POST /ask, query > 500 chars
+      query_too_long  -- 400, POST /ask, query > 150 chars
       not_found       -- 404, page routes, slug miss
       internal_error  -- 500, all routes, unhandled server error
     """
@@ -77,7 +77,7 @@ class AskRequest(BaseModel):
 
     query: str = Field(
         ...,
-        description="Free-text user question, max 500 chars",
+        description="Free-text user question, max 150 chars",
     )
     location: str = Field(
         ...,

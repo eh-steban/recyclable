@@ -24,6 +24,7 @@ from src.domain.knowledge_base.material_repo import MaterialRepo
 from src.domain.knowledge_base.rule_repo import RuleRepo
 from src.domain.knowledge_base.source_repo import SourceRepo
 from src.domain.retrieval.retrieval_service import RetrievalService
+from src.domain.retrieval.retrieval_service_port import RetrievalServicePort
 from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
 from src.infra.db.repos.jurisdiction_repo import PgJurisdictionRepo
 from src.infra.db.repos.material_alias_search import PgMaterialAliasSearch
@@ -106,7 +107,7 @@ def get_retrieval_service(
     rule_repo: RuleRepo = Depends(get_rule_repo),
     source_repo: SourceRepo = Depends(get_source_repo),
     anthropic: AnthropicClient = Depends(get_anthropic_client),
-) -> RetrievalService:
+) -> RetrievalServicePort:
     return RetrievalService(
         material_normalizer=normalizer,
         rule_repo=rule_repo,
@@ -121,7 +122,7 @@ def get_retrieval_service(
 
 
 def get_answer_query(
-    retrieval_service: RetrievalService = Depends(get_retrieval_service),
+    retrieval_service: RetrievalServicePort = Depends(get_retrieval_service),
     audit_repo: AnswerAuditRecordRepo = Depends(get_audit_repo),
     jurisdiction_repo: JurisdictionRepo = Depends(get_jurisdiction_repo),
 ) -> AnswerQuery:

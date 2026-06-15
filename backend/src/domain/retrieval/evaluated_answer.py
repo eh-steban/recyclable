@@ -7,7 +7,6 @@ The application layer maps them to the wire Answer shape.
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.item_verdict import ItemVerdict
 
 # ---------------------------------------------------------------------------
@@ -20,8 +19,7 @@ class EvaluatedAnswer:
     """A grounded answer produced by the LLM and validated.
 
     verdict: the domain verdict (Accepted | Refused | NotCovered | Conflicted).
-    citations: sources that support the verdict. Non-empty for definitive
-               verdicts per INV-PROD-001.
+             Citations are carried by the verdict itself (INV-PROD-001).
     recommended_action: short actionable text (<= 500 characters on wire).
     retrieved_source_urls: the grounding allow-list (INV-LLM-002) -- the URL
                set behind the retrieved rules, of which citations must be a
@@ -30,7 +28,6 @@ class EvaluatedAnswer:
     """
 
     verdict: ItemVerdict
-    citations: tuple[Citation, ...]
     recommended_action: str
     confidence: str  # 'high' | 'medium' | 'low'
     retrieved_source_urls: frozenset[str]

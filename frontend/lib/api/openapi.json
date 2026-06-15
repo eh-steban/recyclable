@@ -8,7 +8,7 @@
     "/ask": {
       "post": {
         "summary": "Ask",
-        "description": "Answer a recycling question grounded in jurisdiction rules.\n\nReturns HTTP 200 for all retrieval outcomes including refusals.\nReturns HTTP 400 with error='query_too_long' when query exceeds\n500 characters.",
+        "description": "Answer a recycling question grounded in jurisdiction rules.\n\nReturns HTTP 200 for all retrieval outcomes including refusals.\nReturns HTTP 400 with error='query_too_long' when query exceeds\n150 characters.",
         "operationId": "ask_ask_post",
         "requestBody": {
           "content": {
@@ -32,7 +32,7 @@
             }
           },
           "400": {
-            "description": "query_too_long -- query exceeds 500 characters",
+            "description": "query_too_long -- query exceeds 150 characters",
             "content": {
               "application/json": {
                 "schema": {
@@ -282,7 +282,7 @@
           "query": {
             "type": "string",
             "title": "Query",
-            "description": "Free-text user question, max 500 chars"
+            "description": "Free-text user question, max 150 chars"
           },
           "location": {
             "type": "string",
@@ -340,7 +340,7 @@
           "error"
         ],
         "title": "ErrorEnvelope",
-        "description": "Typed error envelope for application-level errors.\n\nAll non-2xx application errors use this shape:\n  { \"error\": \"<machine_code>\" }\n\nKnown codes per answer.md § Known error codes:\n  query_too_long  -- 400, POST /ask, query > 500 chars\n  not_found       -- 404, page routes, slug miss\n  internal_error  -- 500, all routes, unhandled server error"
+        "description": "Typed error envelope for application-level errors.\n\nAll non-2xx application errors use this shape:\n  { \"error\": \"<machine_code>\" }\n\nKnown codes per answer.md § Known error codes:\n  query_too_long  -- 400, POST /ask, query > 150 chars\n  not_found       -- 404, page routes, slug miss\n  internal_error  -- 500, all routes, unhandled server error"
       },
       "FacilityWire": {
         "properties": {

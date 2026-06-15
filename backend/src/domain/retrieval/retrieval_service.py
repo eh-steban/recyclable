@@ -172,7 +172,6 @@ class RetrievalService:
 
         violations = self._grounding_validator.validate(
             llm_result.verdict,
-            list(llm_result.citations),
             retrieved_source_urls,
         )
         if violations:

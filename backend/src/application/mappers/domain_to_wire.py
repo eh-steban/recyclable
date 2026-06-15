@@ -32,6 +32,7 @@ from src.domain.retrieval.item_verdict import (
     ItemVerdict,
     NotCovered,
     Refused,
+    citations_of,
 )
 
 #: Wire cap on recommended_action length (answer.md § recommended_action).
@@ -115,7 +116,7 @@ def evaluated_answer_to_wire(
 
     citations = [
         CitationWire(title=c.title, url=c.url, quote=c.quote)
-        for c in answer.citations
+        for c in citations_of(answer.verdict)
     ]
 
     return Answer(
