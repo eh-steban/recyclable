@@ -1,20 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MaterialRow } from "@/components/material-row";
-import type { MaterialSummary } from "@/lib/api";
+import { makeMaterialSummary } from "@/tests/fixtures/materials";
+import { makeCitation, DENVER_RECYCLING_URL } from "@/tests/fixtures/citations";
 
-const aluminumCans: MaterialSummary = {
-  id: "00000000-0000-0000-0000-000000000001",
-  slug: "aluminum-cans",
+const aluminumCans = makeMaterialSummary({
   canonicalName: "Aluminum Cans",
   acceptedStatus: "accepted",
   needsPreparation: false,
-  citation: {
+  citation: makeCitation({
     title: "Denver Recycling -- What to Recycle",
-    url: "https://www.denvergov.org/recycling",
+    url: DENVER_RECYCLING_URL,
     quote: null,
-  },
-};
+  }),
+});
 
 const HREF = "/recycling/colorado/denver/aluminum-cans";
 
@@ -70,16 +69,13 @@ describe("MaterialRow", () => {
   });
 
   it("shows prep-needed badge when needsPreparation is true", () => {
-    const prepMaterial: MaterialSummary = {
-      ...aluminumCans,
-      needsPreparation: true,
-    };
+    const prepMaterial = { ...aluminumCans, needsPreparation: true };
     render(<MaterialRow material={prepMaterial} href={HREF} />);
     expect(screen.getByText("prep needed")).toBeInTheDocument();
   });
 
   it("renders rejected status with correct badge text", () => {
-    const rejectedMaterial: MaterialSummary = {
+    const rejectedMaterial = {
       ...aluminumCans,
       canonicalName: "Plastic Bags",
       slug: "plastic-bags",
@@ -96,7 +92,7 @@ describe("MaterialRow", () => {
   });
 
   it("renders conditional status badge", () => {
-    const conditionalMaterial: MaterialSummary = {
+    const conditionalMaterial = {
       ...aluminumCans,
       canonicalName: "Motor Oil",
       slug: "motor-oil",

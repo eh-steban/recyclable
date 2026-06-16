@@ -1,33 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AnswerCard } from "@/components/answer-card";
-import type { Answer } from "@/lib/api";
-
-const CITATION = {
-  title: "Denver Recycling Guide",
-  url: "https://www.denvergov.org/recycling",
-  quote: "Aluminum cans are accepted curbside.",
-};
-
-function makeAnswer(overrides: Partial<Answer> = {}): Answer {
-  return {
-    auditRecordId: "00000000-0000-0000-0000-000000000001",
-    shortAnswer: "yes",
-    recommendedAction: "Place in your blue recycling cart.",
-    preparationSteps: [],
-    doNotDo: [],
-    citations: [CITATION],
-    confidence: "high",
-    clarifyingQuestion: null,
-    refusalReason: null,
-    jurisdiction: {
-      id: "00000000-0000-0000-0000-000000000002",
-      name: "Denver, CO",
-    },
-    dropoffOptions: [],
-    ...overrides,
-  };
-}
+import { makeAnswer } from "@/tests/fixtures/answers";
+import { makeCitation, DENVER_RECYCLING_URL } from "@/tests/fixtures/citations";
 
 describe("AnswerCard -- short-answer badge", () => {
   it("renders yes badge for yes short_answer", () => {
@@ -52,10 +27,6 @@ describe("AnswerCard -- short-answer badge", () => {
           shortAnswer: "unknown",
           refusalReason: "no_evidence",
           citations: [],
-          jurisdiction: {
-            id: "00000000-0000-0000-0000-000000000002",
-            name: "Denver, CO",
-          },
         })}
       />,
     );
@@ -65,7 +36,13 @@ describe("AnswerCard -- short-answer badge", () => {
 
 describe("AnswerCard -- recommended action", () => {
   it("renders recommended_action text", () => {
-    render(<AnswerCard answer={makeAnswer()} />);
+    render(
+      <AnswerCard
+        answer={makeAnswer({
+          recommendedAction: "Place in your blue recycling cart.",
+        })}
+      />,
+    );
     expect(
       screen.getByText("Place in your blue recycling cart."),
     ).toBeInTheDocument();
@@ -111,7 +88,18 @@ describe("AnswerCard -- do_not_do hidden when empty", () => {
 
 describe("AnswerCard -- citations", () => {
   it("renders a citation link with title and url", () => {
-    render(<AnswerCard answer={makeAnswer()} />);
+    render(
+      <AnswerCard
+        answer={makeAnswer({
+          citations: [
+            makeCitation({
+              title: "Denver Recycling Guide",
+              url: DENVER_RECYCLING_URL,
+            }),
+          ],
+        })}
+      />,
+    );
     const link = screen.getByRole("link", { name: "Denver Recycling Guide" });
     expect(link).toHaveAttribute("href", "https://www.denvergov.org/recycling");
     expect(link).toHaveAttribute("target", "_blank");
@@ -119,7 +107,15 @@ describe("AnswerCard -- citations", () => {
   });
 
   it("renders a blockquote when citation has a quote", () => {
-    render(<AnswerCard answer={makeAnswer()} />);
+    render(
+      <AnswerCard
+        answer={makeAnswer({
+          citations: [
+            makeCitation({ quote: "Aluminum cans are accepted curbside." }),
+          ],
+        })}
+      />,
+    );
     const blockquote = screen.getByRole("blockquote");
     expect(blockquote).toHaveTextContent(
       "Aluminum cans are accepted curbside.",
@@ -219,10 +215,6 @@ describe("AnswerCard -- no_evidence refusal", () => {
     clarifyingQuestion: null,
     citations: [],
     recommendedAction: "",
-    jurisdiction: {
-      id: "00000000-0000-0000-0000-000000000002",
-      name: "Denver, CO",
-    },
   });
 
   it("renders fallback refusal text (INV-PROD-001)", () => {

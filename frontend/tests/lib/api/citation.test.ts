@@ -1,17 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { translateCitation } from "@/lib/api/citation";
-
-function makeWireCitation(quote?: string | null) {
-  return {
-    title: "Denver Recycling",
-    url: "https://www.denvergov.org/recycling",
-    quote: quote,
-  };
-}
+import {
+  makeWireCitation,
+  DENVER_RECYCLING_URL,
+} from "@/tests/fixtures/citations";
 
 describe("translateCitation quote handling", () => {
   it("preserves null quote as null (not undefined or the string 'null')", () => {
-    const wire = makeWireCitation(null);
+    const wire = makeWireCitation({ quote: null });
     const citation = translateCitation(wire);
 
     expect(citation.quote).toBeNull();
@@ -20,13 +16,19 @@ describe("translateCitation quote handling", () => {
   });
 
   it("preserves a non-null quote string", () => {
-    const wire = makeWireCitation("Aluminum cans are accepted curbside.");
+    const wire = makeWireCitation({
+      quote: "Aluminum cans are accepted curbside.",
+    });
     const citation = translateCitation(wire);
     expect(citation.quote).toBe("Aluminum cans are accepted curbside.");
   });
 
   it("passes through title and url fields", () => {
-    const wire = makeWireCitation(null);
+    const wire = makeWireCitation({
+      title: "Denver Recycling",
+      url: DENVER_RECYCLING_URL,
+      quote: null,
+    });
     const citation = translateCitation(wire);
     expect(citation.title).toBe("Denver Recycling");
     expect(citation.url).toBe("https://www.denvergov.org/recycling");
