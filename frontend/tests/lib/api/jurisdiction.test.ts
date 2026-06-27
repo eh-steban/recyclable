@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { translateJurisdictionPage, DENVER_SLUG } from "@/lib/api/jurisdiction";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockGET } = vi.hoisted(() => ({ mockGET: vi.fn() }));
+vi.mock("@/lib/api/client", () => ({
+  apiClient: { GET: mockGET },
+}));
+
+import {
+  fetchJurisdictionPage,
+  translateJurisdictionPage,
+  DENVER_SLUG,
+} from "@/lib/api/jurisdiction";
 
 function makeWireJurisdiction() {
   return {
@@ -71,5 +81,71 @@ describe("translateJurisdictionPage", () => {
 describe("DENVER_SLUG", () => {
   it("equals the reconciled slug 'denver-co-us'", () => {
     expect(DENVER_SLUG).toBe("denver-co-us");
+  });
+});
+
+// -- fetchJurisdictionPage ----------------------------------------------------
+
+// Guards INV-OPS-006.
+describe("fetchJurisdictionPage", () => {
+  beforeEach(() => {
+    mockGET.mockReset();
+  });
+
+  it("returns the translated page on a 200 response", async () => {
+    mockGET.mockResolvedValue({
+      data: {
+        jurisdiction: makeWireJurisdiction(),
+        materials: [makeWireMaterialSummary()],
+      },
+      error: undefined,
+      response: { ok: true, status: 200 },
+    });
+
+    const page = await fetchJurisdictionPage("denver-co-us");
+
+    expect(page?.jurisdiction.slug).toBe("denver-co-us");
+  });
+
+  it("returns null on a 404 (jurisdiction genuinely absent)", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: { detail: "not found" },
+      response: { ok: false, status: 404 },
+    });
+
+    expect(await fetchJurisdictionPage("atlantis")).toBeNull();
+  });
+
+  it("throws on a 5xx so the build fails instead of caching a false 404", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: { detail: "boom" },
+      response: { ok: false, status: 503 },
+    });
+
+    await expect(fetchJurisdictionPage("denver-co-us")).rejects.toThrow(
+      /HTTP 503/,
+    );
+  });
+
+  it("throws when the response is ok but the body is missing", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      response: { ok: true, status: 200 },
+    });
+
+    await expect(fetchJurisdictionPage("denver-co-us")).rejects.toThrow(
+      /HTTP 200/,
+    );
+  });
+
+  it("propagates a network failure so the build fails", async () => {
+    mockGET.mockRejectedValue(new TypeError("Network request failed"));
+
+    await expect(fetchJurisdictionPage("denver-co-us")).rejects.toThrow(
+      "Network request failed",
+    );
   });
 });

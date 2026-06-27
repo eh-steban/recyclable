@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { translateMaterialPage } from "@/lib/api/material";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockGET } = vi.hoisted(() => ({ mockGET: vi.fn() }));
+vi.mock("@/lib/api/client", () => ({
+  apiClient: { GET: mockGET },
+}));
+
+import { fetchMaterialPage, translateMaterialPage } from "@/lib/api/material";
 
 function makeWireJurisdiction() {
   return {
@@ -87,5 +93,73 @@ describe("translateMaterialPage", () => {
     };
     const page = translateMaterialPage(wire);
     expect(page.citations).toHaveLength(0);
+  });
+});
+
+// -- fetchMaterialPage --------------------------------------------------------
+
+// Guards INV-OPS-006.
+describe("fetchMaterialPage", () => {
+  beforeEach(() => {
+    mockGET.mockReset();
+  });
+
+  it("returns the translated page on a 200 response", async () => {
+    mockGET.mockResolvedValue({
+      data: {
+        jurisdiction: makeWireJurisdiction(),
+        material: makeWireMaterialDetail(),
+        rule: makeWireRule(),
+        citations: [],
+      },
+      error: undefined,
+      response: { ok: true, status: 200 },
+    });
+
+    const page = await fetchMaterialPage("denver-co-us", "aluminum-cans");
+
+    expect(page?.material.slug).toBe("aluminum-cans");
+  });
+
+  it("returns null on a 404 (material genuinely absent)", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: { detail: "not found" },
+      response: { ok: false, status: 404 },
+    });
+
+    expect(await fetchMaterialPage("denver-co-us", "unobtainium")).toBeNull();
+  });
+
+  it("throws on a 5xx so the build fails instead of caching a false 404", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: { detail: "boom" },
+      response: { ok: false, status: 500 },
+    });
+
+    await expect(
+      fetchMaterialPage("denver-co-us", "aluminum-cans"),
+    ).rejects.toThrow(/HTTP 500/);
+  });
+
+  it("throws when the response is ok but the body is missing", async () => {
+    mockGET.mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      response: { ok: true, status: 200 },
+    });
+
+    await expect(
+      fetchMaterialPage("denver-co-us", "aluminum-cans"),
+    ).rejects.toThrow(/HTTP 200/);
+  });
+
+  it("propagates a network failure so the build fails", async () => {
+    mockGET.mockRejectedValue(new TypeError("Network request failed"));
+
+    await expect(
+      fetchMaterialPage("denver-co-us", "aluminum-cans"),
+    ).rejects.toThrow("Network request failed");
   });
 });
