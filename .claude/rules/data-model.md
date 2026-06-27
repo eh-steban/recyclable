@@ -161,6 +161,7 @@ unique. Only one active rule per (jurisdiction, material).
 | `status` | text | `draft` \| `pending_review` \| `approved` \| `rejected` |
 | `reviewer_id` | text null | |
 | `prompt_name`, `prompt_version`, `model_id` | as above | |
+| `trace_id` | uuid FK | Run-trace for this ingestion run |
 | `created_at`, `decided_at` | timestamptz | |
 
 ### `regression_cases`
