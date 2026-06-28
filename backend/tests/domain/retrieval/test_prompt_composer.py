@@ -9,6 +9,8 @@ block is rendered with the exact source URL the model must cite back
 
 import uuid
 
+from syrupy.assertion import SnapshotAssertion
+
 from src.domain.knowledge_base.rule import AcceptedStatus, Disposition
 from src.domain.knowledge_base.source import SourceId
 from src.domain.retrieval.prompt_composer import (
@@ -157,3 +159,32 @@ class TestFormatRuleContext:
     def test_empty_rules_renders_none_marker(self) -> None:
         block = format_rule_context([], {})
         assert "none" in block.lower()
+
+
+class TestAskComposeV1Golden:
+    def test_golden(self, snapshot: SnapshotAssertion) -> None:
+        """Snapshots system_prompt and user turn (INV-LLM-002, INV-LLM-004).
+
+        Supplements the substring asserts: catches any GROUNDING_CONTRACT or
+        rendering change the substring checks would miss.
+        """
+        source_id = SourceId(uuid.UUID("00000000-0000-0000-0000-000000000001"))
+        rule = make_rule(
+            source_document_id=source_id,
+            disposition=Disposition.CURBSIDE_RECYCLE,
+            accepted_status=AcceptedStatus.ACCEPTED,
+            source_quote="Aluminum beverage cans are accepted curbside.",
+        )
+        source = make_source_document(
+            id=source_id,
+            url="https://denvergov.org/recycling/accepted",
+            title="Denver Accepted-for-Recycling",
+        )
+        query = Query(
+            text="Can I recycle aluminum cans?", location_input="Denver"
+        )
+        rule_context = format_rule_context([rule], {source_id: source})
+        prompt = ask_compose_v1(query, rule_context=rule_context)
+
+        assert prompt.system_prompt == snapshot(name="system_prompt")
+        assert prompt.messages[0]["content"] == snapshot(name="user_turn")
