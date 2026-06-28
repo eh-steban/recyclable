@@ -28,17 +28,6 @@ _TRUNCATE_TABLES = [
 
 
 @pytest.fixture()
-def db_session(db_engine: Engine) -> Generator[Session]:
-    """Yield an open Session for the duration of one test.
-
-    The session is NOT committed by this fixture -- tests that need to
-    commit do so explicitly (e.g. the idempotency test).
-    """
-    with Session(db_engine) as session:
-        yield session
-
-
-@pytest.fixture()
 def clean_db(db_engine: Engine) -> Generator[None]:
     """Truncate all seed tables before (and after) each test."""
     with Session(db_engine) as session, session.begin():

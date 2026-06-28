@@ -105,6 +105,41 @@ pytest -p randomly --randomly-seed=<N>
 pytest -p randomly --randomly-seed=last
 ```
 
+## Snapshot testing conventions
+
+### When to reach for which assertion style
+
+**Named asserts** are the default -- properties, roundtrips, scalars, and
+LLM outcomes. A named assert states intent directly; a golden hides it.
+Do not convert these to snapshots. Most tests (~190 of 213) belong here.
+
+**`dirty-equals`** inline matchers (`IsUUID`, `IsNow`, etc.) suit
+moderate-sized objects that have a few volatile scalars (an id, a
+timestamp) amid otherwise-stable structure. Intent stays inline without
+an amber file. When ids are pinned to deterministic sentinel values,
+there is no volatile scalar; prefer a plain named assert or a golden.
+
+**`syrupy` goldens** apply only to large or text-heavy artifacts:
+full nested service wires, composed LLM prompts. The value is catching
+unintended drift across a big surface, not asserting a single property.
+
+### Gate and regeneration
+
+The gate must run the whole suite, unfiltered, without `--snapshot-update`.
+Orphan-snapshot detection only fires on an unfiltered run; a `-k`- or
+path-filtered run silently tolerates dead `.ambr` entries.
+
+`--snapshot-update` is a deliberate, reviewed step -- it must never be
+part of the gate. A gate that includes it rewrites every stale snapshot
+and turns every broken golden into a pass.
+
+### Goldens supplement named invariant asserts
+
+A syrupy golden does not replace named asserts that pin a specific
+invariant. The `INV-LLM` substring asserts, and any other named asserts
+bearing an invariant, stay even when a golden covers the same output.
+The golden catches broad drift; the named assert documents the invariant.
+
 ## Domain tests
 
 Unit test all domain entities, value objects, and domain services:

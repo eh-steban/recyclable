@@ -54,6 +54,14 @@ repos:
         files: ^backend/.*\.py$
         pass_filenames: false
 
+      - id: comment-review
+        name: comment-reviewer ran against the final diff
+        entry: bin/check-comment-review
+        language: script
+        stages: [pre-commit]
+        always_run: true
+        pass_filenames: false
+
       - id: check-commit-msg
         name: project commit message rules
         entry: bin/check-commit-msg

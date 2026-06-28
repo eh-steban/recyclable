@@ -1,0 +1,36 @@
+# serializer version: 1
+# name: TestGetMaterialPageGolden.test_golden[material_page_wire]
+  dict({
+    'citations': list([
+      dict({
+        'quote': 'Cardboard is accepted curbside when flattened.',
+        'title': 'Denver Accepted-for-Recycling',
+        'url': 'https://denvergov.org/recycling/accepted',
+      }),
+    ]),
+    'jurisdiction': dict({
+      'id': '00000000-0000-0000-0000-000000000001',
+      'name': 'City and County of Denver',
+      'slug': 'denver-co-us',
+    }),
+    'material': dict({
+      'canonical_name': 'Cardboard',
+      'id': '00000000-0000-0000-0000-000000000002',
+      'slug': 'cardboard',
+    }),
+    'rule': dict({
+      'accepted_status': 'accepted',
+      'disposition': 'curbside_recycle',
+      'exceptions': list([
+        'Waxed cardboard is not accepted',
+      ]),
+      'preparation_steps': list([
+        'Flatten the box',
+        'Remove tape and staples',
+      ]),
+      'warnings': list([
+        'Keep dry -- wet cardboard goes to landfill',
+      ]),
+    }),
+  })
+# ---

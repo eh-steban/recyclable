@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AskBox } from "@/components/ask-box/ask-box";
+import { makeOkAnswer } from "@/tests/fixtures/answers";
 
 // Mock the Server Action so tests don't hit the network.
 vi.mock("@/app/ask/actions", () => ({
@@ -10,33 +11,6 @@ vi.mock("@/app/ask/actions", () => ({
 
 import { submitAsk } from "@/app/ask/actions";
 const mockSubmitAsk = vi.mocked(submitAsk);
-
-function makeOkAnswer() {
-  return {
-    ok: true as const,
-    answer: {
-      auditRecordId: "00000000-0000-0000-0000-000000000001",
-      shortAnswer: "yes",
-      recommendedAction: "Place in your blue recycling cart.",
-      preparationSteps: [],
-      doNotDo: [],
-      citations: [
-        {
-          title: "Denver Recycling Guide",
-          url: "https://www.denvergov.org/recycling",
-        },
-      ],
-      confidence: "high",
-      clarifyingQuestion: null,
-      refusalReason: null,
-      jurisdiction: {
-        id: "00000000-0000-0000-0000-000000000002",
-        name: "Denver, CO",
-      },
-      dropoffOptions: [],
-    },
-  };
-}
 
 describe("AskBox -- form renders", () => {
   it("renders location input with placeholder", () => {
@@ -61,7 +35,9 @@ describe("AskBox -- form renders", () => {
 
 describe("AskBox -- happy path renders answer card", () => {
   beforeEach(() => {
-    mockSubmitAsk.mockResolvedValue(makeOkAnswer());
+    mockSubmitAsk.mockResolvedValue(
+      makeOkAnswer({ recommendedAction: "Place in your blue recycling cart." }),
+    );
   });
 
   it("renders AnswerCard with recommended_action after submit", async () => {
@@ -88,10 +64,11 @@ describe("AskBox -- happy path renders answer card", () => {
   });
 
   it("disables button and shows Checking... while in-flight", async () => {
-    let resolve: (v: ReturnType<typeof makeOkAnswer>) => void;
-    const deferred = new Promise<ReturnType<typeof makeOkAnswer>>(
-      (res) => (resolve = res),
-    );
+    const okAnswer = makeOkAnswer({
+      recommendedAction: "Place in your blue recycling cart.",
+    });
+    let resolve: (v: typeof okAnswer) => void;
+    const deferred = new Promise<typeof okAnswer>((res) => (resolve = res));
     mockSubmitAsk.mockReturnValueOnce(deferred);
 
     const user = userEvent.setup({ delay: null });
@@ -110,7 +87,7 @@ describe("AskBox -- happy path renders answer card", () => {
     const btn = screen.getByRole("button", { name: /checking/i });
     expect(btn).toBeDisabled();
 
-    resolve!(makeOkAnswer());
+    resolve!(okAnswer);
     await waitFor(() => {
       expect(
         screen.getByText("Place in your blue recycling cart."),

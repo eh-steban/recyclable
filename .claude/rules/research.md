@@ -1,7 +1,7 @@
 ---
 paths:
   - "private/plans/discovery/**"
-  - "private/plans/spike/**"
+  - "private/plans/spikes/**"
   - "private/plans/fix/**"
   - "private/plans/implementation/**"
   - "private/specs/**"

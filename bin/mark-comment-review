@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Stamp the comment-review marker for the current staged diff. Run AFTER
+# comment-reviewer passes on the final diff and AFTER staging everything
+# to be committed, immediately before `git commit`.
+#
+# The marker (.git/COMMENT_REVIEW_OK, untracked) binds the approval to
+# the staged diff's hash; bin/check-comment-review rejects the commit if
+# that diff changes afterward. See .claude/CLAUDE.md "Review gates".
+
+set -euo pipefail
+
+if git diff --cached --quiet; then
+    echo "mark-comment-review: nothing staged -- stage the commit first." >&2
+    exit 1
+fi
+
+marker="$(git rev-parse --git-dir)/COMMENT_REVIEW_OK"
+hash="$(git diff --cached | git hash-object --stdin)"
+printf '%s\n' "${hash}" > "${marker}"
+echo "comment-review: stamped marker for the current staged diff."

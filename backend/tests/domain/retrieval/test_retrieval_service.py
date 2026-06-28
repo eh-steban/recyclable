@@ -4,23 +4,11 @@ service never calls location resolution itself.
 """
 
 import uuid
-from datetime import UTC, datetime
-from typing import final
 
-from src.domain.knowledge_base.jurisdiction import (
-    Jurisdiction,
-    JurisdictionId,
-    JurisdictionType,
-    SupportedStatus,
-)
-from src.domain.knowledge_base.material import (
-    Material,
-    MaterialCategory,
-    MaterialId,
-)
+from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.material import MaterialId
 from src.domain.knowledge_base.normalization_result import (
     Ambiguous,
-    NormalizationResult,
     Resolved,
     Uncertain,
 )
@@ -38,70 +26,16 @@ from src.domain.retrieval.evaluated_answer import (
     NoEvaluationReason,
 )
 from src.domain.retrieval.item_verdict import Accepted
-from src.domain.retrieval.location_resolver import DENVER_SLUG
 from src.domain.retrieval.query import Query
-from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.domain.retrieval.retrieval_service import RetrievalService
-
-
-def _make_jurisdiction(slug: str = DENVER_SLUG) -> Jurisdiction:
-    return Jurisdiction(
-        id=JurisdictionId(uuid.uuid4()),
-        name="City and County of Denver",
-        slug=slug,
-        type=JurisdictionType.CITY,
-        country="US",
-        supported_status=SupportedStatus.SUPPORTED,
-        created_at=datetime.now(tz=UTC),
-        updated_at=datetime.now(tz=UTC),
-    )
-
-
-def _make_material(slug: str) -> Material:
-    return Material(
-        id=MaterialId(uuid.uuid4()),
-        canonical_name=slug.replace("-", " ").title(),
-        slug=slug,
-        category=MaterialCategory.PLASTIC,
-    )
-
-
-def _make_rule(
-    jurisdiction_id: JurisdictionId,
-    material_id: MaterialId,
-    source_id: SourceId,
-) -> Rule:
-    return Rule(
-        id=RuleId(uuid.uuid4()),
-        jurisdiction_id=jurisdiction_id,
-        material_id=material_id,
-        disposition=Disposition.CURBSIDE_RECYCLE,
-        accepted_status=AcceptedStatus.ACCEPTED,
-        source_document_id=source_id,
-        source_quote="Corrugated cardboard is accepted in purple recycle carts",
-    )
-
-
-def _make_source(source_id: SourceId, url: str) -> SourceDocument:
-    return SourceDocument(
-        id=source_id,
-        jurisdiction_id=JurisdictionId(uuid.uuid4()),
-        url=url,
-        title="Denver Recycling Guidelines",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="...",
-        source_text_hash="hash",
-    )
-
-
-@final
-class _FakeNormalizer:
-    def __init__(self, result: NormalizationResult) -> None:
-        self._result = result
-
-    def normalize(self, query_text: str) -> NormalizationResult:
-        return self._result
+from tests.utils.builders import (
+    make_jurisdiction,
+    make_material,
+    make_rule,
+    make_source_document,
+)
+from tests.utils.fakes.anthropic_client import FakeAnthropicClient
+from tests.utils.fakes.llm import NeverCalledLLM, StubNormalizer
 
 
 class MemRuleRepo:
@@ -159,47 +93,18 @@ class MemSourceRepo:
         raise NotImplementedError("not exercised by these tests")
 
 
-@final
-class _RecordingLLM:
-    def __init__(self) -> None:
-        self.call_count = 0
-
-    def ask(
-        self,
-        messages: list[LLMMessage],
-        system_prompt: str,
-    ):
-        self.call_count += 1
-        raise AssertionError(
-            "RetrievalLLM must not be called on pre-LLM short-circuits"
-        )
-
-
-@final
-class _ConfigurableLLM:
-    def __init__(self, response: EvaluatedAnswer | NoEvaluation) -> None:
-        self._response = response
-
-    def ask(
-        self,
-        messages: list[LLMMessage],
-        system_prompt: str,
-    ) -> EvaluatedAnswer | NoEvaluation:
-        return self._response
-
-
 def _build_service(
     *,
-    normalizer: _FakeNormalizer,
+    normalizer: StubNormalizer,
     rule_repo: MemRuleRepo | None = None,
     source_repo: MemSourceRepo | None = None,
-    llm: _RecordingLLM | _ConfigurableLLM | None = None,
+    llm: NeverCalledLLM | FakeAnthropicClient | None = None,
 ) -> RetrievalService:
     return RetrievalService(
         material_normalizer=normalizer,  # type: ignore[arg-type]
         rule_repo=rule_repo or MemRuleRepo(),
         source_repo=source_repo or MemSourceRepo(),
-        retrieval_llm=llm or _RecordingLLM(),  # type: ignore[arg-type]
+        retrieval_llm=llm or NeverCalledLLM(),  # type: ignore[arg-type]
     )
 
 
@@ -209,9 +114,9 @@ class TestOutOfJurisdiction:
     """
 
     def test_none_jurisdiction_returns_ooj(self) -> None:
-        llm = _RecordingLLM()
+        llm = NeverCalledLLM()
         service = _build_service(
-            normalizer=_FakeNormalizer(Uncertain()),
+            normalizer=StubNormalizer(Uncertain()),
             llm=llm,
         )
 
@@ -226,16 +131,19 @@ class TestOutOfJurisdiction:
 
 class TestAmbiguousMaterialPath:
     def test_returns_no_evaluation_with_ambiguous_material_reason(self) -> None:
-        candidates = (_make_material("pet-bottle"), _make_material("hdpe-jug"))
-        llm = _RecordingLLM()
+        candidates = (
+            make_material(slug="pet-bottle"),
+            make_material(slug="hdpe-jug"),
+        )
+        llm = NeverCalledLLM()
         service = _build_service(
-            normalizer=_FakeNormalizer(Ambiguous(candidates=candidates)),
+            normalizer=StubNormalizer(Ambiguous(candidates=candidates)),
             llm=llm,
         )
 
         result = service.answer(
             Query(text="plastic", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -246,15 +154,15 @@ class TestAmbiguousMaterialPath:
 
 class TestUncertainMaterialPath:
     def test_returns_no_evaluation_with_uncertain_reason(self) -> None:
-        llm = _RecordingLLM()
+        llm = NeverCalledLLM()
         service = _build_service(
-            normalizer=_FakeNormalizer(Uncertain()),
+            normalizer=StubNormalizer(Uncertain()),
             llm=llm,
         )
 
         result = service.answer(
             Query(text="something obscure", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -265,16 +173,16 @@ class TestUncertainMaterialPath:
 
 class TestResolvedMaterialReachesRetrievalStep:
     def test_resolved_proceeds_past_normalizer_step(self) -> None:
-        material = _make_material("cardboard")
-        llm = _RecordingLLM()
+        material = make_material(slug="cardboard")
+        llm = NeverCalledLLM()
         service = _build_service(
-            normalizer=_FakeNormalizer(Resolved(material=material)),
+            normalizer=StubNormalizer(Resolved(material=material)),
             llm=llm,
         )
 
         result = service.answer(
             Query(text="cardboard", location_input="Denver"),
-            _make_jurisdiction(),
+            make_jurisdiction(),
         )
 
         assert isinstance(result, NoEvaluation)
@@ -288,13 +196,17 @@ class TestRetrievedSourceUrlsFromRules:
     """
 
     def test_grounded_citation_url_returns_evaluated_answer(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
         rule_url = "https://denvergov.org/recycling"
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
-        source = _make_source(source_id, rule_url)
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
+        source = make_source_document(id=source_id, url=rule_url)
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(
                 citations=(Citation(title="Denver", url=rule_url),)
@@ -305,10 +217,10 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            material_normalizer=StubNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            retrieval_llm=FakeAnthropicClient(ask_result=llm_answer),  # type: ignore[arg-type]
         )
 
         result = service.answer(
@@ -320,12 +232,18 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.retrieved_source_urls == frozenset({rule_url})
 
     def test_ungrounded_citation_url_returns_validator_rejected(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
-        source = _make_source(source_id, "https://denvergov.org/recycling")
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
+        source = make_source_document(
+            id=source_id, url="https://denvergov.org/recycling"
+        )
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(
                 citations=(
@@ -340,10 +258,10 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            material_normalizer=StubNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            retrieval_llm=FakeAnthropicClient(ask_result=llm_answer),  # type: ignore[arg-type]
         )
 
         result = service.answer(
@@ -354,15 +272,23 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
     def test_multiple_sources_returns_full_retrieved_set(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         sid_a, sid_b = SourceId(uuid.uuid4()), SourceId(uuid.uuid4())
         url_a = "https://denvergov.org/recycling"
         url_b = "https://denvergov.org/guidelines"
 
-        denver = _make_jurisdiction()
+        denver = make_jurisdiction()
         rules = [
-            _make_rule(denver.id, material.id, sid_a),
-            _make_rule(denver.id, material.id, sid_b),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_a,
+            ),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_b,
+            ),
         ]
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(citations=(Citation(title="B", url=url_b),)),
@@ -372,15 +298,15 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            material_normalizer=StubNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=rules),
             source_repo=MemSourceRepo(
                 docs={
-                    sid_a: _make_source(sid_a, url_a),
-                    sid_b: _make_source(sid_b, url_b),
+                    sid_a: make_source_document(id=sid_a, url=url_a),
+                    sid_b: make_source_document(id=sid_b, url=url_b),
                 }
             ),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            retrieval_llm=FakeAnthropicClient(ask_result=llm_answer),  # type: ignore[arg-type]
         )
 
         result = service.answer(
@@ -391,16 +317,24 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.retrieved_source_urls == frozenset({url_a, url_b})
 
     def test_partial_source_repo_miss_excludes_missing_url(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         sid_found = SourceId(uuid.uuid4())
         sid_missing = SourceId(uuid.uuid4())
         found_url = "https://denvergov.org/recycling"
         missing_url = "https://denvergov.org/not-in-repo"
 
-        denver = _make_jurisdiction()
+        denver = make_jurisdiction()
         rules = [
-            _make_rule(denver.id, material.id, sid_found),
-            _make_rule(denver.id, material.id, sid_missing),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_found,
+            ),
+            make_rule(
+                jurisdiction_id=denver.id,
+                material_id=material.id,
+                source_document_id=sid_missing,
+            ),
         ]
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(
@@ -412,12 +346,14 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            material_normalizer=StubNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=rules),
             source_repo=MemSourceRepo(
-                docs={sid_found: _make_source(sid_found, found_url)}
+                docs={
+                    sid_found: make_source_document(id=sid_found, url=found_url)
+                }
             ),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            retrieval_llm=FakeAnthropicClient(ask_result=llm_answer),  # type: ignore[arg-type]
         )
 
         result = service.answer(
@@ -428,11 +364,15 @@ class TestRetrievedSourceUrlsFromRules:
         assert result.reason == NoEvaluationReason.VALIDATOR_REJECTED
 
     def test_source_repo_miss_excludes_url_from_set(self) -> None:
-        material = _make_material("cardboard")
+        material = make_material(slug="cardboard")
         source_id = SourceId(uuid.uuid4())
 
-        denver = _make_jurisdiction()
-        rule = _make_rule(denver.id, material.id, source_id)
+        denver = make_jurisdiction()
+        rule = make_rule(
+            jurisdiction_id=denver.id,
+            material_id=material.id,
+            source_document_id=source_id,
+        )
         llm_answer = EvaluatedAnswer(
             verdict=Accepted(
                 citations=(
@@ -445,10 +385,10 @@ class TestRetrievedSourceUrlsFromRules:
         )
 
         service = RetrievalService(
-            material_normalizer=_FakeNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
+            material_normalizer=StubNormalizer(Resolved(material=material)),  # type: ignore[arg-type]
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={}),
-            retrieval_llm=_ConfigurableLLM(llm_answer),  # type: ignore[arg-type]
+            retrieval_llm=FakeAnthropicClient(ask_result=llm_answer),  # type: ignore[arg-type]
         )
 
         result = service.answer(
@@ -466,23 +406,24 @@ class TestUnknownStatusRule:
     """
 
     def test_unknown_status_returns_no_evidence_without_llm(self) -> None:
-        material = _make_material("mystery-plastic")
+        material = make_material(slug="mystery-plastic")
         source_id = SourceId(uuid.uuid4())
-        denver = _make_jurisdiction()
-        rule = Rule(
-            id=RuleId(uuid.uuid4()),
+        denver = make_jurisdiction()
+        rule = make_rule(
             jurisdiction_id=denver.id,
             material_id=material.id,
+            source_document_id=source_id,
             disposition=Disposition.UNKNOWN,
             accepted_status=AcceptedStatus.UNKNOWN,
-            source_document_id=source_id,
             source_quote="Status of this material is under review.",
         )
-        source = _make_source(source_id, "https://denvergov.org/recycling")
-        llm = _RecordingLLM()
+        source = make_source_document(
+            id=source_id, url="https://denvergov.org/recycling"
+        )
+        llm = NeverCalledLLM()
 
         service = _build_service(
-            normalizer=_FakeNormalizer(Resolved(material=material)),
+            normalizer=StubNormalizer(Resolved(material=material)),
             rule_repo=MemRuleRepo(rules=[rule]),
             source_repo=MemSourceRepo(docs={source_id: source}),
             llm=llm,
@@ -502,7 +443,7 @@ class TestFallbackForValidatorRejection:
 
     def test_returns_validator_rejected_no_evaluation(self) -> None:
         service = _build_service(
-            normalizer=_FakeNormalizer(Uncertain()),
+            normalizer=StubNormalizer(Uncertain()),
         )
         query = Query(text="cardboard", location_input="Denver")
 

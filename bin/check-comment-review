@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Refuse a commit that changes backend/frontend source unless
+# comment-reviewer has been run against that exact diff and stamped via
+# bin/mark-comment-review.
+#
+# Why this exists: comment-reviewer can run and pass, then a later edit
+# (a code-reviewer fix, a docstring tweak) changes comments the gate
+# never saw -- a stale pass. The marker binds approval to the staged
+# diff's hash, so ANY later change to reviewed source invalidates it and
+# blocks the commit until comment review is current again.
+#
+# Scope is deliberately broad: a shell hook cannot reliably tell a
+# docstring-prose edit from ordinary code, so it requires a fresh stamp
+# on any source change rather than guess and miss. Stamping is one
+# command; bypass a genuinely trivial edit (no comment change) with:
+#   SKIP=comment-review git commit ...
+#
+# Invoked by pre-commit at the pre-commit stage; `git diff --cached` is
+# the content being committed. See .claude/CLAUDE.md "Review gates".
+
+set -euo pipefail
+
+marker="$(git rev-parse --git-dir)/COMMENT_REVIEW_OK"
+
+if ! git diff --cached --name-only --diff-filter=ACM \
+    | grep -qE '^(backend|frontend)/.*\.(py|ts|tsx|js|jsx)$'; then
+    exit 0
+fi
+
+current_hash="$(git diff --cached | git hash-object --stdin)"
+
+fail() {
+    {
+        echo "comment-review gate: ${1}"
+        echo ""
+        echo "  This commit changes backend/frontend source. Run"
+        echo "  comment-reviewer against the final diff, then stamp it:"
+        echo "    bin/mark-comment-review"
+        echo ""
+        echo "  Trivial edit with no comment changes? Bypass once:"
+        echo "    SKIP=comment-review git commit ..."
+        echo ""
+        echo "  See .claude/CLAUDE.md \"Review gates\"."
+    } >&2
+    exit 1
+}
+
+[[ -f "${marker}" ]] || fail "no comment-review marker found"
+
+[[ "$(cat "${marker}")" == "${current_hash}" ]] \
+    || fail "marker is stale (reviewed source changed since the last review)"

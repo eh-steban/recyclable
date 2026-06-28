@@ -1,0 +1,36 @@
+# serializer version: 1
+# name: TestGetJurisdictionPageGolden.test_golden[jurisdiction_page_wire]
+  dict({
+    'jurisdiction': dict({
+      'id': '00000000-0000-0000-0000-000000000001',
+      'name': 'City and County of Denver',
+      'slug': 'denver-co-us',
+    }),
+    'materials': list([
+      dict({
+        'accepted_status': 'accepted',
+        'canonical_name': 'Cardboard',
+        'citation': dict({
+          'quote': 'Cardboard is accepted curbside when flattened.',
+          'title': 'Denver Accepted-for-Recycling',
+          'url': 'https://denvergov.org/recycling/accepted',
+        }),
+        'id': '00000000-0000-0000-0000-000000000002',
+        'needs_preparation': True,
+        'slug': 'cardboard',
+      }),
+      dict({
+        'accepted_status': 'conditional',
+        'canonical_name': 'Glass Bottles',
+        'citation': dict({
+          'quote': None,
+          'title': '',
+          'url': '',
+        }),
+        'id': '00000000-0000-0000-0000-000000000003',
+        'needs_preparation': False,
+        'slug': 'glass-bottles',
+      }),
+    ]),
+  })
+# ---

@@ -8,25 +8,21 @@ leaving the DB clean for the next test.
 """
 
 import uuid
-from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
-from src.domain.audit.answer_audit_record import (
-    AnswerAuditRecord,
-    AnswerAuditRecordId,
-)
+from src.domain.audit.answer_audit_record import AnswerAuditRecordId
 from src.domain.exceptions import (
     DuplicateAggregateError,
     RepositoryConcurrencyError,
 )
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
-from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import NoEvaluationReason
 from src.domain.retrieval.item_verdict import Accepted, NotCovered, citations_of
 from src.infra.db.repos.answer_audit_record_repo import PgAnswerAuditRecordRepo
+from tests.utils.builders import make_answer_audit_record
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -52,32 +48,6 @@ def _make_jurisdiction(session: Session) -> JurisdictionId:
     return JurisdictionId(jid)
 
 
-def _make_record(jurisdiction_id: JurisdictionId) -> AnswerAuditRecord:
-    """Build a valid AnswerAuditRecord with one citation."""
-    source_url = "https://example.gov/recycling"
-    return AnswerAuditRecord(
-        id=AnswerAuditRecordId(uuid.uuid4()),
-        query_text="Is cardboard recyclable?",
-        query_location_input="Denver, CO",
-        jurisdiction_id=jurisdiction_id,
-        verdict=Accepted(
-            citations=(
-                Citation(
-                    title="Denver Recycling Guide",
-                    url=source_url,
-                    quote="Cardboard is accepted.",
-                ),
-            )
-        ),
-        retrieved_source_urls=frozenset({source_url}),
-        recommended_action="Place flattened in the blue bin.",
-        prompt_version="ask_compose_v1",
-        model_id="claude-sonnet-4-6",
-        latency_ms=1234,
-        created_at=datetime.now(UTC),
-    )
-
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -86,7 +56,7 @@ def _make_record(jurisdiction_id: JurisdictionId) -> AnswerAuditRecord:
 def test_save_and_find_roundtrip(db_session: Session) -> None:
     """save() then find_by_id() returns an equivalent AnswerAuditRecord."""
     jid = _make_jurisdiction(db_session)
-    record = _make_record(jid)
+    record = make_answer_audit_record(jurisdiction_id=jid)
     repo = PgAnswerAuditRecordRepo(db_session)
     repo.save(record)
 
@@ -125,18 +95,16 @@ def test_save_out_of_jurisdiction_record_persists_as_null(
     row. Regression for the OOJ foreign-key failure.
     """
     ooj = JurisdictionId(uuid.UUID(int=0))
-    record = AnswerAuditRecord(
-        id=AnswerAuditRecordId(uuid.uuid4()),
+    record = make_answer_audit_record(
+        jurisdiction_id=ooj,
         query_text="Can I recycle glass in Aurora?",
         query_location_input="Aurora",
-        jurisdiction_id=ooj,
         verdict=NotCovered(),
         retrieved_source_urls=frozenset(),
         recommended_action="Aurora is not covered yet.",
         prompt_version="no_evaluation",
         model_id="none",
         latency_ms=0,
-        created_at=datetime.now(UTC),
         no_evaluation_reason=NoEvaluationReason.OUT_OF_JURISDICTION,
     )
     repo = PgAnswerAuditRecordRepo(db_session)
@@ -168,18 +136,17 @@ def test_no_evaluation_reason_enum_label_persists(
     each label and read it back from the actual enum column to prove the type
     accepts it -- the ORM/StrEnum declarations alone do not.
     """
-    record = AnswerAuditRecord(
-        id=AnswerAuditRecordId(uuid.uuid4()),
+    record = make_answer_audit_record(
+        jurisdiction_id=JurisdictionId(uuid.UUID(int=0)),
         query_text="Is cardboard recyclable?",
         query_location_input="Denver, CO",
-        jurisdiction_id=JurisdictionId(uuid.UUID(int=0)),
         verdict=NotCovered(),
+        citations=(),
         retrieved_source_urls=frozenset(),
         recommended_action="No conclusive rule.",
         prompt_version="no_evaluation",
         model_id="none",
         latency_ms=0,
-        created_at=datetime.now(UTC),
         no_evaluation_reason=reason,
     )
     repo = PgAnswerAuditRecordRepo(db_session)
@@ -209,33 +176,13 @@ def test_duplicate_id_raises_duplicate_aggregate_error(
     The application layer must never import sqlalchemy.exc.IntegrityError.
     """
     jid = _make_jurisdiction(db_session)
-    record = _make_record(jid)
+    record = make_answer_audit_record(jurisdiction_id=jid)
     repo = PgAnswerAuditRecordRepo(db_session)
     repo.save(record)
     db_session.flush()  # flush to materialise the first insert
 
     # Attempt to insert a second row with the same PK.
-    duplicate = AnswerAuditRecord(
-        id=record.id,  # same id -- PK violation
-        query_text="Different query",
-        query_location_input="Denver, CO",
-        jurisdiction_id=jid,
-        verdict=Accepted(
-            citations=(
-                Citation(
-                    title="Source",
-                    url="https://example.gov/recycling",
-                    quote=None,
-                ),
-            )
-        ),
-        retrieved_source_urls=frozenset({"https://example.gov/recycling"}),
-        recommended_action="action",
-        prompt_version="ask_compose_v1",
-        model_id="claude-sonnet-4-6",
-        latency_ms=100,
-        created_at=datetime.now(UTC),
-    )
+    duplicate = make_answer_audit_record(id=record.id, jurisdiction_id=jid)
     with pytest.raises(DuplicateAggregateError):
         repo.save(duplicate)
 
@@ -269,7 +216,7 @@ def test_closed_session_raises_repository_concurrency_error(
     broken_session = Session(bind=conn)
     repo = PgAnswerAuditRecordRepo(broken_session)
     jid = JurisdictionId(uuid.uuid4())
-    record = _make_record(jid)
+    record = make_answer_audit_record(jurisdiction_id=jid)
 
     try:
         with pytest.raises(RepositoryConcurrencyError):

@@ -32,7 +32,7 @@ from src.domain.retrieval.item_verdict import Accepted
 from src.domain.retrieval.retrieval_llm import LLMMessage
 from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
 from src.main import app
-from tests._fakes.anthropic_client import FakeAnthropicClient
+from tests.utils.fakes.anthropic_client import FakeAnthropicClient
 
 _DENVER_QUERY = "Can I recycle aluminum cans in Denver?"
 

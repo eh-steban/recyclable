@@ -46,6 +46,10 @@ declare -A WT_PORT_VARS=()       # ENV_VAR -> base port
 WT_PORT_STEP=10
 WT_BASE_BRANCH=""                # empty = auto-detect
 WT_ENV_SETUP=""                  # name of a hook fn in .wt.conf
+WT_COPY_FILES=()                 # gitignored files to copy into a new
+                                 # worktree (paths relative to repo root)
+WT_POST_CREATE=""                # shell run inside the new worktree after
+                                 # setup (e.g. uv sync, copy compose override)
 
 [[ -f "${REPO_ROOT}/.wt.conf" ]] && source "${REPO_ROOT}/.wt.conf"
 
@@ -136,6 +140,27 @@ branch_submodules() {
   done < <(submodule_paths)
 }
 
+# Copy gitignored files the working tree needs but git does not track
+# (e.g. .env, backend/.env.test) so a fresh worktree can build and test
+# like the main checkout. Configured via WT_COPY_FILES in .wt.conf.
+# Note: in stack mode, do NOT list the root .env here -- _write_env
+# builds an isolated one with per-worktree compose ports.
+copy_worktree_files() {
+  local dir="$1" f src dst
+  for f in "${WT_COPY_FILES[@]:-}"; do
+    [[ -z "$f" ]] && continue
+    src="${REPO_ROOT}/${f}"
+    dst="${dir}/${f}"
+    if [[ -f "$src" ]]; then
+      mkdir -p "$(dirname "$dst")"
+      cp "$src" "$dst"
+      echo "  copied ${f}"
+    else
+      echo "  skip ${f} (not present in main checkout)"
+    fi
+  done
+}
+
 # --- Commands --------------------------------------------------------
 cmd_create() {
   local name="${1:?Usage: wt create <name> [branch]}"; shift || true
@@ -150,6 +175,7 @@ cmd_create() {
   echo "Worktree: $dir  (branch $branch off $WT_BASE_BRANCH)"
 
   branch_submodules "$dir" "$branch"
+  copy_worktree_files "$dir"
 
   if stack_enabled; then
     local slot; slot="$(next_slot)"
@@ -161,6 +187,12 @@ cmd_create() {
     cmd_start "$name"
   else
     echo "Stack disabled -- git/submodule worktree only."
+  fi
+
+  if [[ -n "$WT_POST_CREATE" ]]; then
+    echo "Post-create setup..."
+    ( cd "$dir" && eval "$WT_POST_CREATE" ) \
+      || echo "Warning: post-create setup failed; finish it manually in $dir"
   fi
 }
 

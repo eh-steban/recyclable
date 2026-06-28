@@ -1,27 +1,10 @@
-"""JurisdictionRepo port (Protocol).
-
-The interface lives in domain/ alongside the aggregate it addresses.
-The implementation lives in infra/db/repos/.
-"""
+"""JurisdictionRepo port (Protocol)."""
 
 from typing import Protocol
 
 from src.domain.knowledge_base.jurisdiction import Jurisdiction, JurisdictionId
+from src.domain.shared.repo import Repo
 
 
-class JurisdictionRepo(Protocol):
-    """Repo port for Jurisdiction aggregate.
-
-    Persistence-oriented style: callers explicitly call save().
-    next_identity() mints a fresh id before construction.
-    """
-
-    def next_identity(self) -> JurisdictionId: ...
-
-    def save(self, jurisdiction: Jurisdiction) -> None: ...
-
-    def find_by_id(
-        self, jurisdiction_id: JurisdictionId
-    ) -> Jurisdiction | None: ...
-
+class JurisdictionRepo(Repo[Jurisdiction, JurisdictionId], Protocol):
     def find_by_slug(self, slug: str) -> Jurisdiction | None: ...

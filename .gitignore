@@ -15,6 +15,11 @@ Thumbs.db
 .mcp.json
 .claude/settings.local.json
 
+# Worktree-only compose override (unpublishes ports; see
+# docker-compose.override.yaml.example). Never committed -- it would
+# unpublish the main checkout's ports too.
+docker-compose.override.yaml
+
 # Logs
 *.log
 logs/

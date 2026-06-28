@@ -171,6 +171,14 @@ Fix issues before reporting done. Quick-fixes (typos, config changes,
 one-line edits) self-review only. For specs and katas, run `spec-writer`
 instead.
 
+A `pre-commit` backstop enforces step 4: a commit touching `backend/` or
+`frontend/` source is rejected unless `bin/mark-comment-review` has
+stamped the current staged diff. After comment-reviewer passes on the
+final diff, stage everything and run `bin/mark-comment-review`, then
+commit. The marker binds to the staged diff's hash, so any later edit
+re-arms the gate. Bypass a genuinely trivial edit (no comment change)
+with `SKIP=comment-review git commit ...`.
+
 ### Context budgets
 
 Full budget reference:

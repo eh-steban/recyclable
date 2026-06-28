@@ -9,17 +9,10 @@ from typing import Protocol
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 from src.domain.knowledge_base.material import MaterialId
 from src.domain.knowledge_base.rule import Rule, RuleId
+from src.domain.shared.repo import Repo
 
 
-class RuleRepo(Protocol):
-    """Repo port for Rule aggregate."""
-
-    def next_identity(self) -> RuleId: ...
-
-    def save(self, rule: Rule) -> None: ...
-
-    def find_by_id(self, rule_id: RuleId) -> Rule | None: ...
-
+class RuleRepo(Repo[Rule, RuleId], Protocol):
     def find_for(
         self,
         jurisdiction_id: JurisdictionId,
@@ -28,8 +21,6 @@ class RuleRepo(Protocol):
         """Return current rules for an exact (jurisdiction, material) tuple.
 
         Returns only rules with superseded_by IS NULL (INV-AUTH-002).
-        Never falls back to neighbouring jurisdictions or related materials
-        (INV-PROD-002).
         """
         ...
 

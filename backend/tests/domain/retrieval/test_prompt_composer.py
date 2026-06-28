@@ -8,57 +8,18 @@ block is rendered with the exact source URL the model must cite back
 """
 
 import uuid
-from datetime import UTC, datetime
 
-from src.domain.knowledge_base.jurisdiction import JurisdictionId
-from src.domain.knowledge_base.material import MaterialId
-from src.domain.knowledge_base.rule import (
-    AcceptedStatus,
-    Disposition,
-    Rule,
-    RuleId,
-)
-from src.domain.knowledge_base.source import SourceDocument, SourceId
+from syrupy.assertion import SnapshotAssertion
+
+from src.domain.knowledge_base.rule import AcceptedStatus, Disposition
+from src.domain.knowledge_base.source import SourceId
 from src.domain.retrieval.prompt_composer import (
     GROUNDING_CONTRACT,
     ask_compose_v1,
     format_rule_context,
 )
 from src.domain.retrieval.query import Query
-
-
-def _make_rule(
-    source_id: SourceId,
-    accepted_status: AcceptedStatus = AcceptedStatus.ACCEPTED,
-    *,
-    exceptions: tuple[str, ...] = (),
-    warnings: tuple[str, ...] = (),
-) -> Rule:
-    return Rule(
-        id=RuleId(uuid.uuid4()),
-        jurisdiction_id=JurisdictionId(uuid.uuid4()),
-        material_id=MaterialId(uuid.uuid4()),
-        disposition=Disposition.CURBSIDE_RECYCLE,
-        accepted_status=accepted_status,
-        source_document_id=source_id,
-        source_quote="Aluminum beverage cans are accepted curbside.",
-        preparation_steps=("Empty and rinse the can",),
-        exceptions=exceptions,
-        warnings=warnings,
-    )
-
-
-def _make_source(source_id: SourceId, url: str) -> SourceDocument:
-    return SourceDocument(
-        id=source_id,
-        jurisdiction_id=JurisdictionId(uuid.uuid4()),
-        url=url,
-        title="Denver Accepted-for-Recycling",
-        authority_level=1,
-        fetched_at=datetime.now(tz=UTC),
-        source_text="Aluminum beverage cans are accepted curbside.",
-        source_text_hash="hash",
-    )
+from tests.utils.builders import make_rule, make_source_document
 
 
 class TestUserTurn:
@@ -153,8 +114,15 @@ class TestFormatRuleContext:
     def test_includes_status_disposition_quote_and_source(self) -> None:
         source_id = SourceId(uuid.uuid4())
         url = "https://denvergov.org/recycling/accepted"
-        rule = _make_rule(source_id)
-        source = _make_source(source_id, url)
+        rule = make_rule(
+            source_document_id=source_id,
+            disposition=Disposition.CURBSIDE_RECYCLE,
+            accepted_status=AcceptedStatus.ACCEPTED,
+            source_quote="Aluminum beverage cans are accepted curbside.",
+        )
+        source = make_source_document(
+            id=source_id, url=url, title="Denver Accepted-for-Recycling"
+        )
 
         block = format_rule_context([rule], {source_id: source})
 
@@ -169,7 +137,7 @@ class TestFormatRuleContext:
         so the model does not fabricate a citation (INV-LLM-002).
         """
         source_id = SourceId(uuid.uuid4())
-        rule = _make_rule(source_id)
+        rule = make_rule(source_document_id=source_id)
 
         block = format_rule_context([rule], {})
 
@@ -180,14 +148,19 @@ class TestFormatRuleContext:
     def test_exceptions_and_warnings_rendered(self) -> None:
         """A rule's exceptions and warnings reach the evidence block."""
         source_id = SourceId(uuid.uuid4())
-        rule = _make_rule(
-            source_id,
+        rule = make_rule(
+            source_document_id=source_id,
             exceptions=("Greasy cans are not accepted",),
             warnings=("Do not crush before recycling",),
         )
 
         block = format_rule_context(
-            [rule], {source_id: _make_source(source_id, "https://x.example")}
+            [rule],
+            {
+                source_id: make_source_document(
+                    id=source_id, url="https://x.example"
+                )
+            },
         )
 
         assert "Greasy cans are not accepted" in block
@@ -196,10 +169,15 @@ class TestFormatRuleContext:
     def test_multiple_rules_render_numbered_blocks(self) -> None:
         """Each retrieved rule gets its own numbered, source-bearing block."""
         sid1, sid2 = SourceId(uuid.uuid4()), SourceId(uuid.uuid4())
-        rules = [_make_rule(sid1), _make_rule(sid2, AcceptedStatus.REJECTED)]
+        rules = [
+            make_rule(source_document_id=sid1),
+            make_rule(
+                source_document_id=sid2, accepted_status=AcceptedStatus.REJECTED
+            ),
+        ]
         sources = {
-            sid1: _make_source(sid1, "https://a.example"),
-            sid2: _make_source(sid2, "https://b.example"),
+            sid1: make_source_document(id=sid1, url="https://a.example"),
+            sid2: make_source_document(id=sid2, url="https://b.example"),
         }
 
         block = format_rule_context(rules, sources)
@@ -212,3 +190,32 @@ class TestFormatRuleContext:
     def test_empty_rules_renders_none_marker(self) -> None:
         block = format_rule_context([], {})
         assert "none" in block.lower()
+
+
+class TestAskComposeV1Golden:
+    def test_golden(self, snapshot: SnapshotAssertion) -> None:
+        """Snapshots system_prompt and user turn (INV-LLM-002, INV-LLM-004).
+
+        Supplements the substring asserts: catches any GROUNDING_CONTRACT or
+        rendering change the substring checks would miss.
+        """
+        source_id = SourceId(uuid.UUID("00000000-0000-0000-0000-000000000001"))
+        rule = make_rule(
+            source_document_id=source_id,
+            disposition=Disposition.CURBSIDE_RECYCLE,
+            accepted_status=AcceptedStatus.ACCEPTED,
+            source_quote="Aluminum beverage cans are accepted curbside.",
+        )
+        source = make_source_document(
+            id=source_id,
+            url="https://denvergov.org/recycling/accepted",
+            title="Denver Accepted-for-Recycling",
+        )
+        query = Query(
+            text="Can I recycle aluminum cans?", location_input="Denver"
+        )
+        rule_context = format_rule_context([rule], {source_id: source})
+        prompt = ask_compose_v1(query, rule_context=rule_context)
+
+        assert prompt.system_prompt == snapshot(name="system_prompt")
+        assert prompt.messages[0]["content"] == snapshot(name="user_turn")

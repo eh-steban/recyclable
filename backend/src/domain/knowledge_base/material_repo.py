@@ -7,17 +7,10 @@ from src.domain.knowledge_base.material import (
     MaterialAlias,
     MaterialId,
 )
+from src.domain.shared.repo import Repo
 
 
-class MaterialRepo(Protocol):
-    """Repo port for Material aggregate."""
-
-    def next_identity(self) -> MaterialId: ...
-
-    def save(self, material: Material) -> None: ...
-
-    def find_by_id(self, material_id: MaterialId) -> Material | None: ...
-
+class MaterialRepo(Repo[Material, MaterialId], Protocol):
     def find_by_slug(self, slug: str) -> Material | None: ...
 
     def find_aliases_for(
