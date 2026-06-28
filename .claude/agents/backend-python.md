@@ -52,6 +52,12 @@ Tests are YOUR responsibility, written alongside implementation code:
 - Error path tests: every error category needs a test (400, 404, 500, 502)
 - Coverage targets: Domain 90%+, Application 80%+, Infrastructure critical paths
 - Run pytest after changes to verify nothing breaks
+- Run `basedpyright src/` after changes -- Python has no compile step,
+  so this is the type-safety gate the frontend gets for free from its
+  build. The pass condition is **zero errors**; the `assert_never`
+  exhaustiveness pin emits expected warnings, so exit code 1 with 0
+  errors is clean (see .claude/rules/backend/python.md). Do not report a
+  change validated until basedpyright is error-free and pytest passes.
 - See .claude/rules/backend/testing.md for patterns
 
 ## Observability (integrated -- no separate observability agent)

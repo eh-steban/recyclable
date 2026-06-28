@@ -201,6 +201,10 @@ without translation).
   partially successful?
 - Are timeouts, retries, idempotency, rollback, and safe error
   responses handled?
+- Does a broad or catch-all handler swallow error types the caller
+  needed to act on -- turning a hard failure into a silent wrong
+  answer or corrupted-state path? Enumerate the specific unexpected
+  errors the handler hides and trace where each one leads.
 - Are secrets, tokens, or internal URLs at risk of leaking through
   logs, error messages, or response bodies?
 

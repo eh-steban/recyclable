@@ -26,7 +26,10 @@ propose a new invariant in the output rather than relying on local
 judgment. If a change touches auth, user data, LLM grounding or
 refusal, migrations, external input, background jobs, or destructive
 operations, recommend running the `adversarial-reviewer` unless it
-already ran.
+already ran. If a change adds or alters an invariant-bearing domain type
+(Value Object, Entity, Aggregate, or a validated type), or adds a
+construction/mutation/persistence path for one, recommend running
+`type-invariant-reviewer` unless it already ran.
 
 ## Loading rules on demand
 
@@ -70,10 +73,29 @@ This keeps your context targeted. Do not Read every rule body up front.
 - Race conditions in async code
 - Boundary conditions (empty arrays, max values, missing data)
 
-### 4. Missing error handling
+### 4. Error handling and silent failures
 
-- Every external call (DB, API, third-party service) must have error handling
-- User-facing errors must be safe (no stack traces, internal paths)
+Per the "Fail fast" principle, the system refuses on missing evidence
+rather than degrading silently. Load `.claude/docs/error-handling.md`
+on demand for the canonical patterns. Flag:
+
+- Empty catch/except blocks (never acceptable), and catch-log-continue
+  that swallows an error the caller needed to act on.
+- Broad catches (`except Exception`, `catch (e)`) that could hide
+  unrelated failures -- name what they could mask, or recommend
+  narrowing.
+- Fallback to a mock/stub/default-on-error in a production path -- that
+  belongs only in tests. A fallback must be explicit and justified.
+- Every external call (DB, API, third-party, LLM) handling failure
+  explicitly, not via optional chaining / null-coalescing that skips it.
+- User-facing errors that are unsafe (stack traces, internal paths) OR
+  unactionable (a generic message that doesn't say what failed or what
+  to do).
+
+Flag the presence of a broad or swallowing handler here. Constructing
+the concrete failure path it enables -- which unexpected errors it hides
+and where each leads -- is `adversarial-reviewer`'s operational lens, not
+this scan.
 
 ### 5. Test coverage gaps
 
