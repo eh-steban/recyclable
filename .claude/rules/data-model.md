@@ -156,7 +156,7 @@ unique. Only one active rule per (jurisdiction, material).
 | `seed_url` | text | |
 | `source_document_ids` | uuid[] | Sources discovered/used |
 | `proposed_rule_changes` | jsonb | Array of `{ op: 'add'\|'update', rule: ... }` |
-| `conflicts` | jsonb | Array of `{ existing_rule_id, proposed, reason }` |
+| `conflicts` | jsonb | Array of `{ existing_rule_id, proposed, source_document_id, source_quote, reason }` |
 | `missing_fields` | jsonb | Fields the agent could not extract |
 | `status` | text | `draft` \| `pending_review` \| `approved` \| `rejected` |
 | `reviewer_id` | text null | |
