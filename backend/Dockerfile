@@ -25,12 +25,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM base AS dev
 ENV LOG_LEVEL=DEBUG
 
+# Run as a non-root user whose uid matches the host developer (1000 by
+# default). The source is bind-mounted, so files the container writes
+# (.pytest_cache, syrupy __snapshots__) are then owned by the host user
+# rather than root -- otherwise `scripts/wt remove` cannot delete the
+# worktree without sudo. Override USER_UID/USER_GID at build time when the
+# host uid differs.
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN groupadd --gid "${USER_GID}" appuser \
+    && useradd --create-home --uid "${USER_UID}" --gid "${USER_GID}" appuser
+
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --extra dev
 
 # Source is bind-mounted by docker-compose; this COPY is a parity fallback.
 COPY . .
+
+# appuser must own the venv (runtime uv installs) and /app before the
+# bind mount shadows it.
+RUN chown -R appuser:appuser /opt/venv /app
+USER appuser
 
 EXPOSE 8000
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
