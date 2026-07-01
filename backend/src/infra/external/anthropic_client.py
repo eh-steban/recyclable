@@ -1,7 +1,7 @@
 """Anthropic SDK adapter.
 
-Implements both RetrievalLLM (Sonnet, user path) and
-MaterialNormalizerLLM (Haiku, normalizer fallback).
+Implements RetrievalLLM (Sonnet, user path), MaterialNormalizerLLM
+(Haiku, normalizer fallback), and IngestionLLM (Opus, ingestion worker).
 
 INV-LLM-005: model IDs are pinned as module-level constants.
 No caller passes a model parameter.
@@ -17,12 +17,16 @@ import json
 import logging
 import re
 import time
+import uuid
 from collections.abc import Callable
 from typing import Any, Final, cast, final
 
 import anthropic
-from anthropic.types import Message, MessageParam
+from anthropic.types import Message, MessageParam, ToolUseBlock
 
+from src.domain.ingestion.candidate_rule import CandidateRule
+from src.domain.ingestion.ingestion_llm import OPUS_MODEL_ID
+from src.domain.ingestion.source_fetcher import SourceFetchResult
 from src.domain.knowledge_base.material import Material, MaterialId
 from src.domain.retrieval.citation import Citation
 from src.domain.retrieval.evaluated_answer import (
@@ -32,6 +36,10 @@ from src.domain.retrieval.evaluated_answer import (
 )
 from src.domain.retrieval.item_verdict import Accepted, Refused
 from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID, LLMMessage
+from src.llm.prompts.extract_rules import (
+    build_extract_rules_system_prompt,
+    build_extract_rules_tool_schema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -393,3 +401,201 @@ class AnthropicClient:
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             logger.warning("classify: failed to parse Haiku response: %s", exc)
             return []
+
+
+# ---------------------------------------------------------------------------
+# OpusIngestionClient -- IngestionLLM port (INV-LLM-005, INV-LLM-003)
+# ---------------------------------------------------------------------------
+
+
+@final
+class OpusIngestionClient:
+    """Opus-powered IngestionLLM implementation (Story 1 single-shot).
+
+    Makes one Anthropic SDK call per extract() invocation: passes the
+    pre-fetched source text as the first user message, then drives
+    the tool loop until Opus calls extract_rules or stops.
+
+    The tool list is {fetch_source, extract_rules} -- no writer (INV-LLM-003).
+    OPUS_MODEL_ID is imported from the domain port (INV-LLM-005).
+    """
+
+    _client: anthropic.Anthropic
+    _timeout_s: float
+
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        timeout_s: float = 120.0,
+    ) -> None:
+        self._client = anthropic.Anthropic(api_key=api_key)
+        self._timeout_s = timeout_s
+
+    def extract(
+        self,
+        source: SourceFetchResult,
+        jurisdiction_id: str,
+        prompt_name: str,
+        prompt_version: int,
+    ) -> list[CandidateRule]:
+        """Call Opus with the source text; return extracted CandidateRules.
+
+        Story 1 contract: single-shot. Opus sees the pre-fetched source
+        text and calls extract_rules to emit candidates.
+        """
+        tools = build_extract_rules_tool_schema()
+        system_prompt = build_extract_rules_system_prompt(
+            jurisdiction_name=jurisdiction_id
+        )
+        # Wrap source text in a delimiter to prevent prompt injection
+        # (INV-LLM-004 convention from the retrieval path).
+        user_content = (
+            f"Please extract recycling rules from the following source page"
+            f" (source_document_id: {source.id}).\n\n"
+            f'<source_document id="{source.id}" url="{source.url}">\n'
+            f"{source.source_text[:200_000]}\n"
+            f"</source_document>"
+        )
+
+        logger.info(
+            "opus_extract: calling Opus model=%s prompt=%s/%d source=%r",
+            OPUS_MODEL_ID,
+            prompt_name,
+            prompt_version,
+            source.url,
+        )
+        start = time.monotonic()
+
+        messages: list[dict[str, Any]] = [
+            {"role": "user", "content": user_content}
+        ]
+        all_candidates: list[CandidateRule] = []
+
+        # Drive the tool loop: Opus may call fetch_source (ignored in S1,
+        # we return empty) or extract_rules (we capture candidates). Stop
+        # when the model emits end_turn or no tool calls remain.
+        for _turn in range(10):
+            response: Message = self._client.messages.create(
+                model=OPUS_MODEL_ID,
+                max_tokens=4096,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                tools=cast("Any", tools),
+                messages=cast("list[MessageParam]", messages),
+                timeout=self._timeout_s,
+            )
+
+            # Append model turn to conversation.
+            messages.append({"role": "assistant", "content": response.content})
+
+            # Check for tool use.
+            tool_calls = [b for b in response.content if b.type == "tool_use"]
+            if not tool_calls:
+                # No tool calls -- model is done.
+                break
+
+            # Build tool results for next turn.
+            tool_results: list[dict[str, Any]] = []
+            for block in tool_calls:
+                tool_block: ToolUseBlock = block  # type: ignore[assignment]
+                if tool_block.name == "extract_rules":
+                    candidates = _parse_extract_rules_input(
+                        cast("dict[str, Any]", tool_block.input),
+                        jurisdiction_id,
+                    )
+                    all_candidates.extend(candidates)
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_block.id,
+                            "content": "ok",
+                        }
+                    )
+                else:
+                    # fetch_source in S1: return empty (we pre-fetched).
+                    _prefetched = "Source already provided."
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_block.id,
+                            "content": _prefetched,
+                        }
+                    )
+
+            messages.append({"role": "user", "content": tool_results})
+
+            if response.stop_reason == "end_turn":
+                break
+
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        logger.info(
+            "opus_extract: done model=%s candidates=%d elapsed_ms=%d",
+            OPUS_MODEL_ID,
+            len(all_candidates),
+            elapsed_ms,
+        )
+        return all_candidates
+
+
+def _parse_extract_rules_input(
+    tool_input: dict[str, Any],
+    jurisdiction_id: str,
+) -> list[CandidateRule]:
+    """Parse the extract_rules tool input into CandidateRule list.
+
+    Silently skips malformed candidates (logs a warning) so a single
+    bad candidate doesn't drop the entire batch.
+    """
+    raw_id: str = tool_input.get("source_document_id", "")
+    try:
+        source_doc_id = uuid.UUID(raw_id)
+    except ValueError, AttributeError:
+        logger.warning(
+            "extract_rules: invalid source_document_id=%r; new uuid",
+            raw_id,
+        )
+        source_doc_id = uuid.uuid4()
+
+    candidates_raw: list[dict[str, Any]] = tool_input.get("candidates", [])
+    results: list[CandidateRule] = []
+    jur_uuid: uuid.UUID
+    try:
+        jur_uuid = uuid.UUID(jurisdiction_id)
+    except ValueError:
+        logger.warning(
+            "extract_rules: non-UUID jurisdiction_id=%r; skipping candidates",
+            jurisdiction_id,
+        )
+        return []
+
+    for i, raw in enumerate(candidates_raw):
+        try:
+            results.append(
+                CandidateRule(
+                    source_document_id=source_doc_id,
+                    source_quote=raw.get("source_quote", ""),
+                    confidence=raw.get("confidence", "low"),
+                    jurisdiction_id=jur_uuid,
+                    material_slug=raw.get("material_slug", ""),
+                    disposition=raw.get("disposition", "unknown"),
+                    accepted_status=raw.get("accepted_status", "unknown"),
+                    preparation_steps=tuple(raw.get("preparation_steps", [])),
+                    exceptions=tuple(raw.get("exceptions", [])),
+                    warnings=tuple(raw.get("warnings", [])),
+                    effective_from=raw.get("effective_from"),
+                )
+            )
+        except Exception as exc:
+            logger.warning(
+                "extract_rules: skipping malformed candidate[%d]: %s",
+                i,
+                exc,
+            )
+
+    return results
