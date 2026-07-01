@@ -5,6 +5,8 @@ Import Base and all mapped classes here so Alembic autogenerate sees them.
 
 from src.infra.db.models.answer_audit_record import AnswerAuditRecordORM
 from src.infra.db.models.base import Base
+from src.infra.db.models.ingestion_report import IngestionReportORM
+from src.infra.db.models.ingestion_run_trace import IngestionRunTraceORM
 from src.infra.db.models.jurisdiction import JurisdictionORM
 from src.infra.db.models.material import MaterialORM
 from src.infra.db.models.material_alias import MaterialAliasORM
@@ -21,4 +23,6 @@ __all__ = [
     "RuleORM",
     "RegressionCaseORM",
     "AnswerAuditRecordORM",
+    "IngestionRunTraceORM",
+    "IngestionReportORM",
 ]
