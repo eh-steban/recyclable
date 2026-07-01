@@ -11,7 +11,7 @@ Single source of truth for **who can write to which markdown / config
 files** in this repo. This is about *documentation* ownership, not code
 ownership or interservice contract ownership (see `contracts.md` for that).
 
-**Last reconciled:** 2026-06-10
+**Last reconciled:** 2026-07-01
 
 > Why this doc exists: ownership rules used to be scattered across
 > `CLAUDE.md`, `knowledge-management.md`, `agents/spec-writer.md`, and a
@@ -83,6 +83,9 @@ with normal review gates.
 - `.claude/docs/ddd/**/*.md` -- the DDD shards (hub
   `principles-hub.md`); reference docs opened on demand via the hub,
   not auto-loaded.
+- `.claude/docs/user-story-breakdown/**/*.md` -- the work-breakdown
+  shards (hub `principles-hub.md`); reference docs opened on demand via
+  the hub, not auto-loaded. Same treatment as the DDD shards.
 - `.claude/docs/tdd.md`, `.claude/docs/validation.md`,
   `.claude/docs/refactoring.md`, `.claude/docs/formatting.md`,
   `.claude/docs/error-handling.md`, `.claude/docs/observability.md` --
