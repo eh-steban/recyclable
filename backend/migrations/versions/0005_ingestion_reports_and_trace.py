@@ -1,9 +1,8 @@
 """0005 ingestion reports and trace.
 
 Creates ingestion_reports and ingestion_run_traces with their full column
-sets per data-model.md and design D6. Story 1 populates only the minimal
-trace fields (id, seed_url, created_at); Stories 2-4 populate the rest --
-no follow-up migration needed.
+sets per data-model.md and design D6. The D6 audit columns on the trace
+table are nullable; initial ingest runs write only id, seed_url, created_at.
 
 Revision ID: 0005_ingestion_reports_and_trace
 Revises: 0004_pg_trgm_index
@@ -33,7 +32,7 @@ def upgrade() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("seed_url", sa.Text(), nullable=False),
-        # Full D6 audit columns -- populated by Stories 2-4.
+        # D6 audit columns -- nullable; populated by enrichment passes.
         sa.Column("tool_calls", postgresql.JSONB(), nullable=True),
         sa.Column(
             "urls_fetched",

@@ -13,8 +13,9 @@ from src.infra.db.models.base import Base
 class IngestionRunTraceORM(Base):
     """ORM row for one ingestion run audit trace.
 
-    Story 1 populates only id, seed_url, created_at.
-    Stories 2-4 populate the remaining D6 columns (tool_calls, etc.).
+    Only id, seed_url, and created_at are written on the initial ingest run.
+    The remaining D6 audit columns (tool_calls, etc.) are nullable and
+    populated by enrichment passes.
     """
 
     __tablename__: str = "ingestion_run_traces"
@@ -25,7 +26,7 @@ class IngestionRunTraceORM(Base):
         server_default=text("gen_random_uuid()"),
     )
     seed_url: Mapped[str] = mapped_column(Text, nullable=False)
-    # Full D6 audit columns -- populated by Stories 2-4.
+    # D6 audit columns -- nullable; populated by enrichment passes.
     tool_calls: Mapped[object] = mapped_column(JSONB, nullable=True)
     urls_fetched: Mapped[list[str] | None] = mapped_column(
         ARRAY(Text), nullable=True

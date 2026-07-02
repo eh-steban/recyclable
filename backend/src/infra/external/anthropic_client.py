@@ -410,7 +410,7 @@ class AnthropicClient:
 
 @final
 class OpusIngestionClient:
-    """Opus-powered IngestionLLM implementation (Story 1 single-shot).
+    """Opus-powered IngestionLLM implementation.
 
     Makes one Anthropic SDK call per extract() invocation: passes the
     pre-fetched source text as the first user message, then drives

@@ -1,19 +1,22 @@
 """IngestSource application service -- ingestion worker task coordinator.
 
-Pipeline:
-1. Mint a trace identity and persist an IngestionRunTrace.
-2. Fetch the seed URL via SourceFetcher.
-3. Call IngestionLLM.extract() to get CandidateRule list.
-4. Assemble an IngestionReport (all candidates op=add; no diff yet).
-5. Transition to pending_review (runs Validator).
-6. Persist the report.
-7. Return the IngestionReportId.
+Pipeline (two-transaction shape, repositories.md Principle 9):
 
-The trace save (step 1) and report save (step 6) are committed in two
-separate DB transactions; the fetch + LLM extraction (steps 2-3) run
-with no open transaction (repositories.md Principle 9).
+  Transaction 1  -- run_trace_phase():
+      Mint and persist IngestionRunTrace; commit.
 
-Imports domain ports only; never imports infra/ (DDD inward-dependency rule).
+  No transaction -- run_extract_phase():
+      Fetch the seed URL; call IngestionLLM.extract().
+      Network I/O and a potentially 120 s Opus call run with no open
+      Postgres transaction.
+
+  Transaction 2  -- run_report_phase():
+      Assemble IngestionReport; transition to pending_review (Validator);
+      persist; commit.
+
+The caller (ingestion_pipeline.py) wraps each phase in its own
+session.begin() block. The service itself is transaction-agnostic and
+imports domain ports only (DDD inward-dependency rule).
 """
 
 import logging
@@ -31,9 +34,12 @@ from src.domain.ingestion.ingestion_report import (
     RuleOp,
 )
 from src.domain.ingestion.ingestion_report_repo import IngestionReportRepo
-from src.domain.ingestion.ingestion_run_trace import IngestionRunTrace
+from src.domain.ingestion.ingestion_run_trace import (
+    IngestionRunTrace,
+    IngestionRunTraceId,
+)
 from src.domain.ingestion.ingestion_run_trace_repo import IngestionRunTraceRepo
-from src.domain.ingestion.source_fetcher import SourceFetcher
+from src.domain.ingestion.source_fetcher import SourceFetcher, SourceFetchResult
 from src.llm.prompts.extract_rules import (
     EXTRACT_RULES_PROMPT_NAME,
     EXTRACT_RULES_VERSION,
@@ -69,6 +75,11 @@ class IngestSource:
 
     Constructor parameters are domain ports; the worker pipeline injects
     concrete implementations at call time.
+
+    Use the three-phase methods for the two-transaction shape:
+        trace_id = svc.run_trace_phase(cmd)          # tx 1
+        source, candidates = svc.run_extract_phase(cmd, trace_id)  # no tx
+        report_id = svc.run_report_phase(...)         # tx 2
     """
 
     def __init__(
@@ -83,13 +94,14 @@ class IngestSource:
         self._fetcher = fetcher
         self._llm = llm
 
-    def run(self, command: IngestSourceCommand) -> IngestionReportId:
-        """Execute the single-URL ingestion pipeline.
+    def run_trace_phase(
+        self, command: IngestSourceCommand
+    ) -> IngestionRunTraceId:
+        """Mint and persist the IngestionRunTrace (transaction 1).
 
-        Returns the IngestionReportId of the persisted pending_review report.
+        The caller commits the session after this returns.
         """
         now = datetime.now(tz=UTC)
-
         trace_id = self._trace_repo.next_identity()
         trace = IngestionRunTrace(
             id=trace_id,
@@ -97,15 +109,24 @@ class IngestSource:
             created_at=now,
         )
         self._trace_repo.save(trace)
-
         logger.info(
             "ingestion trace minted: trace_id=%s seed_url=%r",
             trace_id,
             command.seed_url,
         )
+        return trace_id
 
+    def run_extract_phase(
+        self,
+        command: IngestSourceCommand,
+        trace_id: IngestionRunTraceId,
+    ) -> tuple[SourceFetchResult, list[CandidateRule]]:
+        """Fetch the source URL and call the LLM (no open transaction).
+
+        Network I/O and Opus extraction run here, outside any DB transaction.
+        Returns the fetched source and extracted candidates.
+        """
         source = self._fetcher.fetch(command.seed_url, authority_level=3)
-
         logger.info(
             "source fetched: trace_id=%s url=%r content_type=%r",
             trace_id,
@@ -120,20 +141,33 @@ class IngestSource:
             prompt_name=EXTRACT_RULES_PROMPT_NAME,
             prompt_version=EXTRACT_RULES_VERSION,
         )
-
         logger.info(
             "extraction complete: trace_id=%s candidate_count=%d",
             trace_id,
             len(candidates),
         )
+        return source, candidates
 
+    def run_report_phase(
+        self,
+        command: IngestSourceCommand,
+        trace_id: IngestionRunTraceId,
+        source: SourceFetchResult,
+        candidates: list[CandidateRule],
+    ) -> IngestionReportId:
+        """Assemble, validate, and persist the IngestionReport (transaction 2).
+
+        The caller commits the session after this returns.
+        Returns the IngestionReportId of the persisted pending_review report.
+        """
+        now = datetime.now(tz=UTC)
         proposed_changes = tuple(_candidate_to_change(c) for c in candidates)
         report_id = self._report_repo.next_identity()
         draft = IngestionReport(
             id=report_id,
             jurisdiction_id=command.jurisdiction_id,
             trace_id=trace_id.value,
-            seed_url=command.seed_url,
+            seed_url=source.url,
             proposed_rule_changes=proposed_changes,
             conflicts=(),
             missing_fields=(),
@@ -143,16 +177,12 @@ class IngestSource:
             prompt_version=EXTRACT_RULES_VERSION,
             model_id=OPUS_MODEL_ID,
         )
-
         report = draft.to_pending_review()
-
         self._report_repo.save(report)
-
         logger.info(
             "ingestion report persisted: report_id=%s trace_id=%s status=%s",
             report_id,
             trace_id,
             report.status,
         )
-
         return report_id

@@ -3,7 +3,7 @@
 Verifies the full coordination path:
 - Mints trace + report identities via repos
 - Delegates to IngestionLLM for extraction
-- Assembles all candidates as op=add (Story 1, no diff)
+- Assembles all candidates as op=add (no diff step yet)
 - Runs Validator and transitions report to pending_review
 - Persists report + trace
 - Returns the IngestionReportId
@@ -111,7 +111,7 @@ class FakeSourceFetcher:
 
 
 # ---------------------------------------------------------------------------
-# Tests
+# Helpers
 # ---------------------------------------------------------------------------
 
 _J_ID = JurisdictionId(uuid.uuid4())
@@ -148,6 +148,21 @@ def _make_service(
     )
 
 
+def _run_pipeline(
+    service: IngestSource,
+    command: IngestSourceCommand,
+) -> IngestionReportId:
+    """Drive all three phases in sequence (mirrors the pipeline shape)."""
+    trace_id = service.run_trace_phase(command)
+    source, candidates = service.run_extract_phase(command, trace_id)
+    return service.run_report_phase(command, trace_id, source, candidates)
+
+
+# ---------------------------------------------------------------------------
+# Happy-path tests
+# ---------------------------------------------------------------------------
+
+
 class TestIngestSource:
     def test_returns_report_id(
         self,
@@ -155,14 +170,14 @@ class TestIngestSource:
         trace_repo: MemIngestionRunTraceRepo,
         fetcher: FakeSourceFetcher,
     ) -> None:
-        """run() returns an IngestionReportId."""
+        """Three-phase run returns an IngestionReportId."""
         service = _make_service(report_repo, trace_repo, fetcher)
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
             jurisdiction_name="Denver, CO",
         )
-        report_id = service.run(command)
+        report_id = _run_pipeline(service, command)
         assert isinstance(report_id, IngestionReportId)
 
     def test_report_persisted_as_pending_review(
@@ -178,7 +193,7 @@ class TestIngestSource:
             jurisdiction_id=_J_ID,
             jurisdiction_name="Denver, CO",
         )
-        report_id = service.run(command)
+        report_id = _run_pipeline(service, command)
         report = report_repo.find_by_id(report_id)
         assert report is not None
         assert report.status == IngestionReportStatus.PENDING_REVIEW
@@ -189,14 +204,14 @@ class TestIngestSource:
         trace_repo: MemIngestionRunTraceRepo,
         fetcher: FakeSourceFetcher,
     ) -> None:
-        """All Story-1 candidates are op=add (no diff step yet)."""
+        """All candidates are op=add (no diff step yet)."""
         service = _make_service(report_repo, trace_repo, fetcher)
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
             jurisdiction_name="Denver, CO",
         )
-        report_id = service.run(command)
+        report_id = _run_pipeline(service, command)
         report = report_repo.find_by_id(report_id)
         assert report is not None
         assert len(report.proposed_rule_changes) == 1
@@ -215,10 +230,163 @@ class TestIngestSource:
             jurisdiction_id=_J_ID,
             jurisdiction_name="Denver, CO",
         )
-        report_id = service.run(command)
+        report_id = _run_pipeline(service, command)
         report = report_repo.find_by_id(report_id)
         assert report is not None
         assert report.trace_id is not None
         trace = trace_repo.find_by_id(IngestionRunTraceId(report.trace_id))
         assert trace is not None
         assert trace.seed_url == command.seed_url
+
+
+# ---------------------------------------------------------------------------
+# Error-path tests
+# ---------------------------------------------------------------------------
+
+
+class BoomFetcher:
+    """Raises on fetch()."""
+
+    def fetch(self, url: str, *, authority_level: int = 3) -> SourceFetchResult:
+        raise RuntimeError("network failure")
+
+
+class BoomLLM:
+    """Raises on extract()."""
+
+    def extract(
+        self,
+        source: SourceFetchResult,
+        jurisdiction_id: str,
+        jurisdiction_name: str,
+        prompt_name: str,
+        prompt_version: int,
+    ) -> list[CandidateRule]:
+        raise RuntimeError("LLM timeout")
+
+
+@final
+class EmptyLLM:
+    """Returns no candidates."""
+
+    def extract(
+        self,
+        source: SourceFetchResult,
+        jurisdiction_id: str,
+        jurisdiction_name: str,
+        prompt_name: str,
+        prompt_version: int,
+    ) -> list[CandidateRule]:
+        return []
+
+
+class BoomReportRepo(InMemoryRepo[IngestionReport, IngestionReportId]):
+    @override
+    def next_identity(self) -> IngestionReportId:
+        return IngestionReportId(uuid.uuid4())
+
+    def find_pending(self) -> list[IngestionReport]:
+        return []
+
+    @override
+    def save(self, entity: IngestionReport, /) -> None:
+        raise RuntimeError("DB write failed")
+
+
+class TestIngestSourceErrorPaths:
+    def test_fetcher_raises_propagates(
+        self,
+        report_repo: MemIngestionReportRepo,
+        trace_repo: MemIngestionRunTraceRepo,
+    ) -> None:
+        """fetch() raising propagates; no report is saved."""
+        service = IngestSource(
+            report_repo=report_repo,
+            trace_repo=trace_repo,
+            fetcher=BoomFetcher(),
+            llm=FakeIngestionLLM(uuid.uuid4()),
+        )
+        command = IngestSourceCommand(
+            seed_url="https://denvergov.org/recycling",
+            jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
+        )
+        trace_id = service.run_trace_phase(command)
+        with pytest.raises(RuntimeError, match="network failure"):
+            service.run_extract_phase(command, trace_id)
+        assert list(report_repo._store.values()) == []
+
+    def test_llm_raises_propagates(
+        self,
+        report_repo: MemIngestionReportRepo,
+        trace_repo: MemIngestionRunTraceRepo,
+        fetcher: FakeSourceFetcher,
+    ) -> None:
+        """extract() raising propagates; no report is saved."""
+        service = IngestSource(
+            report_repo=report_repo,
+            trace_repo=trace_repo,
+            fetcher=fetcher,
+            llm=BoomLLM(),
+        )
+        command = IngestSourceCommand(
+            seed_url="https://denvergov.org/recycling",
+            jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
+        )
+        trace_id = service.run_trace_phase(command)
+        with pytest.raises(RuntimeError, match="LLM timeout"):
+            service.run_extract_phase(command, trace_id)
+        assert list(report_repo._store.values()) == []
+
+    def test_empty_candidates_yields_pending_review_with_zero_changes(
+        self,
+        report_repo: MemIngestionReportRepo,
+        trace_repo: MemIngestionRunTraceRepo,
+        fetcher: FakeSourceFetcher,
+    ) -> None:
+        """Empty candidate list yields PENDING_REVIEW with zero changes."""
+        service = IngestSource(
+            report_repo=report_repo,
+            trace_repo=trace_repo,
+            fetcher=fetcher,
+            llm=EmptyLLM(),
+        )
+        command = IngestSourceCommand(
+            seed_url="https://denvergov.org/recycling",
+            jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
+        )
+        trace_id = service.run_trace_phase(command)
+        source, candidates = service.run_extract_phase(command, trace_id)
+        assert candidates == []
+        report_id = service.run_report_phase(
+            command, trace_id, source, candidates
+        )
+        report = report_repo.find_by_id(report_id)
+        assert report is not None
+        assert report.status == IngestionReportStatus.PENDING_REVIEW
+        assert len(report.proposed_rule_changes) == 0
+
+    def test_report_repo_save_raises_propagates(
+        self,
+        trace_repo: MemIngestionRunTraceRepo,
+        fetcher: FakeSourceFetcher,
+    ) -> None:
+        """report_repo.save() raising propagates out of run_report_phase()."""
+        boom_repo = BoomReportRepo()
+        service = IngestSource(
+            report_repo=boom_repo,
+            trace_repo=trace_repo,
+            fetcher=fetcher,
+            llm=FakeIngestionLLM(uuid.uuid4()),
+        )
+        command = IngestSourceCommand(
+            seed_url="https://denvergov.org/recycling",
+            jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
+        )
+        trace_id = service.run_trace_phase(command)
+        source, candidates = service.run_extract_phase(command, trace_id)
+        with pytest.raises(RuntimeError, match="DB write failed"):
+            service.run_report_phase(command, trace_id, source, candidates)

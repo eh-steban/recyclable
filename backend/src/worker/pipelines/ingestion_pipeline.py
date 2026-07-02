@@ -1,11 +1,15 @@
 """Ingestion pipeline -- wires concrete implementations into IngestSource.
 
 Runs in the worker process, never in the FastAPI HTTP handler (INV-OPS-001).
-Constructs the dependency graph from config + DB session and delegates to the
-IngestSource application service.
 
-Story 1: single-URL, single-shot Opus call. Stories 3+ extend to a bounded
-agentic loop without changing this module's interface.
+Two-transaction shape (repositories.md Principle 9):
+
+  Transaction 1: save the IngestionRunTrace and commit.
+  No transaction: network fetch + Opus extraction (up to 120 s).
+  Transaction 2: save the IngestionReport and commit.
+
+This ensures Postgres is not holding an open transaction during the
+potentially long network + LLM calls.
 """
 
 import logging
@@ -28,7 +32,8 @@ logger = logging.getLogger(__name__)
 def run_ingestion(command: IngestSourceCommand) -> IngestionReportId:
     """Wire concrete implementations and run IngestSource.
 
-    Opens a new session, commits on success, rolls back on any exception.
+    Opens a new session and drives the two-transaction pipeline shape:
+    trace commit, then fetch+extract (no open tx), then report commit.
     The caller (cli/ingest.py) is responsible for reporting the result.
     """
     engine = get_engine()
@@ -47,10 +52,32 @@ def run_ingestion(command: IngestSourceCommand) -> IngestionReportId:
 
         try:
             with session.begin():
-                report_id = service.run(command)
+                trace_id = service.run_trace_phase(command)
         except Exception:
             logger.exception(
-                "ingestion pipeline failed: seed_url=%r", command.seed_url
+                "ingestion pipeline failed (trace phase): seed_url=%r",
+                command.seed_url,
+            )
+            raise
+
+        try:
+            source, candidates = service.run_extract_phase(command, trace_id)
+        except Exception:
+            logger.exception(
+                "ingestion pipeline failed (extract phase): seed_url=%r",
+                command.seed_url,
+            )
+            raise
+
+        try:
+            with session.begin():
+                report_id = service.run_report_phase(
+                    command, trace_id, source, candidates
+                )
+        except Exception:
+            logger.exception(
+                "ingestion pipeline failed (report phase): seed_url=%r",
+                command.seed_url,
             )
             raise
 

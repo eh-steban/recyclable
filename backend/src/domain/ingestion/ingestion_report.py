@@ -121,9 +121,8 @@ def _validate_to_pending_review(report: IngestionReport) -> list[str]:
 class IngestionReport:
     """IngestionReport aggregate root.
 
-    Represents one operator-initiated ingestion run: fetch one (Story 1) or
-    more (Story 3) source pages, extract candidate rules, and produce a
-    reviewable report.
+    Represents one operator-initiated ingestion run: fetch one or more source
+    pages, extract candidate rules, and produce a reviewable report.
 
     Fields:
         id: typed identity, minted by repo.next_identity().

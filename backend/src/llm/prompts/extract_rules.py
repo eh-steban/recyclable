@@ -146,11 +146,9 @@ _EXTRACT_RULES_TOOL: dict[str, Any] = {
 
 
 def build_extract_rules_tool_schema() -> list[dict[str, Any]]:
-    """Return the tool list for the Opus ingestion call (Story 1 surface).
+    """Return the tool list for the Opus ingestion call.
 
     Tools: {fetch_source, extract_rules} -- no writer (INV-LLM-003).
-    Story 3 adds diff_source; the no-writer guard expands to exact-three
-    assertion at that point.
     """
     return [_FETCH_SOURCE_TOOL, _EXTRACT_RULES_TOOL]
 
