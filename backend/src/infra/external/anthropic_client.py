@@ -508,6 +508,7 @@ class OpusIngestionClient:
                     candidates = _parse_extract_rules_input(
                         cast("dict[str, Any]", tool_block.input),
                         jurisdiction_id,
+                        source.id,
                     )
                     all_candidates.extend(candidates)
                     tool_results.append(
@@ -546,6 +547,7 @@ class OpusIngestionClient:
 def _parse_extract_rules_input(
     tool_input: dict[str, Any],
     jurisdiction_id: str,
+    source_id: uuid.UUID,
 ) -> list[CandidateRule]:
     """Parse the extract_rules tool input into CandidateRule list.
 
@@ -557,10 +559,11 @@ def _parse_extract_rules_input(
         source_doc_id = uuid.UUID(raw_id)
     except ValueError, AttributeError:
         logger.warning(
-            "extract_rules: invalid source_document_id=%r; new uuid",
+            "extract_rules: invalid source_document_id=%r; fallback=%s",
             raw_id,
+            source_id,
         )
-        source_doc_id = uuid.uuid4()
+        source_doc_id = source_id
 
     candidates_raw: list[dict[str, Any]] = tool_input.get("candidates", [])
     results: list[CandidateRule] = []
