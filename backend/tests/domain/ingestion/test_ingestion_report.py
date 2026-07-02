@@ -9,6 +9,7 @@ Verifies:
 - Tuple boundary-guard on frozen tuple fields (architecture.md idiom)
 """
 
+import dataclasses
 import uuid
 from datetime import UTC, datetime
 from typing import cast
@@ -175,3 +176,12 @@ class TestToPendingReview:
         once = report.to_pending_review()
         twice = once.to_pending_review()
         assert twice.status == IngestionReportStatus.PENDING_REVIEW
+
+    def test_approved_to_pending_review_raises(self) -> None:
+        """APPROVED -> to_pending_review() raises; lifecycle not reversible."""
+        report = _make_report(proposed_rule_changes=(_valid_change(),))
+        approved = dataclasses.replace(
+            report, status=IngestionReportStatus.APPROVED
+        )
+        with pytest.raises(IngestionReportValidationError, match="status"):
+            approved.to_pending_review()

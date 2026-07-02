@@ -23,10 +23,6 @@ from typing import Any, cast, override
 
 from src.domain.knowledge_base.jurisdiction import JurisdictionId
 
-# ---------------------------------------------------------------------------
-# Typed identity Value
-# ---------------------------------------------------------------------------
-
 
 @dataclass(frozen=True, slots=True)
 class IngestionReportId:
@@ -39,11 +35,6 @@ class IngestionReportId:
         return str(self.value)
 
 
-# ---------------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------------
-
-
 class IngestionReportStatus(StrEnum):
     DRAFT = "draft"
     PENDING_REVIEW = "pending_review"
@@ -54,11 +45,6 @@ class IngestionReportStatus(StrEnum):
 class RuleOp(StrEnum):
     ADD = "add"
     UPDATE = "update"
-
-
-# ---------------------------------------------------------------------------
-# ProposedRuleChange Value
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,11 +67,6 @@ class ProposedRuleChange:
     source_quote: str
 
 
-# ---------------------------------------------------------------------------
-# Validation Error
-# ---------------------------------------------------------------------------
-
-
 class IngestionReportValidationError(Exception):
     """Raised by `to_pending_review()` when the Validator finds violations.
 
@@ -100,17 +81,23 @@ class IngestionReportValidationError(Exception):
         super().__init__(f"IngestionReport validation failed: {violations}")
 
 
-# ---------------------------------------------------------------------------
-# Validator (Level-2, notification-handler style)
-# ---------------------------------------------------------------------------
-
-
 def _validate_to_pending_review(report: IngestionReport) -> list[str]:
     """Collect all violations for the draft -> pending_review transition.
 
     Returns an empty list when the report is valid.
     """
     violations: list[str] = []
+
+    _allowed = (
+        IngestionReportStatus.DRAFT,
+        IngestionReportStatus.PENDING_REVIEW,
+    )
+    if report.status not in _allowed:
+        _msg = (
+            f"status must be DRAFT or PENDING_REVIEW to call"
+            f" to_pending_review(); got {report.status!r}"
+        )
+        violations.append(_msg)
 
     if report.jurisdiction_id is None:
         violations.append("jurisdiction_id must be non-null")
@@ -128,11 +115,6 @@ def _validate_to_pending_review(report: IngestionReport) -> list[str]:
             )
 
     return violations
-
-
-# ---------------------------------------------------------------------------
-# Aggregate Root
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
