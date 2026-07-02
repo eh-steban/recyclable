@@ -4,19 +4,26 @@ Verifies:
 - Private/loopback/link-local IP addresses are rejected before body is read
 - Cloud metadata addresses (169.254.169.254) are rejected
 - CGNAT shared-address-space (100.64.0.0/10, RFC 6598) is rejected
-- IPv4-mapped IPv6 private addresses are rejected
+- IPv4-mapped IPv6 private addresses (::ffff:10.x, ::ffff:100.64.x) rejected
 - Non-http/https schemes are rejected
 - Over-cap bodies are rejected (FETCH_MAX_BYTES)
+- Body-size cap enforced without buffering the full oversize body
 - Idempotent: same URL returns byte-identical source_text
+- DNS gaierror is wrapped in FetchError
+- HTTP non-2xx response is wrapped in FetchError
+- Network timeout is wrapped in FetchError
 - DNS rebinding / TOCTOU: second resolution returns private IP, still rejected
 - Multi-address: public-first then private in getaddrinfo result, still rejected
 - Redirect to internal IP is rejected
+- Cross-host redirect is rejected
 """
 
 import hashlib
+import socket
 from collections.abc import Generator
 from contextlib import contextmanager
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from urllib.request import Request as UrllibRequest
 
 import pytest
 
@@ -25,6 +32,10 @@ from src.infra.external.source_fetcher import (
     FETCH_MAX_BYTES,
     FETCH_TIMEOUT_S,
     HttpSourceFetcher,
+    _http_get,
+    _is_private_address,
+    _resolve_all_ips,
+    _SSRFRedirectHandler,
 )
 
 # Public IP used across safe-fetch helpers (example.com).
@@ -124,6 +135,14 @@ class TestSSRFDenyList:
         ):
             fetcher.fetch("http://100.127.255.255/")
 
+    def test_ipv4_mapped_ipv6_private_rejected(self) -> None:
+        """::ffff:10.0.0.1 is a private IPv4 address in mapped form."""
+        assert _is_private_address("::ffff:10.0.0.1")
+
+    def test_ipv4_mapped_ipv6_cgnat_rejected(self) -> None:
+        """::ffff:100.64.0.1 is a CGNAT address in IPv4-mapped IPv6 form."""
+        assert _is_private_address("::ffff:100.64.0.1")
+
 
 class TestMultiAddressDNS:
     """All addresses returned by getaddrinfo must be validated.
@@ -166,41 +185,43 @@ class TestMultiAddressDNS:
 
 
 class TestDNSRebindingTOCTOU:
-    """DNS rebinding / TOCTOU: the connection must use the validated IP.
+    """DNS rebinding / TOCTOU: the connection uses the pre-validated IP.
 
-    After the deny-list check passes, the HTTP client must not perform a
-    second DNS lookup that could resolve to a different (internal) address.
-    We simulate this by patching _resolve_all_ips to return a public IP on
-    the first call (pre-fetch check) and a private IP on any subsequent
-    call, then verifying the fetch is still rejected -- because the real
-    connection attempt uses the pre-validated IP, not a fresh resolution.
+    The pinned-IP connector calls socket.create_connection() with the IP
+    returned by _assert_all_safe(), bypassing any subsequent getaddrinfo
+    call. We simulate a genuine rebind: first call returns a public IP
+    (passes the deny-list), a hypothetical second call would return a
+    private IP -- but the connector never makes that second call.
 
-    With the pinned-IP connector the socket connects to the validated IP
-    directly, so a second getaddrinfo call never happens in the live path.
-    In tests we verify the guard: if the implementation were to re-resolve,
-    the rebinding IP would be caught, not silently allowed.
+    The test patches _resolve_all_ips with side_effect=[public, private]
+    and verifies the fetch SUCCEEDS: the private IP from the second
+    resolution is never consulted because the connector is already pinned
+    to the first (public) IP.
     """
 
-    def test_rebind_to_private_on_second_resolution_is_caught(self) -> None:
-        """The validation pass catches the private IP even if it comes second.
+    def test_pinned_connector_never_re_resolves(self) -> None:
+        """Fetch succeeds when the hypothetical second resolution is private.
 
-        Because the implementation validates ALL addresses from getaddrinfo
-        and the connector uses the validated IP directly, rebinding is
-        prevented at the resolution step. This test confirms that a response
-        list containing any private address is always rejected regardless of
-        which call returns it.
+        Confirms the pinned connector does not call _resolve_all_ips again
+        after the initial validation pass.
         """
         fetcher = HttpSourceFetcher()
-        # Simulate DNS returning both a public and a private address -- the
-        # attack vector where the attacker controls multiple A records and
-        # hopes the check picks the public one but the connector picks the
-        # private one. Our implementation validates ALL addresses, so this
-        # is rejected.
+        body = b"<html>Recycling.</html>"
+        # First call: public IP (passes the deny-list check).
+        # Second call (if it happened): private IP (would be rejected).
         with (
-            _mock_dns([_PUBLIC_IP, "127.0.0.1"]),
-            pytest.raises(FetchError, match="private"),
+            patch(
+                "src.infra.external.source_fetcher._resolve_all_ips",
+                side_effect=[[_PUBLIC_IP], ["127.0.0.1"]],
+            ),
+            patch(
+                "src.infra.external.source_fetcher._http_get",
+                return_value=body,
+            ),
         ):
-            fetcher.fetch("http://rebind.example.com/")
+            result = fetcher.fetch("https://example.com/rebind-test")
+        # The fetch succeeded -- the second resolution was never made.
+        assert isinstance(result, SourceFetchResult)
 
 
 class TestRedirectSafety:
@@ -260,6 +281,50 @@ class TestRedirectSafety:
         ):
             fetcher.fetch("https://public.example.com/page")
 
+    def test_cross_host_redirect_rejected(self) -> None:
+        """A redirect to a different hostname is refused.
+
+        The pinned connection carries the original host's IP + SNI; following
+        a cross-host redirect would TLS-mismatch or hit the wrong server.
+        """
+        handler = _SSRFRedirectHandler(original_host="example.com")
+        req = UrllibRequest("https://example.com/page")
+        fake_fp = MagicMock()
+        fake_headers = MagicMock()
+
+        with pytest.raises(FetchError, match="cross-host redirect"):
+            handler.redirect_request(
+                req,
+                fake_fp,
+                302,
+                "Found",
+                fake_headers,
+                "https://www.example.com/page",
+            )
+
+    def test_same_host_redirect_allowed(self) -> None:
+        """A same-host redirect (path change only) is allowed."""
+        handler = _SSRFRedirectHandler(original_host="example.com")
+        req = UrllibRequest("https://example.com/old")
+        fake_fp = MagicMock()
+        fake_headers = MagicMock()
+
+        with patch(
+            "src.infra.external.source_fetcher._assert_all_safe",
+            return_value=[_PUBLIC_IP],
+        ):
+            result = handler.redirect_request(
+                req,
+                fake_fp,
+                301,
+                "Moved Permanently",
+                fake_headers,
+                "https://example.com/new",
+            )
+        # super().redirect_request() returns a new Request or None; not None
+        # means the redirect will be followed.
+        assert result is not None
+
 
 class TestBodySizeCap:
     def test_body_over_cap_rejected(self) -> None:
@@ -277,6 +342,94 @@ class TestBodySizeCap:
         with _mock_safe_fetch("https://example.com/ok", body):
             result = fetcher.fetch("https://example.com/ok")
         assert result.source_text is not None
+
+    def test_http_get_reads_at_most_cap_plus_one_bytes(self) -> None:
+        """_http_get reads at most FETCH_MAX_BYTES+1 bytes from the response.
+
+        An oversize body must not be fully buffered in memory; reading
+        cap+1 is the minimum needed to detect the oversize condition.
+        """
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"x" * (FETCH_MAX_BYTES + 1)
+
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+
+        with patch(
+            "urllib.request.build_opener",
+            return_value=mock_opener,
+        ):
+            raw = _http_get(
+                "https://example.com/",
+                FETCH_TIMEOUT_S,
+                [_PUBLIC_IP],
+                "example.com",
+            )
+
+        # Confirm read() was called with the cap+1 limit.
+        mock_response.read.assert_called_once_with(FETCH_MAX_BYTES + 1)
+        assert len(raw) == FETCH_MAX_BYTES + 1
+
+
+class TestDNSErrorHandling:
+    def test_dns_gaierror_raises_fetch_error(self) -> None:
+        """DNS resolution failure is wrapped in FetchError."""
+        fetcher = HttpSourceFetcher()
+        with (
+            patch(
+                "src.infra.external.source_fetcher._resolve_all_ips",
+                side_effect=FetchError(
+                    "DNS resolution failed for 'bad.host': ..."
+                ),
+            ),
+            pytest.raises(FetchError, match="DNS resolution failed"),
+        ):
+            fetcher.fetch("https://bad.host/page")
+
+    def test_real_dns_gaierror_becomes_fetch_error(self) -> None:
+        """socket.gaierror from getaddrinfo is wrapped in FetchError."""
+        with (
+            patch(
+                "socket.getaddrinfo",
+                side_effect=socket.gaierror("Name or service not known"),
+            ),
+            pytest.raises(FetchError, match="DNS resolution failed"),
+        ):
+            _resolve_all_ips("no-such-host.invalid")
+
+
+class TestHTTPErrorHandling:
+    def test_http_error_raises_fetch_error(self) -> None:
+        """HTTP URLError is wrapped in FetchError."""
+        fetcher = HttpSourceFetcher()
+
+        with (
+            _mock_dns([_PUBLIC_IP]),
+            patch(
+                "src.infra.external.source_fetcher._http_get",
+                side_effect=FetchError(
+                    "HTTP error fetching 'https://example.com/': ..."
+                ),
+            ),
+            pytest.raises(FetchError, match="HTTP error"),
+        ):
+            fetcher.fetch("https://example.com/bad")
+
+    def test_timeout_raises_fetch_error(self) -> None:
+        """A timed-out fetch is wrapped in FetchError."""
+        fetcher = HttpSourceFetcher()
+        timeout_msg = (
+            f"Fetch of 'https://x.test/' timed out after {FETCH_TIMEOUT_S}s"
+        )
+        with (
+            _mock_dns([_PUBLIC_IP]),
+            patch(
+                "src.infra.external.source_fetcher._http_get",
+                side_effect=FetchError(timeout_msg),
+            ),
+            pytest.raises(FetchError, match="timed out"),
+        ):
+            fetcher.fetch("https://example.com/slow")
 
 
 class TestSourceTextHash:

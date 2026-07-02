@@ -22,7 +22,8 @@ SSRF hardening implemented here:
    preserved from the original URL so TLS and virtual hosting work.
 
 4. Redirect re-check: _SSRFRedirectHandler validates the redirect target's
-   host (all addresses) before following the hop.
+   host (all addresses) before following the hop. Cross-host redirects
+   are refused to prevent IP/SNI mismatch on the pinned connection.
 
 Module-level constants are named with their derivation (plan § Reference Data
 § Pinned adapter constants):
@@ -285,7 +286,21 @@ class _SSRFHTTPSHandler(urllib.request.HTTPSHandler):
 
 
 class _SSRFRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Redirect handler that re-checks ALL resolved addresses on each hop."""
+    """Redirect handler that re-checks ALL resolved addresses on each hop.
+
+    Cross-host redirects (host changes between the original request and
+    the redirect target) are refused. A cross-host redirect would require
+    rebuilding the pinned connection with the new host's validated IPs;
+    doing so inside the handler is error-prone and unnecessary for the
+    single-page ingest use-case. Raise FetchError so the caller can retry
+    with the canonical URL if needed.
+    """
+
+    _original_host: str
+
+    def __init__(self, original_host: str) -> None:
+        super().__init__()
+        self._original_host = original_host
 
     @override
     def redirect_request(
@@ -307,10 +322,22 @@ class _SSRFRedirectHandler(urllib.request.HTTPRedirectHandler):
             )
             raise FetchError(_msg)
 
-        host = parsed.hostname or ""
-        if host:
+        new_host = parsed.hostname or ""
+
+        # Reject cross-host redirects: the pinned connection carries the
+        # original host's IP and SNI; a different host would TLS-mismatch or
+        # hit the wrong server.
+        if new_host and new_host != self._original_host:
+            msg = (
+                f"Fetch of {req.full_url!r} rejected: cross-host redirect"
+                f" to {newurl!r} (original host {self._original_host!r},"
+                f" redirect host {new_host!r})"
+            )
+            raise FetchError(msg)
+
+        if new_host:
             # Validate every address the redirect target resolves to.
-            _ = _assert_all_safe(host, newurl)
+            _ = _assert_all_safe(new_host, newurl)
 
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
@@ -346,12 +373,14 @@ def _http_get(
         scheme_handler = _SSRFHTTPHandler(validated_ips)
 
     opener = urllib.request.build_opener(
-        _SSRFRedirectHandler(),
+        _SSRFRedirectHandler(original_host),
         scheme_handler,
     )
     try:
         response = opener.open(url, timeout=timeout)
-        return response.read()
+        # Read at most cap+1 bytes; checking length after avoids buffering
+        # the full body of an oversize response (S-2 fix).
+        return response.read(FETCH_MAX_BYTES + 1)
     except URLError as exc:
         if "timed out" in str(exc).lower():
             raise FetchError(
@@ -376,8 +405,10 @@ class HttpSourceFetcher:
     1. Rejects non-http/https schemes.
     2. Resolves ALL addresses for the host and rejects if any is denied.
     3. Connects to the first validated IP directly (no second resolution).
-    4. Re-checks ALL addresses on every redirect hop via _SSRFRedirectHandler.
-    5. Rejects bodies larger than FETCH_MAX_BYTES.
+    4. Re-checks ALL addresses on every same-host redirect; cross-host
+       redirects are refused.
+    5. Reads at most FETCH_MAX_BYTES+1 bytes, then rejects if oversized
+       (prevents full-body buffering of malicious oversize responses).
     6. Applies FETCH_TIMEOUT_S wall-clock timeout.
 
     Idempotent: re-fetching an unchanged URL produces byte-identical
