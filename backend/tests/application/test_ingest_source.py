@@ -75,6 +75,7 @@ class FakeIngestionLLM:
         self,
         source: SourceFetchResult,
         jurisdiction_id: str,
+        jurisdiction_name: str,
         prompt_name: str,
         prompt_version: int,
     ) -> list[CandidateRule]:
@@ -159,6 +160,7 @@ class TestIngestSource:
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
         )
         report_id = service.run(command)
         assert isinstance(report_id, IngestionReportId)
@@ -174,6 +176,7 @@ class TestIngestSource:
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
         )
         report_id = service.run(command)
         report = report_repo.find_by_id(report_id)
@@ -191,6 +194,7 @@ class TestIngestSource:
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
         )
         report_id = service.run(command)
         report = report_repo.find_by_id(report_id)
@@ -209,6 +213,7 @@ class TestIngestSource:
         command = IngestSourceCommand(
             seed_url="https://denvergov.org/recycling",
             jurisdiction_id=_J_ID,
+            jurisdiction_name="Denver, CO",
         )
         report_id = service.run(command)
         report = report_repo.find_by_id(report_id)

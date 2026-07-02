@@ -46,6 +46,16 @@ def main(argv: list[str] | None = None) -> None:
         help="UUID of the jurisdiction this run targets.",
     )
     _ = parser.add_argument(
+        "--jurisdiction-name",
+        required=True,
+        metavar="NAME",
+        help=(
+            "Human-readable display name of the jurisdiction"
+            " (e.g. 'Denver, CO'). Used in the extraction prompt"
+            " (INV-LLM-008)."
+        ),
+    )
+    _ = parser.add_argument(
         "--verbose",
         action="store_true",
         default=False,
@@ -61,6 +71,7 @@ def main(argv: list[str] | None = None) -> None:
 
     source_url: str = cast(str, args.source)
     jurisdiction_id_str: str = cast(str, args.jurisdiction_id)
+    jurisdiction_name: str = cast(str, args.jurisdiction_name)
 
     try:
         jurisdiction_uuid = uuid.UUID(jurisdiction_id_str)
@@ -75,6 +86,7 @@ def main(argv: list[str] | None = None) -> None:
     command = IngestSourceCommand(
         seed_url=source_url,
         jurisdiction_id=JurisdictionId(jurisdiction_uuid),
+        jurisdiction_name=jurisdiction_name,
     )
 
     try:

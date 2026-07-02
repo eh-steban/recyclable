@@ -1,16 +1,17 @@
-"""IngestSource application service -- ingestion worker thin task coordinator.
+"""IngestSource application service -- ingestion worker task coordinator.
 
-Story 1 delivers the minimal pipeline:
+Pipeline:
 1. Mint a trace identity and persist an IngestionRunTrace.
 2. Fetch the seed URL via SourceFetcher.
 3. Call IngestionLLM.extract() to get CandidateRule list.
-4. Assemble an IngestionReport (all candidates op=add; no diff in Story 1).
+4. Assemble an IngestionReport (all candidates op=add; no diff yet).
 5. Transition to pending_review (runs Validator).
 6. Persist the report.
 7. Return the IngestionReportId.
 
-The LLM call is outside the transaction boundary per repositories.md
-Principle 9: assemble the report fully before any repo save.
+The trace save (step 1) and report save (step 6) are committed in two
+separate DB transactions; the fetch + LLM extraction (steps 2-3) run
+with no open transaction (repositories.md Principle 9).
 
 Imports domain ports only; never imports infra/ (DDD inward-dependency rule).
 """
@@ -42,10 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 def _candidate_to_change(candidate: CandidateRule) -> ProposedRuleChange:
-    """Map a CandidateRule to a ProposedRuleChange with op=add.
-
-    Story 1: all candidates are treated as new additions (no diff).
-    """
+    """Map a CandidateRule to a ProposedRuleChange with op=add."""
     rule: dict[str, object] = {
         "jurisdiction_id": str(candidate.jurisdiction_id),
         "material_slug": candidate.material_slug,
@@ -67,7 +65,7 @@ def _candidate_to_change(candidate: CandidateRule) -> ProposedRuleChange:
 
 @final
 class IngestSource:
-    """Application service for the ingestion worker pipeline (Story 1).
+    """Application service for the ingestion worker pipeline.
 
     Constructor parameters are domain ports; the worker pipeline injects
     concrete implementations at call time.
@@ -92,7 +90,6 @@ class IngestSource:
         """
         now = datetime.now(tz=UTC)
 
-        # Step 1: mint and persist the trace (FK anchor for the report).
         trace_id = self._trace_repo.next_identity()
         trace = IngestionRunTrace(
             id=trace_id,
@@ -107,7 +104,6 @@ class IngestSource:
             command.seed_url,
         )
 
-        # Step 2: fetch the seed URL.
         source = self._fetcher.fetch(command.seed_url, authority_level=3)
 
         logger.info(
@@ -117,10 +113,10 @@ class IngestSource:
             source.content_type,
         )
 
-        # Step 3: extract candidates (LLM call outside transaction boundary).
         candidates: list[CandidateRule] = self._llm.extract(
             source=source,
             jurisdiction_id=str(command.jurisdiction_id.value),
+            jurisdiction_name=command.jurisdiction_name,
             prompt_name=EXTRACT_RULES_PROMPT_NAME,
             prompt_version=EXTRACT_RULES_VERSION,
         )
@@ -131,7 +127,6 @@ class IngestSource:
             len(candidates),
         )
 
-        # Step 4: assemble report (all candidates op=add).
         proposed_changes = tuple(_candidate_to_change(c) for c in candidates)
         report_id = self._report_repo.next_identity()
         draft = IngestionReport(
@@ -149,10 +144,8 @@ class IngestSource:
             model_id=OPUS_MODEL_ID,
         )
 
-        # Step 5: transition to pending_review (runs Validator).
         report = draft.to_pending_review()
 
-        # Step 6: persist.
         self._report_repo.save(report)
 
         logger.info(

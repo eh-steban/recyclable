@@ -436,17 +436,18 @@ class OpusIngestionClient:
         self,
         source: SourceFetchResult,
         jurisdiction_id: str,
+        jurisdiction_name: str,
         prompt_name: str,
         prompt_version: int,
     ) -> list[CandidateRule]:
         """Call Opus with the source text; return extracted CandidateRules.
 
-        Story 1 contract: single-shot. Opus sees the pre-fetched source
-        text and calls extract_rules to emit candidates.
+        jurisdiction_name is the human-readable display name passed to the
+        system prompt (INV-LLM-008); jurisdiction_id is used for tracing only.
         """
         tools = build_extract_rules_tool_schema()
         system_prompt = build_extract_rules_system_prompt(
-            jurisdiction_name=jurisdiction_id
+            jurisdiction_name=jurisdiction_name
         )
         # Wrap source text in a delimiter to prevent prompt injection
         # (INV-LLM-004 convention from the retrieval path).
