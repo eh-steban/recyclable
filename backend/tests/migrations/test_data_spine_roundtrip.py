@@ -80,10 +80,10 @@ def test_upgrade_creates_all_seven_tables(
     missing = IN_SCOPE_TABLES - tables
     assert not missing, f"Tables missing after upgrade: {missing}"
 
-    # Out-of-scope tables must NOT be present.
+    # Out-of-scope tables must NOT be present. (ingestion_reports is built as
+    # of 0005; covered by test_ingestion_reports_roundtrip.py.)
     out_of_scope = {
         "facilities",
-        "ingestion_reports",
         "feedback",
         "escalations",
     }
