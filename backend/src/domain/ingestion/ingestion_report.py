@@ -1,15 +1,10 @@
 """IngestionReport aggregate root.
 
-Non-trivial aggregate root per architecture.md § Aggregates.
 The `to_pending_review()` method runs `IngestionReportValidator` (notification-
-handler style) and refuses the transition on any violation.
-
-Per architecture.md § Three-level validation, the Validator enforces
-Level-2 whole-object checks: every proposed change must carry op, rule,
-confidence, non-null source_document_id, and non-empty source_quote;
-trace_id and jurisdiction_id must be non-null (INV-DATA-001).
-
-Cross-entity references are by typed id only (architecture.md § Aggregates).
+handler style) and refuses the transition on any violation. Every proposed
+change must carry op, rule, confidence, non-null source_document_id, and
+non-empty source_quote; trace_id and jurisdiction_id must be non-null
+(INV-DATA-001).
 """
 
 # LLM-extracted rule payloads are dict[str, Any]; boundary guard reads fields

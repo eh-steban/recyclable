@@ -2,12 +2,7 @@
 
 Minted at run start to satisfy the non-null FK on IngestionReport.
 Full enrichment (tool_calls, urls_fetched, etc.) uses the nullable
-D6 audit columns already in the schema.
-
-Architecture note: IngestionRunTrace is an Entity (not a Value) because it
-has a managed lifecycle -- created once at run start, potentially enriched
-later. It lives in the audit Module per architecture.md (ingestion audit
-records live alongside AnswerAuditRecord).
+D6 trace columns already in the schema.
 """
 
 import uuid

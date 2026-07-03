@@ -1,4 +1,4 @@
-"""B-3: trace save and report save must be in separate DB transactions.
+"""Trace save and report save must be in separate DB transactions.
 
 The trace is persisted and committed before the network fetch and LLM
 extraction begin. The report is persisted in a second transaction after

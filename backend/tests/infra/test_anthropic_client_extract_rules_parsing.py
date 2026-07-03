@@ -1,4 +1,4 @@
-"""Unit tests for _parse_extract_rules_input (B-2: provenance fallback).
+"""Unit tests for _parse_extract_rules_input.
 
 Verifies that when the model's source_document_id is missing or unparseable,
 the function falls back to the real source id (INV-DATA-001) rather than
@@ -95,3 +95,27 @@ class TestParseExtractRulesInputProvenance:
         assert len(results) == 1
         assert results[0].source_document_id == _SOURCE_ID
         assert results[0].source_document_id != other_source_id
+
+    def test_null_source_document_id_falls_back_to_source_id(self) -> None:
+        """JSON null (None) source_document_id falls back to the real source id.
+
+        uuid.UUID(None) raises TypeError; the except clause must catch it
+        so the entire batch is not dropped (INV-DATA-001).
+        """
+        tool_input = {
+            "source_document_id": None,
+            "candidates": [
+                {
+                    "source_quote": "Paper is accepted curbside.",
+                    "confidence": "high",
+                    "material_slug": "paper",
+                    "disposition": "curbside_recycle",
+                    "accepted_status": "accepted",
+                }
+            ],
+        }
+        results = _parse_extract_rules_input(
+            tool_input, _JURISDICTION_ID, _SOURCE_ID
+        )
+        assert len(results) == 1
+        assert results[0].source_document_id == _SOURCE_ID

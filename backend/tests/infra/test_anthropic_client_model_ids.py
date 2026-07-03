@@ -13,10 +13,13 @@ dispatches to the Haiku model. No network calls; the SDK is patched.
 """
 
 import unittest.mock as mock
+import uuid
 
 import anthropic
 import pytest
 
+from src.domain.ingestion.ingestion_llm import OPUS_MODEL_ID
+from src.domain.ingestion.source_fetcher import SourceFetchResult
 from src.domain.retrieval.evaluated_answer import (
     NoEvaluation,
     NoEvaluationReason,
@@ -25,6 +28,7 @@ from src.domain.retrieval.retrieval_llm import SONNET_MODEL_ID
 from src.infra.external.anthropic_client import (
     HAIKU_MODEL_ID,
     AnthropicClient,
+    OpusIngestionClient,
 )
 
 
@@ -215,3 +219,47 @@ def test_ask_does_not_retry_on_non_retryable_4xx(
     )
     assert isinstance(result, NoEvaluation)
     assert result.reason == NoEvaluationReason.LLM_REJECTED
+
+
+def test_extract_uses_opus_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """extract() must call the Anthropic SDK with model=OPUS_MODEL_ID.
+
+    INV-LLM-005: the Opus model ID is pinned at the call site; no caller
+    may override it. A mutation that swaps the model string at the call
+    site must make this test fail.
+    """
+    messages_spy = mock.MagicMock()
+    messages_spy.create.return_value = mock.MagicMock(
+        content=[],
+        stop_reason="end_turn",
+    )
+    fake_sdk = mock.MagicMock(spec=anthropic.Anthropic)
+    fake_sdk.messages = messages_spy
+
+    monkeypatch.setattr(anthropic, "Anthropic", lambda **kwargs: fake_sdk)
+
+    client = OpusIngestionClient(api_key="test")
+    source = SourceFetchResult(
+        id=uuid.uuid4(),
+        url="https://example.com/recycling",
+        source_text="Glass bottles accepted.",
+        source_text_hash="abc123",
+        authority_level=3,
+        content_type="text/html",
+    )
+    client.extract(
+        source=source,
+        jurisdiction_id=str(uuid.uuid4()),
+        jurisdiction_name="Denver, CO",
+        prompt_name="extract_rules_v1",
+        prompt_version=1,
+    )
+
+    call_kwargs = messages_spy.create.call_args
+    assert call_kwargs is not None, "messages.create was not called"
+    model_used = call_kwargs.kwargs.get(
+        "model", call_kwargs.args[0] if call_kwargs.args else None
+    )
+    assert model_used == OPUS_MODEL_ID, (
+        f"Expected {OPUS_MODEL_ID!r}, got {model_used!r}"
+    )

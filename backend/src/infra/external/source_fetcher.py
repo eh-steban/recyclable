@@ -25,12 +25,6 @@ SSRF hardening implemented here:
    host (all addresses) before following the hop. Cross-host redirects
    are refused to prevent IP/SNI mismatch on the pinned connection.
 
-Module-level constants are named with their derivation (plan § Reference Data
-§ Pinned adapter constants):
-
-- FETCH_MAX_BYTES: 5 MB -- design Q2 default; caps body before extraction.
-- FETCH_TIMEOUT_S: 30 s -- design Q2 default; per-fetch wall-clock timeout.
-
 The internal helpers (_resolve_all_ips, _http_get) are thin wrappers so
 tests can patch them without patching socket / urllib internals.
 """
@@ -81,7 +75,7 @@ def _resolve_all_ips(host: str) -> list[str]:
 
     Returning all addresses (not just [0]) lets _assert_all_safe() reject
     a host where the attacker orders a public IP first and a private one
-    second (Finding 2: incomplete DNS validation).
+    second address in the result.
     """
     try:
         infos = socket.getaddrinfo(host, None)
@@ -148,9 +142,9 @@ def _assert_all_safe(host: str, url: str) -> list[str]:
 
     Returns the validated list of IPs so the caller can pin the connection.
 
-    Fixes Finding 1 (TOCTOU) and Finding 2 (first-address-only): the
-    caller uses the returned list to open the socket directly, and every
-    address is checked before any connection is made.
+    Prevents TOCTOU and first-address-only gaps: the caller uses the
+    returned list to open the socket directly, and every address is
+    checked before any connection is made.
     """
     ips = _resolve_all_ips(host)
     for ip in ips:
@@ -352,8 +346,8 @@ def _http_get(
     timeout: int,
     validated_ips: list[str],
     original_host: str,
-) -> bytes:
-    """Fetch url and return raw response bytes using pinned IP connections.
+) -> tuple[bytes, str]:
+    """Fetch url and return (raw bytes, Content-Type) via pinned IP connections.
 
     validated_ips: all IPs returned by _resolve_all_ips() for the original
                    host; the connection is pinned to validated_ips[0].
@@ -361,6 +355,8 @@ def _http_get(
 
     Follows redirects; each redirect hop's target is re-validated by
     _SSRFRedirectHandler. Raises FetchError on HTTP errors or timeouts.
+    The Content-Type falls back to 'application/octet-stream' when the
+    server omits the header.
     """
     parsed = urllib.parse.urlparse(url)
     scheme = parsed.scheme
@@ -380,7 +376,11 @@ def _http_get(
         response = opener.open(url, timeout=timeout)
         # Read at most cap+1 bytes; checking length after avoids buffering
         # the full body of an oversize response (S-2 fix).
-        return response.read(FETCH_MAX_BYTES + 1)
+        body = response.read(FETCH_MAX_BYTES + 1)
+        content_type: str = response.headers.get(
+            "Content-Type", "application/octet-stream"
+        )
+        return body, content_type
     except URLError as exc:
         if "timed out" in str(exc).lower():
             raise FetchError(
@@ -436,7 +436,7 @@ class HttpSourceFetcher:
         host = parsed.hostname or ""
         original_host = host
 
-        # 2. Resolve all addresses and validate every one (Findings 1 + 2).
+        # 2. Resolve all addresses and validate every one (TOCTOU + all-addr).
         #    Returns the validated list for connection pinning.
         validated_ips = _assert_all_safe(host, url)
 
@@ -449,7 +449,9 @@ class HttpSourceFetcher:
         )
 
         # 3. Fetch using pinned IP (no second DNS lookup).
-        raw = _http_get(url, FETCH_TIMEOUT_S, validated_ips, original_host)
+        raw, content_type = _http_get(
+            url, FETCH_TIMEOUT_S, validated_ips, original_host
+        )
 
         # 5. Body size cap (after fetch, before decode).
         if len(raw) > FETCH_MAX_BYTES:
@@ -476,5 +478,5 @@ class HttpSourceFetcher:
             source_text=source_text,
             source_text_hash=source_text_hash,
             authority_level=authority_level,
-            content_type="text/html",
+            content_type=content_type,
         )

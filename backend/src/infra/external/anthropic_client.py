@@ -13,6 +13,7 @@ schema validation is added.
 
 # pyright: reportAny=false, reportExplicitAny=false
 
+import html
 import json
 import logging
 import re
@@ -451,10 +452,13 @@ class OpusIngestionClient:
         )
         # Wrap source text in a delimiter to prevent prompt injection
         # (INV-LLM-004 convention from the retrieval path).
+        # XML-escape the URL so special chars in query strings don't break
+        # the attribute structure of the <source_document> tag.
+        escaped_url = html.escape(source.url, quote=True)
         user_content = (
             f"Please extract recycling rules from the following source page"
             f" (source_document_id: {source.id}).\n\n"
-            f'<source_document id="{source.id}" url="{source.url}">\n'
+            f'<source_document id="{source.id}" url="{escaped_url}">\n'
             f"{source.source_text[:200_000]}\n"
             f"</source_document>"
         )
@@ -557,7 +561,7 @@ def _parse_extract_rules_input(
     raw_id: str = tool_input.get("source_document_id", "")
     try:
         source_doc_id = uuid.UUID(raw_id)
-    except ValueError, AttributeError:
+    except ValueError, AttributeError, TypeError:
         logger.warning(
             "extract_rules: invalid source_document_id=%r; fallback=%s",
             raw_id,

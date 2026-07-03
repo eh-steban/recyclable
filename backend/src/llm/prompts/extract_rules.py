@@ -1,9 +1,5 @@
 """extract_rules prompt and tool schema for the ingestion Opus agent.
 
-Per llm/CLAUDE.md § Prompt versioning: every template has a stable name,
-a version integer, and a pure builder function. The version is logged on
-every call so traces map back to the exact prompt wording.
-
 The tool schema is used in two ways:
 1. Passed to the Anthropic SDK as the `tools` list for the Opus call.
 2. Inspected by the static no-writer guard in tests (INV-LLM-003).

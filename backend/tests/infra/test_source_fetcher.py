@@ -216,7 +216,7 @@ class TestDNSRebindingTOCTOU:
             ),
             patch(
                 "src.infra.external.source_fetcher._http_get",
-                return_value=body,
+                return_value=(body, "text/html"),
             ),
         ):
             result = fetcher.fetch("https://example.com/rebind-test")
@@ -351,6 +351,7 @@ class TestBodySizeCap:
         """
         mock_response = MagicMock()
         mock_response.read.return_value = b"x" * (FETCH_MAX_BYTES + 1)
+        mock_response.headers.get.return_value = "text/html"
 
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_response
@@ -359,7 +360,7 @@ class TestBodySizeCap:
             "urllib.request.build_opener",
             return_value=mock_opener,
         ):
-            raw = _http_get(
+            raw, _ct = _http_get(
                 "https://example.com/",
                 FETCH_TIMEOUT_S,
                 [_PUBLIC_IP],
@@ -451,6 +452,72 @@ class TestSourceTextHash:
         assert r1.source_text_hash == r2.source_text_hash
 
 
+class TestContentType:
+    def test_content_type_reflects_response_header(self) -> None:
+        """content_type in SourceFetchResult mirrors the HTTP Content-Type."""
+        fetcher = HttpSourceFetcher()
+        body = b"<html>Recycle glass!</html>"
+        with (
+            patch(
+                "src.infra.external.source_fetcher._resolve_all_ips",
+                return_value=[_PUBLIC_IP],
+            ),
+            patch(
+                "src.infra.external.source_fetcher._http_get",
+                return_value=(body, "text/html; charset=utf-8"),
+            ),
+        ):
+            result = fetcher.fetch("https://example.com/page")
+        assert result.content_type == "text/html; charset=utf-8"
+
+    def test_content_type_json_reflects_response_header(self) -> None:
+        fetcher = HttpSourceFetcher()
+        body = b'{"rules": []}'
+        with (
+            patch(
+                "src.infra.external.source_fetcher._resolve_all_ips",
+                return_value=[_PUBLIC_IP],
+            ),
+            patch(
+                "src.infra.external.source_fetcher._http_get",
+                return_value=(body, "application/json"),
+            ),
+        ):
+            result = fetcher.fetch("https://example.com/rules.json")
+        assert result.content_type == "application/json"
+
+    def test_content_type_falls_back_to_octet_stream_when_header_absent(
+        self,
+    ) -> None:
+        """Exercises the fallback default inside _http_get directly.
+
+        When the response carries no Content-Type header, the real dict .get()
+        returns the default 'application/octet-stream'. A MagicMock headers
+        would silently absorb the default arg; a real empty dict does not.
+        """
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"binary data"
+        # Real dict: .get("Content-Type", "application/octet-stream") returns
+        # the default because the key is absent.
+        mock_response.headers = {}
+
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+
+        with patch(
+            "urllib.request.build_opener",
+            return_value=mock_opener,
+        ):
+            _body, content_type = _http_get(
+                "https://example.com/blob",
+                FETCH_TIMEOUT_S,
+                [_PUBLIC_IP],
+                "example.com",
+            )
+
+        assert content_type == "application/octet-stream"
+
+
 class TestConstants:
     def test_fetch_max_bytes_is_5mb(self) -> None:
         assert FETCH_MAX_BYTES == 5 * 1024 * 1024
@@ -469,11 +536,12 @@ def _mock_safe_fetch(
     url: str,
     body: bytes,
     dns_ips: list[str] | None = None,
+    content_type: str = "text/html",
 ) -> Generator[None]:
     """Patch DNS and HTTP so no real network call is made.
 
     The DNS check sees a public IP (or the given dns_ips list); the
-    response body is the given bytes.
+    response body is the given bytes with the given Content-Type.
     """
     ips = dns_ips if dns_ips is not None else [_PUBLIC_IP]
     with (
@@ -483,7 +551,7 @@ def _mock_safe_fetch(
         ),
         patch(
             "src.infra.external.source_fetcher._http_get",
-            return_value=body,
+            return_value=(body, content_type),
         ),
     ):
         yield

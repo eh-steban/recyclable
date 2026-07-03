@@ -88,3 +88,40 @@ class TestExtractionPromptJurisdictionName:
             b["text"] for b in system_blocks if b.get("type") == "text"
         )
         assert _JURISDICTION_ID not in system_text
+
+    def test_url_with_special_chars_is_xml_escaped_in_user_message(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """URL containing XML-special chars must be escaped in the user message.
+
+        An unescaped URL with '"', '>' or '&' breaks the XML attribute
+        structure of the <source_document> tag and can cause Opus to
+        misparse the document boundary.
+        """
+        client, spy = _opus_client_with_spy(monkeypatch)
+        source = SourceFetchResult(
+            id=uuid.uuid4(),
+            url='https://example.com/page?a=1&b=2&c="test">',
+            source_text="Glass is accepted.",
+            source_text_hash="abc",
+            authority_level=3,
+            content_type="text/html",
+        )
+        client.extract(
+            source=source,
+            jurisdiction_id=_JURISDICTION_ID,
+            jurisdiction_name=_JURISDICTION_NAME,
+            prompt_name="extract_rules_v1",
+            prompt_version=1,
+        )
+        call_kwargs = spy.create.call_args
+        messages = call_kwargs.kwargs["messages"]
+        user_content: str = messages[0]["content"]
+        # Raw '&' and '"' must not appear unescaped inside the url attribute.
+        # (The closing '>' ends the XML tag, not the URL value.)
+        assert 'url="https://example.com/page?a=1&b=' not in user_content
+        assert 'c="test">' not in user_content
+        # The escaped forms must be present in the user message.
+        assert "&amp;" in user_content
+        assert "&quot;" in user_content
+        assert "&gt;" in user_content
