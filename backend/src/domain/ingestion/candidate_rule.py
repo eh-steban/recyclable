@@ -11,6 +11,8 @@ Confidence is a tracking signal only; it never gates the apply path.
 INV-DATA-001: source_document_id and source_quote must be non-null/non-empty.
 """
 
+# LLM-extracted rule payloads are dict[str, Any]; boundary guard reads fields
+# via getattr, which is also typed Any -- no tighter type is available here.
 # pyright: reportExplicitAny=false, reportAny=false
 
 import uuid

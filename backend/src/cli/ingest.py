@@ -12,8 +12,6 @@ The pipeline runs in this process (worker mode) and is not part of the
 FastAPI HTTP surface (INV-OPS-001).
 """
 
-# pyright: reportAny=false, reportExplicitAny=false
-
 import argparse
 import logging
 import sys
@@ -63,7 +61,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    log_level = logging.DEBUG if args.verbose else logging.INFO  # pyright: ignore[reportAny]
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",

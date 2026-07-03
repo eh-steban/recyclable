@@ -12,6 +12,8 @@ trace_id and jurisdiction_id must be non-null (INV-DATA-001).
 Cross-entity references are by typed id only (architecture.md § Aggregates).
 """
 
+# LLM-extracted rule payloads are dict[str, Any]; boundary guard reads fields
+# via getattr, which is also typed Any -- no tighter type is available here.
 # pyright: reportExplicitAny=false, reportAny=false
 
 import dataclasses

@@ -1,7 +1,5 @@
 """Postgres implementation of the IngestionRunTraceRepo port."""
 
-# pyright: reportAny=false, reportExplicitAny=false
-
 import logging
 import uuid
 

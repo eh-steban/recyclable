@@ -22,7 +22,7 @@ from collections.abc import Callable
 from typing import Any, Final, cast, final
 
 import anthropic
-from anthropic.types import Message, MessageParam, ToolUseBlock
+from anthropic.types import Message, MessageParam
 
 from src.domain.ingestion.candidate_rule import CandidateRule
 from src.domain.ingestion.ingestion_llm import OPUS_MODEL_ID
@@ -503,8 +503,7 @@ class OpusIngestionClient:
 
             # Build tool results for next turn.
             tool_results: list[dict[str, Any]] = []
-            for block in tool_calls:
-                tool_block: ToolUseBlock = block  # type: ignore[assignment]
+            for tool_block in tool_calls:
                 if tool_block.name == "extract_rules":
                     candidates = _parse_extract_rules_input(
                         cast("dict[str, Any]", tool_block.input),
