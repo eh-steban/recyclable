@@ -83,16 +83,19 @@ Modules cover the Backend Context's domain:
 
 - **`ingestion`** -- the Opus research path's domain logic:
   `IngestionReport`, the `ConflictDetector` Domain Service, the
-  ingestion LLM port. Used by the Ingestion application service.
+  ingestion LLM port, and `IngestionRunTrace` (the durable per-run
+  audit Entity). `IngestionRunTrace` is homed here -- NOT in the
+  `audit` Module -- because ingestion is a distinct bounded context
+  and the trace coheres with the `IngestionReport` aggregate it is
+  referenced from. Used by the Ingestion application service.
 
 - **`audit`** -- accountability records: `AnswerAuditRecord`, the
   `AnswerAuditRecordValidator` (which enforces INV-PROD-001 at
   construction), the answer-audit repository port. Written by the
   user path; read for feedback association, eval replay, and
-  operational analytics. Future audit Entities for ingestion,
-  feedback, or admin actions live alongside in this Module as
-  separate Entities (each with its own invariants and validator),
-  not as variants of one polymorphic record.
+  operational analytics. Scope: answer-path logging only (automatic,
+  no human in the loop). Ingestion-side tracing lives in the
+  `ingestion` Module (see `IngestionRunTrace` above).
 
 Each Module's name is part of the Ubiquitous Language. It appears
 in code (folder names, type imports), in conversation, in prompts,
@@ -502,6 +505,11 @@ Validator at the Entity's constructor.
   whole-object invariants and inner Entities are deferred to the
   Ingestion design spec, where their invariants are designed in
   context.
+- **`IngestionRunTrace`** (ingestion Module) -- a managed-lifecycle
+  Entity: minted at run start, enriched as the loop proceeds. Homed
+  in the `ingestion` Module, NOT the `audit` Module (ruling:
+  Story 1 sign-off; rationale: coheres with `IngestionReport`, its
+  only referencing aggregate).
 
 **Cross-Entity references go by typed-id Value, never by object
 reference** (per `ddd/aggregates.md` Principle 4).
