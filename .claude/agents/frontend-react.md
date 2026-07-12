@@ -7,6 +7,10 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
+**Worktree awareness:** before reading any file, follow
+`.claude/docs/worktree-awareness.md` -- the session cwd may be a different
+checkout with a stale `private/`.
+
 You are a React/TypeScript frontend expert.
 
 Follow project conventions in .claude/rules/frontend/CLAUDE.md:

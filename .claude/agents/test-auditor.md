@@ -8,6 +8,10 @@ tools: Read, Bash, Glob, Grep
 model: sonnet
 ---
 
+**Worktree awareness:** before reading any file, follow
+`.claude/docs/worktree-awareness.md` -- the session cwd may be a different
+checkout with a stale `private/`.
+
 You are a QA architect performing a systematic test suite audit.
 
 Before auditing, check `private/learnings-index.md` for applicable

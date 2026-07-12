@@ -7,6 +7,10 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
 
+**Worktree awareness:** before reading any file, follow
+`.claude/docs/worktree-awareness.md` -- the session cwd may be a different
+checkout with a stale `private/`.
+
 You are a technical writer and product analyst.
 
 ## Responsibilities

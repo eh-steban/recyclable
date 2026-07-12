@@ -8,6 +8,10 @@ tools: Read, Bash, Glob, Grep
 model: sonnet
 ---
 
+**Worktree awareness:** before reading any file, follow
+`.claude/docs/worktree-awareness.md` -- the session cwd may be a different
+checkout with a stale `private/`.
+
 You check one thing: does this diff weaken a type's invariant, or add a
 path that bypasses it?
 
