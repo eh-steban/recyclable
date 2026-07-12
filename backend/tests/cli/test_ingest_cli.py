@@ -1,13 +1,8 @@
 """CLI tests for the ingest command (src.cli.ingest).
 
-Verifies argument validation and error-path exit codes without a real DB
-or network: run_ingestion is monkeypatched in all tests.
-
-Covers:
-- Invalid --jurisdiction-id exits nonzero
-- Missing required args exits nonzero (argparse handles this)
-- run_ingestion raising exits nonzero and prints error to stderr
-- Happy path: run_ingestion called, report ID printed, exit 0
+Argument validation, jurisdiction resolution, and error-path exit codes
+without a real DB or network: resolution runs against an in-memory repo
+and run_ingestion is patched.
 """
 
 import uuid
@@ -15,73 +10,79 @@ from unittest.mock import patch
 
 import pytest
 
-from src.cli.ingest import main
+from src.cli.ingest import _select_jurisdiction, main
 from src.domain.ingestion.ingestion_report import IngestionReportId
+from src.domain.knowledge_base.jurisdiction import Jurisdiction
+from tests.utils.builders.knowledge_base import make_jurisdiction
+from tests.utils.fakes.jurisdiction_repo import MemJurisdictionRepo
 
-_VALID_UUID = str(uuid.uuid4())
+_DENVER = make_jurisdiction(
+    name="City and County of Denver", slug="denver-co-us"
+)
 _BASE_ARGV = [
     "--source",
     "https://denvergov.org/recycling",
-    "--jurisdiction-id",
-    _VALID_UUID,
-    "--jurisdiction-name",
-    "Denver, CO",
+    "--jurisdiction",
+    "denver",
 ]
 
 
-class TestIngestCLIArgValidation:
-    def test_invalid_jurisdiction_id_exits_nonzero(
+def _repo_with(*jurisdictions: Jurisdiction) -> MemJurisdictionRepo:
+    repo = MemJurisdictionRepo()
+    for jurisdiction in jurisdictions:
+        repo.save(jurisdiction)
+    return repo
+
+
+class TestSelectJurisdiction:
+    def test_unique_substring_match_returns_jurisdiction(self) -> None:
+        result = _select_jurisdiction(_repo_with(_DENVER), "denver")
+        assert result.slug == "denver-co-us"
+
+    def test_match_is_case_insensitive(self) -> None:
+        result = _select_jurisdiction(_repo_with(_DENVER), "DENVER")
+        assert result.slug == "denver-co-us"
+
+    def test_no_match_lists_available_and_exits(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """Non-UUID --jurisdiction-id prints an error and exits 1."""
-        argv = [
-            "--source",
-            "https://denvergov.org/recycling",
-            "--jurisdiction-id",
-            "not-a-uuid",
-            "--jurisdiction-name",
-            "Denver, CO",
-        ]
         with pytest.raises(SystemExit) as exc_info:
-            main(argv)
+            _select_jurisdiction(_repo_with(_DENVER), "portland")
         assert exc_info.value.code != 0
-        captured = capsys.readouterr()
-        assert "not a valid UUID" in captured.err
+        err = capsys.readouterr().err
+        assert "no jurisdiction matches" in err
+        assert "City and County of Denver" in err
 
+    def test_ambiguous_match_lists_candidates_and_exits(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        repo = _repo_with(
+            make_jurisdiction(name="Denver City", slug="denver-city"),
+            make_jurisdiction(name="Denver County", slug="denver-county"),
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            _select_jurisdiction(repo, "denver")
+        assert exc_info.value.code != 0
+        assert "matches 2 jurisdictions" in capsys.readouterr().err
+
+    def test_empty_db_hints_to_seed(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        with pytest.raises(SystemExit) as exc_info:
+            _select_jurisdiction(MemJurisdictionRepo(), "denver")
+        assert exc_info.value.code != 0
+        assert "seed" in capsys.readouterr().err.lower()
+
+
+class TestIngestCLIArgValidation:
     def test_missing_source_arg_exits_nonzero(self) -> None:
-        """Missing --source causes argparse to exit nonzero."""
-        argv = [
-            "--jurisdiction-id",
-            _VALID_UUID,
-            "--jurisdiction-name",
-            "Denver, CO",
-        ]
         with pytest.raises(SystemExit) as exc_info:
-            main(argv)
+            main(["--jurisdiction", "denver"])
         assert exc_info.value.code != 0
 
-    def test_missing_jurisdiction_id_exits_nonzero(self) -> None:
-        """Missing --jurisdiction-id causes argparse to exit nonzero."""
-        argv = [
-            "--source",
-            "https://denvergov.org/recycling",
-            "--jurisdiction-name",
-            "Denver, CO",
-        ]
+    def test_missing_jurisdiction_arg_exits_nonzero(self) -> None:
         with pytest.raises(SystemExit) as exc_info:
-            main(argv)
-        assert exc_info.value.code != 0
-
-    def test_missing_jurisdiction_name_exits_nonzero(self) -> None:
-        """Missing --jurisdiction-name causes argparse to exit nonzero."""
-        argv = [
-            "--source",
-            "https://denvergov.org/recycling",
-            "--jurisdiction-id",
-            _VALID_UUID,
-        ]
-        with pytest.raises(SystemExit) as exc_info:
-            main(argv)
+            main(["--source", "https://denvergov.org/recycling"])
         assert exc_info.value.code != 0
 
 
@@ -89,8 +90,8 @@ class TestIngestCLIRunIngestion:
     def test_run_ingestion_raising_exits_nonzero(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """run_ingestion raising prints error to stderr and exits 1."""
         with (
+            patch("src.cli.ingest._resolve_jurisdiction", return_value=_DENVER),
             patch(
                 "src.cli.ingest.run_ingestion",
                 side_effect=RuntimeError("DB connection failed"),
@@ -99,18 +100,15 @@ class TestIngestCLIRunIngestion:
         ):
             main(_BASE_ARGV)
         assert exc_info.value.code != 0
-        captured = capsys.readouterr()
-        assert "ingestion failed" in captured.err
+        assert "ingestion failed" in capsys.readouterr().err
 
     def test_happy_path_prints_report_id_and_exits_zero(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """Successful run prints the report ID and exits 0."""
         report_id = IngestionReportId(uuid.uuid4())
-        with patch(
-            "src.cli.ingest.run_ingestion",
-            return_value=report_id,
+        with (
+            patch("src.cli.ingest._resolve_jurisdiction", return_value=_DENVER),
+            patch("src.cli.ingest.run_ingestion", return_value=report_id),
         ):
             main(_BASE_ARGV)
-        captured = capsys.readouterr()
-        assert str(report_id) in captured.out
+        assert str(report_id) in capsys.readouterr().out

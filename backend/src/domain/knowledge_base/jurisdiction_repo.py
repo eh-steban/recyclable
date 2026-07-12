@@ -8,3 +8,7 @@ from src.domain.shared.repo import Repo
 
 class JurisdictionRepo(Repo[Jurisdiction, JurisdictionId], Protocol):
     def find_by_slug(self, slug: str) -> Jurisdiction | None: ...
+
+    def search_by_name(self, query: str) -> list[Jurisdiction]:
+        """Case-insensitive substring match on name; "" matches all."""
+        ...

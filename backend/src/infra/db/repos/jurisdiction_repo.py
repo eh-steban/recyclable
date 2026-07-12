@@ -88,6 +88,16 @@ class PgJurisdictionRepo:
             return None
         return self._to_domain(row)
 
+    def search_by_name(self, query: str) -> list[Jurisdiction]:
+        logger.debug("search_by_name query=%s", query)
+        stmt = (
+            select(JurisdictionORM)
+            .where(JurisdictionORM.name.icontains(query, autoescape=True))
+            .order_by(JurisdictionORM.name)
+        )
+        rows = self._session.execute(stmt).scalars().all()
+        return [self._to_domain(row) for row in rows]
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

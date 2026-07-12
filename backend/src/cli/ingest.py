@@ -2,11 +2,13 @@
 
 Usage::
 
-    python -m src.cli ingest --source <url> --jurisdiction-id <uuid>
+    python -m src.cli ingest --source <url> --jurisdiction <name>
 
-Fetches one page (SSRF-safe), makes a single Opus call to extract candidate
-rules with confidence + provenance, and persists a pending_review
-IngestionReport. Prints the report ID on success.
+Resolves the jurisdiction from a case-insensitive name fragment (e.g.
+"denver" -> "City and County of Denver"), fetches one page (SSRF-safe),
+makes a single Opus call to extract candidate rules with confidence +
+provenance, and persists a pending_review IngestionReport. Prints the
+report ID on success.
 
 The pipeline runs in this process (worker mode) and is not part of the
 FastAPI HTTP surface (INV-OPS-001).
@@ -15,12 +17,53 @@ FastAPI HTTP surface (INV-OPS-001).
 import argparse
 import logging
 import sys
-import uuid
 from typing import cast
 
+from sqlalchemy.orm import Session
+
 from src.application.ingest_source_command import IngestSourceCommand
-from src.domain.knowledge_base.jurisdiction import JurisdictionId
+from src.domain.knowledge_base.jurisdiction import Jurisdiction
+from src.domain.knowledge_base.jurisdiction_repo import JurisdictionRepo
+from src.infra.db.repos.jurisdiction_repo import PgJurisdictionRepo
+from src.infra.db.session import get_engine
 from src.worker.pipelines.ingestion_pipeline import run_ingestion
+
+
+def _select_jurisdiction(repo: JurisdictionRepo, query: str) -> Jurisdiction:
+    """Return the single jurisdiction matching *query*, else exit(1).
+
+    The operator passes a name fragment; the canonical DB name is what
+    reaches the extraction prompt (INV-LLM-008), never the raw query. On
+    zero or multiple matches, list the candidates and exit nonzero so the
+    operator can rerun with a precise fragment.
+    """
+    matches = repo.search_by_name(query)
+    if len(matches) == 1:
+        return matches[0]
+
+    # An empty query matches every row: use it to show what IS available
+    # when the operator's fragment matched nothing.
+    available = matches or repo.search_by_name("")
+    if matches:
+        header = f"Error: {query!r} matches {len(matches)} jurisdictions:"
+    elif available:
+        header = f"Error: no jurisdiction matches {query!r}. Available:"
+    else:
+        print(
+            "Error: no jurisdictions found. Seed one first, e.g."
+            + " python -m src.cli seed --dataset denver-easy",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(header, file=sys.stderr)
+    for jurisdiction in available:
+        print(f"  {jurisdiction.name}  ({jurisdiction.slug})", file=sys.stderr)
+    sys.exit(1)
+
+
+def _resolve_jurisdiction(query: str) -> Jurisdiction:
+    with Session(get_engine()) as session:
+        return _select_jurisdiction(PgJurisdictionRepo(session), query)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -38,19 +81,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Authoritative HTTPS URL of the source page to ingest.",
     )
     _ = parser.add_argument(
-        "--jurisdiction-id",
-        required=True,
-        metavar="UUID",
-        help="UUID of the jurisdiction this run targets.",
-    )
-    _ = parser.add_argument(
-        "--jurisdiction-name",
+        "--jurisdiction",
         required=True,
         metavar="NAME",
         help=(
-            "Human-readable display name of the jurisdiction"
-            " (e.g. 'Denver, CO'). Used in the extraction prompt"
-            " (INV-LLM-008)."
+            "Jurisdiction name or fragment (case-insensitive), e.g."
+            " 'denver'. Resolved against seeded jurisdictions."
         ),
     )
     _ = parser.add_argument(
@@ -68,23 +104,14 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     source_url: str = cast(str, args.source)
-    jurisdiction_id_str: str = cast(str, args.jurisdiction_id)
-    jurisdiction_name: str = cast(str, args.jurisdiction_name)
+    jurisdiction_query: str = cast(str, args.jurisdiction)
 
-    try:
-        jurisdiction_uuid = uuid.UUID(jurisdiction_id_str)
-    except ValueError:
-        msg = (
-            f"Error: --jurisdiction-id {jurisdiction_id_str!r}"
-            " is not a valid UUID."
-        )
-        print(msg, file=sys.stderr)
-        sys.exit(1)
+    jurisdiction = _resolve_jurisdiction(jurisdiction_query)
 
     command = IngestSourceCommand(
         seed_url=source_url,
-        jurisdiction_id=JurisdictionId(jurisdiction_uuid),
-        jurisdiction_name=jurisdiction_name,
+        jurisdiction_id=jurisdiction.id,
+        jurisdiction_name=jurisdiction.name,
     )
 
     try:
