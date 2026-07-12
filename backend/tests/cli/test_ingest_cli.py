@@ -108,7 +108,12 @@ class TestIngestCLIRunIngestion:
         report_id = IngestionReportId(uuid.uuid4())
         with (
             patch("src.cli.ingest._resolve_jurisdiction", return_value=_DENVER),
-            patch("src.cli.ingest.run_ingestion", return_value=report_id),
+            patch(
+                "src.cli.ingest.run_ingestion", return_value=report_id
+            ) as mock_run,
         ):
             main(_BASE_ARGV)
         assert str(report_id) in capsys.readouterr().out
+        command = mock_run.call_args.args[0]
+        assert command.jurisdiction_name == "City and County of Denver"
+        assert command.jurisdiction_id == _DENVER.id
